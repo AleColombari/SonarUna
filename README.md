@@ -35,6 +35,7 @@ Aplicativo: `SonarUna`, versão inicial `0.1.0`. Namespace e identificador Andro
 | Lifecycle / ViewModel Compose | 2.9.4 |
 | AndroidX Core | 1.17.0 |
 | Google Play services Location | 21.3.0 |
+| Fragment (dependência indireta do Play services) | 1.8.9, para compatibilidade com as permissões modernas |
 | Kotlin Coroutines Android / Play services | 1.10.2 |
 | Estado da interface | ViewModel e StateFlow |
 | Voz | SpeechRecognizer e TextToSpeech nativos |
@@ -86,14 +87,16 @@ Os testes unitários verificam transições da conversa, confirmações positiva
 
 | Verificação | Situação |
 | --- | --- |
-| Build de debug | A executar |
-| Testes unitários | A executar |
-| Android Lint | A executar |
-| Testes de interface em dispositivo/emulador | A executar |
+| Build de debug | Aprovado localmente e no GitHub em 27/09/2026 |
+| Testes unitários | 14 aprovados, sem falhas |
+| Android Lint | Aprovado: nenhum erro; 12 avisos locais sobre versões e metadados de backup |
+| Testes de interface em dispositivo/emulador | 3 aprovados no emulador Android 16 / API 36 |
 | Fluxo completo de voz e permissões em celular | A executar |
 | TalkBack, vibração e configurações de acessibilidade | A executar |
 
 Os testes automatizados não substituem a avaliação em aparelho real. Use o [roteiro de testes manuais](docs/TESTES_MANUAIS.md) e registre o aparelho, as versões e os resultados antes de considerar a experiência acessível validada.
+
+Os resultados e limites dessa verificação estão em [VALIDACAO.md](docs/VALIDACAO.md). A imagem do emulador não disponibilizou voz pt-BR utilizável; o aplicativo apresentou a descrição acessível de recuperação. O fluxo real de voz e localização ainda precisa ser verificado em celular.
 
 O workflow [Android](.github/workflows/android.yml) repete o build, os testes unitários, o Lint e a compilação dos testes de interface em pushes na branch de trabalho e em pull requests. Ele disponibiliza o APK e relatórios como artefato por 14 dias; não executa testes de voz ou TalkBack.
 
