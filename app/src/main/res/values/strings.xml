@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SonarUna</string>
+    <string name="permissions_explanation">Olá. Este aplicativo utiliza sua localização e o microfone para ajudar na orientação dentro da universidade. Para continuar, permita o acesso à localização e ao microfone.</string>
+    <string name="permissions_denied">O microfone permite ouvir suas respostas, e a localização permite obter sua posição aproximada. Toque no botão para permitir os acessos necessários.</string>
+    <string name="permissions_settings">O acesso ao microfone ou à localização está bloqueado. Toque no botão para abrir as configurações do aplicativo, entre em Permissões e libere esses acessos. Depois, volte ao aplicativo.</string>
+    <string name="locating">Aguarde enquanto obtenho sua localização aproximada.</string>
+    <string name="origin_request">Localização aproximada obtida. Para confirmar seu ponto de partida, toque no botão de microfone e diga em qual sala ou local você está.</string>
+    <string name="origin_confirmation">Entendi que você está em: %1$s. Está correto? Toque no botão e diga sim ou não.</string>
+    <string name="origin_retry">Certo. Toque no botão e informe novamente em qual sala ou local você está.</string>
+    <string name="destination_request">Local de origem confirmado. Agora toque no botão e diga para onde você deseja ir.</string>
+    <string name="destination_confirmation">Entendi que você deseja ir para: %1$s. Está correto? Toque no botão e diga sim ou não.</string>
+    <string name="destination_retry">Certo. Toque no botão e informe novamente para onde deseja ir.</string>
+    <string name="confirmation_unclear">Não consegui entender a confirmação. Toque no botão e diga apenas sim ou não.</string>
+    <string name="recognition_empty">Não consegui entender. Toque no botão e tente novamente.</string>
+    <string name="complete">Origem %1$s e destino %2$s confirmados. Os dados foram registrados nesta sessão. Nesta primeira versão, o cálculo da rota ainda não está disponível. Toque no botão para iniciar uma nova orientação.</string>
+    <string name="location_error">Não consegui obter sua localização. Verifique se a localização do celular está ativada e toque no botão para tentar novamente.</string>
+    <string name="location_disabled">A localização do celular está desativada. Ative a localização nas configurações do celular, volte ao aplicativo e toque no botão para tentar novamente.</string>
+    <string name="location_services_unavailable">O serviço de localização não está disponível. Verifique se o Google Play Services está instalado e atualizado. Toque no botão para tentar novamente.</string>
+    <string name="speech_unavailable">O serviço de reconhecimento de voz não está disponível. Verifique o serviço de voz nas configurações do celular e toque no botão para tentar novamente.</string>
+    <string name="speech_network">O serviço de voz encontrou um problema de conexão. Verifique sua conexão ou os idiomas disponíveis para uso sem internet. Toque no botão para tentar novamente.</string>
+    <string name="speech_language">O reconhecimento em português do Brasil não está disponível. Verifique os idiomas do serviço de voz e toque no botão para tentar novamente.</string>
+    <string name="microphone_unavailable">Não consegui acessar o microfone. Verifique se outro aplicativo está usando o microfone ou se o acesso está desativado no celular. Toque no botão para tentar novamente.</string>
+    <string name="recognition_cancelled">Escuta cancelada. Toque no botão quando quiser tentar novamente.</string>
+    <string name="tts_unavailable">Não foi possível iniciar a voz em português do Brasil. Verifique o mecanismo de síntese de voz e instale a voz em português nas configurações de acessibilidade do celular. Toque para tentar novamente.</string>
+    <string name="settings_unavailable">Não consegui abrir as configurações. Abra as configurações do celular, entre em Aplicativos, SonarUna e Permissões. Depois, volte ao aplicativo.</string>
+    <string name="action_origin">Ativar microfone para informar o local atual</string>
+    <string name="action_confirm_origin">Ativar microfone para confirmar o local atual</string>
+    <string name="action_destination">Ativar microfone para informar o destino</string>
+    <string name="action_confirm_destination">Ativar microfone para confirmar o destino</string>
+    <string name="action_listening">Ouvindo. Toque para cancelar</string>
+    <string name="action_restart">Iniciar uma nova orientação</string>
+    <string name="action_permissions">Solicitar permissões de microfone e localização</string>
+    <string name="action_settings">Abrir configurações do aplicativo para liberar permissões</string>
+    <string name="action_location_retry">Tentar obter a localização aproximada novamente</string>
+    <string name="action_speech_retry">Ativar microfone para tentar responder novamente</string>
+    <string name="action_initializing">Inicializando a voz em português do Brasil. Aguarde</string>
+    <string name="action_locating">Obtendo localização aproximada. Aguarde</string>
+    <string name="action_speaking">Reproduzindo instrução por voz. Aguarde</string>
+    <string name="state_listening">Microfone ativo</string>
+    <string name="state_ready">Microfone desligado</string>
+    <string name="state_speaking">Falando. Microfone desligado</string>
+</resources>
