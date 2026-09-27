@@ -3,7 +3,6 @@ package com.example.sonaruna
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -13,6 +12,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,7 +33,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(android.graphics.Color.WHITE, android.graphics.Color.WHITE),
-            navigationBarStyle = SystemBarStyle.light(android.graphics.Color.WHITE, android.graphics.Color.WHITE),
+            navigationBarStyle = SystemBarStyle.light(android.graphics.Color.WHITE, android.graphics.Color.BLACK),
         )
         setContent {
             val uiState = viewModel.state.collectAsStateWithLifecycle()
@@ -45,7 +46,7 @@ class MainActivity : ComponentActivity() {
                         PlatformAction.RequestPermissions -> requestMissingPermissions()
                         PlatformAction.OpenAppSettings -> {
                             try {
-                                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+                                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$packageName".toUri()))
                             } catch (_: android.content.ActivityNotFoundException) {
                                 viewModel.onSettingsUnavailable()
                             }
@@ -97,10 +98,10 @@ class MainActivity : ComponentActivity() {
             viewModel.onPermissionsResult(status)
             return
         }
-        permissionHistory.edit().apply {
+        permissionHistory.edit {
             if (!status.location) putBoolean("location_requested", true)
             if (!status.microphone) putBoolean("microphone_requested", true)
-        }.apply()
+        }
         permissionLauncher.launch(missing.toTypedArray())
     }
 }

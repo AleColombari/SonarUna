@@ -94,7 +94,7 @@ class SpeechRecognitionManager(context: Context) {
 
                 override fun onError(error: Int) = onMain {
                     if (!isCurrent(session, attempt)) return@onMain
-                    if (onDevice && error in onDeviceFallbackErrors) {
+                    if (onDevice && canFallbackFromOnDevice(error)) {
                         beginAttempt(session, onDevice = false)
                     } else {
                         finishError(session, classify(error))
@@ -181,13 +181,13 @@ class SpeechRecognitionManager(context: Context) {
         else -> SpeechFailure.UNKNOWN
     }
 
-    private companion object {
-        val onDeviceFallbackErrors = setOf(
+    private fun canFallbackFromOnDevice(error: Int): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && when (error) {
             SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
             SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE,
             SpeechRecognizer.ERROR_SERVER,
             SpeechRecognizer.ERROR_SERVER_DISCONNECTED,
-            SpeechRecognizer.ERROR_CLIENT,
-        )
-    }
+            SpeechRecognizer.ERROR_CLIENT -> true
+            else -> false
+        }
 }

@@ -34,6 +34,11 @@ kotlin {
 }
 
 dependencies {
+    constraints {
+        implementation("androidx.fragment:fragment:1.8.9") {
+            because("Play services brings Fragment 1.1, which predates the Activity Result permission APIs")
+        }
+    }
     val composeBom = platform("androidx.compose:compose-bom:2025.10.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)
