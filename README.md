@@ -168,7 +168,7 @@ O planejamento futuro inclui mapear um bloco da UNAERP, cadastrar salas, represe
 
 ## Trabalho em equipe
 
-A branch de trabalho é **`Desenvolvimento-Alexandre`**. Alexandre autorizou commits e pushes nessa branch sempre que necessários. Merges, integração com o trabalho do colega e alterações/publicação na `main` ficam sob decisão dos desenvolvedores e exigem sua orientação. As regras locais estão em [AGENTS.md](AGENTS.md).
+A branch padrão do repositório é **`main`**. A branch de trabalho é **`Desenvolvimento-Alexandre`**. Alexandre autorizou commits e pushes nessa branch de trabalho sempre que necessários. Merges, integração com o trabalho do colega e alterações/publicação na `main` ficam sob decisão dos desenvolvedores e exigem sua orientação. As regras locais estão em [AGENTS.md](AGENTS.md).
 
 ## Referências técnicas
 
