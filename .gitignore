@@ -9,3 +9,5 @@ captures/
 *.jks
 *.keystore
 .env
+.env.*
+!.env.example

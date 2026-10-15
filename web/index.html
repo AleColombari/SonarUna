@@ -17,6 +17,12 @@
     </button>
     <p id="status" role="status">Carregando…</p>
 
+    <section id="call" class="call" aria-labelledby="call-title" hidden>
+      <h2 id="call-title">Ligação</h2>
+      <p id="call-text"></p>
+      <a id="call-link" class="call-link" href="#">Ligar</a>
+    </section>
+
     <section aria-labelledby="log-title">
       <h2 id="log-title">Conversa</h2>
       <ol id="log"></ol>
@@ -30,9 +36,22 @@
       </div>
     </form>
 
+    <details id="contacts-panel">
+      <summary>Contatos de ajuda</summary>
+      <form id="contacts" autocomplete="off">
+        <p>Quando a pessoa diz <em>preciso de ajuda</em>, o app oferece ligar para um destes números. Os telefones ficam <strong>só neste navegador</strong>: não vão para o GitHub nem para o mapa. Para testar, use o seu próprio número.</p>
+        <label for="phone-atendente">Telefone do atendente</label>
+        <input id="phone-atendente" type="tel" inputmode="tel" placeholder="16 99999-9999">
+        <label for="phone-seguranca">Telefone da segurança</label>
+        <input id="phone-seguranca" type="tel" inputmode="tel" placeholder="16 99999-9999">
+        <button type="submit">Guardar telefones</button>
+        <p id="contacts-message" role="status"></p>
+      </form>
+    </details>
+
     <details>
       <summary>Como usar</summary>
-      <p>Use o Google Chrome ou o Edge, em <code>localhost</code>, e permita o microfone. Toque no botão, responda às perguntas em voz alta e diga <strong>pronto</strong> a cada passo concluído. Você pode dizer a qualquer momento: <em>repetir</em>, <em>voltar</em>, <em>recomeçar</em>, <em>ajuda</em> ou <em>parar</em>.</p>
+      <p>Use o Google Chrome ou o Edge, em <code>localhost</code>, e permita o microfone. Toque no botão, responda às perguntas em voz alta e diga <strong>pronto</strong> a cada etapa concluída. Você pode dizer a qualquer momento: <em>repetir</em>, <em>voltar</em>, <em>recomeçar</em>, <em>ajuda</em> ou <em>parar</em>. Diga <em>preciso de ajuda</em> para falar com um atendente ou com a segurança.</p>
     </details>
   </main>
   <script type="module" src="app.js"></script>

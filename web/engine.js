@@ -348,19 +348,40 @@ export function classifyYesNo(text) {
 }
 
 const COMMANDS = [
+  // "preciso de ajuda" chama alguem; "ajuda" sozinho so explica o app. Por isso `assist` vem antes de `help`.
+  ['assist', [
+    'preciso de ajuda', 'preciso de socorro', 'preciso de um atendente', 'preciso de atendente', 'quero ajuda',
+    'chamar ajuda', 'pedir ajuda', 'pedir socorro', 'me ajuda', 'me ajude', 'socorro', 'estou perdido',
+    'estou perdida', 'chamar atendente', 'chamar seguranca', 'falar com atendente', 'falar com um atendente',
+    'falar com o atendente', 'falar com seguranca', 'falar com a seguranca', 'falar com um seguranca',
+  ]],
   ['stop', ['parar', 'pare', 'cancelar', 'cancela', 'encerrar', 'sair', 'finalizar']],
   ['restart', ['recomecar', 'reiniciar', 'comecar de novo', 'nova rota', 'outra rota', 'novo destino', 'outro destino']],
-  ['help', ['ajuda', 'socorro']],
+  ['help', ['ajuda']],
   ['repeat', ['repetir', 'repete', 'repita', 'de novo', 'nao ouvi', 'nao entendi']],
   ['back', ['voltar', 'volta', 'anterior', 'passo anterior']],
   ['next', ['pronto', 'proximo', 'continuar', 'continua', 'seguir', 'cheguei', 'ok', 'feito', 'ja fui', 'ja andei']],
 ];
 
-/** 'stop' | 'restart' | 'help' | 'repeat' | 'back' | 'next' | null. */
+/** 'assist' | 'stop' | 'restart' | 'help' | 'repeat' | 'back' | 'next' | null. */
 export function classifyCommand(text) {
   const normalized = normalize(text);
   for (const [name, phrases] of COMMANDS) {
     if (phrases.some((phrase) => containsPhrase(normalized, phrase))) return name;
   }
   return null;
+}
+
+/** Contato citado no texto ("com a segurança", "atendente"), ou null. Vence o apelido mais longo. */
+export function findContact(contacts, text) {
+  const query = normalize(text);
+  let best = null;
+  for (const contact of contacts) {
+    for (const alias of contact.aliases.map(normalize)) {
+      if (alias && containsPhrase(query, alias) && (!best || alias.length > best.length)) {
+        best = { contact, length: alias.length };
+      }
+    }
+  }
+  return best?.contact ?? null;
 }

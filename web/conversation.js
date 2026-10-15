@@ -2,7 +2,7 @@
 // Nao fala nem ouve: recebe o que foi ouvido e devolve o que deve ser dito. Quem fala e ouve e o app.js.
 
 import {
-  ateLugar, buildInstructions, classifyCommand, classifyYesNo, emLugar, findEntrance, findPlace, paraLugar, planRoute, stepsPhrase,
+  ateLugar, buildInstructions, classifyCommand, classifyYesNo, emLugar, findContact, findEntrance, findPlace, paraLugar, planRoute, stepsPhrase,
 } from './engine.js';
 
 export const MAX_SILENCE_RETRIES = 3;
@@ -10,8 +10,10 @@ export const MAX_SILENCE_RETRIES = 3;
 /**
  * Cada metodo devolve { say: string[], listen: boolean, phase }.
  * `say` e dito em ordem; se `listen` for verdadeiro o app abre o microfone depois da ultima frase.
+ * Quando o usuario pede ajuda e escolhe alguem, vem tambem `action: { type: 'call', contact }`: quem liga e o app.js.
+ * `getContacts()` devolve os contatos de ajuda com telefone (veja contacts.js); e lido a cada uso.
  */
-export function createSession(map) {
+export function createSession(map, getContacts = () => []) {
   let phase = 'idle';
   let entrance = null;
   let destination = null;
@@ -19,9 +21,12 @@ export function createSession(map) {
   let steps = [];
   let index = 0;
   let silences = 0;
+  let returnPhase = null;
+  let pendingContact = null;
 
   const reply = (say, listen = true) => ({ say, listen, phase });
   const entranceNames = () => map.entrances.map((e) => e.nome).join(' ou ');
+  const contactNames = (contacts) => contacts.map((c) => c.nome).join(' ou ');
   const stepLine = (i) => `Etapa ${i + 1} de ${steps.length}. ${steps[i].texto}`;
 
   function start() {
@@ -32,6 +37,7 @@ export function createSession(map) {
     silences = 0;
     return reply([
       `Olá. Eu sou o SonarUna, no bloco ${map.bloco}.`,
+      ...(getContacts().length > 0 ? ['Se precisar falar com alguém, diga preciso de ajuda a qualquer momento.'] : []),
       `Por qual entrada você entrou? Diga ${entranceNames()}.`,
     ]);
   }
@@ -42,7 +48,8 @@ export function createSession(map) {
   }
 
   function help() {
-    const common = 'Você pode dizer a qualquer momento: repetir, voltar, recomeçar ou parar.';
+    const common = 'Você pode dizer a qualquer momento: repetir, voltar, recomeçar ou parar.'
+      + (getContacts().length > 0 ? ' Para falar com alguém, diga preciso de ajuda.' : '');
     switch (phase) {
       case 'entrance': return reply([`Diga por qual entrada você entrou: ${entranceNames()}.`, common]);
       case 'destination': return reply(['Diga para onde quer ir, por exemplo: sala A12, secretaria ou banheiro.', common]);
@@ -58,8 +65,72 @@ export function createSession(map) {
       case 'destination': return reply(['Para onde você quer ir? Diga, por exemplo, sala A12.']);
       case 'confirm': return reply([`Você quer ir ${paraLugar(candidate)}. Está certo? Diga sim ou não.`]);
       case 'navigating': return reply([stepLine(index)]);
+      case 'assist-choose': return reply([`Com quem você quer falar? Diga ${contactNames(getContacts())}, ou diga cancelar.`]);
+      case 'assist-confirm': return reply([`Você quer falar com ${pendingContact.rotulo}? Diga sim ou não.`]);
       default: return reply([], false);
     }
+  }
+
+  /** O usuario pediu ajuda: descobre com quem falar. Com um contato so, confirma; com varios, pergunta. */
+  function beginAssist(heard) {
+    const contacts = getContacts();
+    if (contacts.length === 0) {
+      return reply([
+        'Não há nenhum contato de ajuda cadastrado neste aparelho. Peça a alguém para cadastrar os telefones na página.',
+        ...announceCurrentQuestion().say,
+      ]);
+    }
+    returnPhase = phase;
+    const named = heard.map((text) => findContact(contacts, text)).find(Boolean);
+    if (named) return callContact(named);
+    if (contacts.length === 1) {
+      pendingContact = contacts[0];
+      phase = 'assist-confirm';
+      return reply([`Certo, vou pedir ajuda. Você quer falar com ${pendingContact.rotulo}? Diga sim ou não.`]);
+    }
+    phase = 'assist-choose';
+    return reply([`Certo, vou pedir ajuda. Com quem você quer falar? Diga ${contactNames(contacts)}, ou diga cancelar.`]);
+  }
+
+  function hearAssist(heard) {
+    const contacts = getContacts();
+    for (const text of heard) {
+      if (phase === 'assist-choose') {
+        const chosen = findContact(contacts, text);
+        if (chosen) return callContact(chosen);
+      } else if (classifyYesNo(text) === 'yes') {
+        return callContact(pendingContact);
+      }
+      if (classifyYesNo(text) === 'no' || ['stop', 'back'].includes(classifyCommand(text))) return cancelAssist();
+    }
+    return reply(phase === 'assist-choose'
+      ? [`Não entendi. Diga ${contactNames(contacts)}, ou diga cancelar.`]
+      : ['Não entendi. Diga sim ou não.']);
+  }
+
+  /** A ligacao em si e feita pelo app.js; a conversa so guarda onde parou para retomar depois. */
+  function callContact(contact) {
+    phase = returnPhase;
+    pendingContact = null;
+    return {
+      say: [`Ligando para ${contact.rotulo} agora. Quando terminar a ligação, toque no botão para continuar.`],
+      listen: false,
+      phase,
+      action: { type: 'call', contact: { id: contact.id, nome: contact.nome, telefone: contact.telefone } },
+    };
+  }
+
+  function cancelAssist() {
+    phase = returnPhase;
+    pendingContact = null;
+    return reply(['Tudo bem. Vamos continuar.', ...announceCurrentQuestion().say]);
+  }
+
+  /** Volta de uma ligacao (ou de uma pausa): repete onde a conversa estava, sem perder a rota. */
+  function resume() {
+    if (phase === 'idle') return start();
+    silences = 0;
+    return reply(['Retomando.', ...announceCurrentQuestion().say]);
   }
 
   function hearEntrance(alternatives) {
@@ -159,6 +230,9 @@ export function createSession(map) {
     if (heard.length === 0) return silence();
     silences = 0;
 
+    if (phase === 'assist-choose' || phase === 'assist-confirm') return hearAssist(heard);
+    if (heard.some((text) => classifyCommand(text) === 'assist')) return beginAssist(heard);
+
     for (const text of heard) {
       const command = classifyCommand(text);
       if (command === 'stop') return stop();
@@ -200,6 +274,7 @@ export function createSession(map) {
 
   return {
     start,
+    resume,
     stop,
     hear,
     silence,

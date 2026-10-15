@@ -2,6 +2,7 @@
 
 import { loadMap } from './engine.js';
 import { createSession } from './conversation.js';
+import { ROLES, callMode, loadStoredPhones, maskPhone, readContacts, savePhones } from './contacts.js';
 
 const SPEECH_START_DELAY_MS = 250;
 
@@ -14,6 +15,11 @@ const els = {
   support: document.getElementById('support'),
   form: document.getElementById('typed'),
   typed: document.getElementById('typed-text'),
+  call: document.getElementById('call'),
+  callText: document.getElementById('call-text'),
+  callLink: document.getElementById('call-link'),
+  contactsForm: document.getElementById('contacts'),
+  contactsMessage: document.getElementById('contacts-message'),
 };
 
 const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -25,6 +31,7 @@ let voice = null;
 let generation = 0;
 let state = 'loading';
 let micBlocked = false;
+let envPhones = {};
 
 const STATES = {
   loading: { label: 'Aguarde', status: 'Carregando o mapa…', aria: 'Carregando' },
@@ -87,10 +94,78 @@ async function deliver(result, gen) {
     await speak(line, gen);
   }
   if (gen !== generation) return;
+  if (result.action?.type === 'call') placeCall(result.action.contact);
   if (!result.listen) return setState('idle');
   await new Promise((resolve) => setTimeout(resolve, SPEECH_START_DELAY_MS));
   if (gen === generation) listen(gen);
 }
+
+// --- Ligacao ---------------------------------------------------------------------------------
+
+// Um computador nao disca sozinho: o link abre o aplicativo de chamadas do sistema, se houver um.
+// No Android a ligacao sera automatica (ACTION_CALL, com a permissao CALL_PHONE).
+function placeCall(contact) {
+  const label = `${contact.nome} (${maskPhone(contact.telefone)})`;
+  els.call.hidden = false;
+  if (callMode(navigator.userAgent, window.location.search) === 'simulada') {
+    els.callText.textContent = `SIMULAÇÃO: no celular o site ligaria agora para ${label}. Este computador não faz ligações.`;
+    els.callLink.hidden = true;
+    addLog('app', `Ligação simulada para ${label}.`);
+    return;
+  }
+  els.callLink.hidden = false;
+  els.callLink.href = `tel:${contact.telefone}`;
+  els.callLink.textContent = `Ligar para ${label}`;
+  els.callText.textContent = 'Se a ligação não abrir sozinha, toque no botão abaixo.';
+  addLog('app', `Ligação pedida para ${label}.`);
+  // O clique no proprio link permite interceptar a chamada em testes; o botao continua disponivel se for bloqueada.
+  els.callLink.click();
+}
+
+function getContacts() {
+  try {
+    return readContacts(window.localStorage, envPhones);
+  } catch {
+    return readContacts({ getItem: () => null }, envPhones);
+  }
+}
+
+async function loadEnvPhones() {
+  try {
+    const response = await fetch('/config.json', { cache: 'no-store' });
+    if (response.ok) envPhones = await response.json();
+  } catch {
+    // Sem servidor de configuracao (site estatico): vale o que foi digitado na pagina.
+  }
+}
+
+function fillContactsForm() {
+  try {
+    const phones = loadStoredPhones(window.localStorage);
+    for (const role of ROLES) {
+      const input = document.getElementById(`phone-${role.id}`);
+      const fromEnv = Boolean(readContacts({ getItem: () => null }, envPhones).find((c) => c.id === role.id));
+      input.disabled = fromEnv;
+      input.placeholder = fromEnv ? 'Definido no arquivo .env' : '16 99999-9999';
+      input.value = fromEnv ? '' : phones[role.id];
+    }
+  } catch {
+    els.contactsMessage.textContent = 'Este navegador não permite guardar os telefones.';
+  }
+}
+
+els.contactsForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const typed = Object.fromEntries(ROLES.map((role) => [role.id, document.getElementById(`phone-${role.id}`).value]));
+  let result;
+  try {
+    result = savePhones(window.localStorage, typed);
+  } catch {
+    result = { ok: false, erros: ['Este navegador não permite guardar os telefones.'] };
+  }
+  els.contactsMessage.textContent = result.ok ? 'Telefones guardados neste navegador.' : result.erros.join(' ');
+  if (result.ok) fillContactsForm();
+});
 
 function handle(alternatives, gen) {
   addLog('you', alternatives[0]);
@@ -152,7 +227,9 @@ function begin() {
   micBlocked = false;
   cancelEverything();
   const gen = generation;
-  deliver(session.start(), gen);
+  els.call.hidden = true;
+  // Depois de uma ligacao a conversa continua de onde parou; so recomeca se tinha acabado.
+  deliver(session.phase === 'idle' ? session.start() : session.resume(), gen);
 }
 
 function end() {
@@ -194,7 +271,9 @@ async function init() {
     const response = await fetch('../data/bloco-a.json');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const map = loadMap(await response.json());
-    session = createSession(map);
+    await loadEnvPhones();
+    session = createSession(map, getContacts);
+    fillContactsForm();
     if (map.aviso) {
       els.notice.textContent = 'Dados de exemplo: o bloco A usado aqui é fictício.';
       els.notice.hidden = false;

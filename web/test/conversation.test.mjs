@@ -130,3 +130,127 @@ test('instrucao nao entendida durante a rota nao muda de passo', () => {
   assert.match(said(result), /Diga pronto para a próxima etapa/);
   assert.match(said(session.hear(['repetir'])), /Etapa 1 de 2/);
 });
+
+// --- Pedido de ajuda ---------------------------------------------------------------------------
+
+const atendente = { id: 'atendente', nome: 'atendente', rotulo: 'o atendente', aliases: ['atendente', 'atendimento'], telefone: '+5516999990001' };
+const seguranca = { id: 'seguranca', nome: 'segurança', rotulo: 'a segurança', aliases: ['seguranca', 'vigilante', 'guarda'], telefone: '+5516999990002' };
+
+const sessionWith = (contacts) => createSession(map, () => contacts);
+const toNavigation = (session) => {
+  session.start();
+  session.hear(['principal']);
+  session.hear(['sala A12']);
+  session.hear(['sim']);
+  return session;
+};
+
+test('"preciso de ajuda" com dois contatos pergunta com quem falar e liga para quem foi escolhido', () => {
+  const session = toNavigation(sessionWith([atendente, seguranca]));
+  const ask = session.hear(['preciso de ajuda']);
+  assert.equal(ask.phase, 'assist-choose');
+  assert.ok(ask.listen);
+  assert.match(said(ask), /Com quem você quer falar\? Diga atendente ou segurança/);
+  assert.equal(ask.action, undefined);
+
+  const call = session.hear(['a segurança por favor']);
+  assert.equal(call.action.type, 'call');
+  assert.equal(call.action.contact.id, 'seguranca');
+  assert.equal(call.action.contact.telefone, '+5516999990002');
+  assert.equal(call.listen, false);
+  assert.match(said(call), /Ligando para a segurança agora/);
+  assert.doesNotMatch(said(call), /5516/);
+  assert.equal(call.phase, 'navigating');
+});
+
+test('com um contato so, pede confirmacao e liga ao ouvir sim', () => {
+  const session = toNavigation(sessionWith([atendente]));
+  const ask = session.hear(['socorro']);
+  assert.equal(ask.phase, 'assist-confirm');
+  assert.match(said(ask), /Você quer falar com o atendente\? Diga sim ou não/);
+  assert.equal(session.hear(['talvez']).action, undefined);
+  const call = session.hear(['sim']);
+  assert.equal(call.action.contact.id, 'atendente');
+});
+
+test('citar o contato no pedido liga direto', () => {
+  const session = sessionWith([atendente, seguranca]);
+  session.start();
+  const call = session.hear(['quero falar com o atendente, preciso de ajuda']);
+  assert.equal(call.action.contact.id, 'atendente');
+});
+
+test('cancelar ou dizer nao volta para a pergunta em que a conversa estava', () => {
+  for (const answer of ['cancelar', 'não', 'voltar']) {
+    const session = sessionWith([atendente, seguranca]);
+    session.start();
+    session.hear(['principal']);
+    session.hear(['preciso de ajuda']);
+    const back = session.hear([answer]);
+    assert.equal(back.phase, 'destination', answer);
+    assert.equal(back.action, undefined);
+    assert.match(said(back), /Tudo bem\. Vamos continuar\. Para onde você quer ir/);
+  }
+});
+
+test('resposta que nao se entende mantem a escolha aberta', () => {
+  const session = sessionWith([atendente, seguranca]);
+  session.start();
+  session.hear(['preciso de ajuda']);
+  const unclear = session.hear(['banana']);
+  assert.equal(unclear.phase, 'assist-choose');
+  assert.match(said(unclear), /Não entendi\. Diga atendente ou segurança/);
+});
+
+test('sem contatos cadastrados avisa e continua a conversa', () => {
+  const session = sessionWith([]);
+  session.start();
+  const result = session.hear(['preciso de ajuda']);
+  assert.equal(result.phase, 'entrance');
+  assert.equal(result.action, undefined);
+  assert.match(said(result), /Não há nenhum contato de ajuda cadastrado/);
+  assert.match(said(result), /Por qual entrada você entrou/);
+});
+
+test('depois da ligacao, retomar continua na mesma etapa da rota', () => {
+  const session = toNavigation(sessionWith([atendente]));
+  session.hear(['pronto']);
+  session.hear(['preciso de ajuda']);
+  session.hear(['sim']);
+  const back = session.resume();
+  assert.equal(back.phase, 'navigating');
+  assert.ok(back.listen);
+  assert.match(said(back), /^Retomando\. Etapa 2 de 3/);
+});
+
+test('retomar uma sessao encerrada comeca de novo', () => {
+  const session = sessionWith([]);
+  assert.equal(session.resume().phase, 'entrance');
+});
+
+test('"ajuda" sozinho so explica o app; "socorro" chama alguem', () => {
+  const session = sessionWith([atendente]);
+  session.start();
+  session.hear(['principal']);
+  const help = session.hear(['ajuda']);
+  assert.equal(help.phase, 'destination');
+  assert.match(said(help), /Para falar com alguém, diga preciso de ajuda/);
+  assert.equal(session.hear(['socorro']).phase, 'assist-confirm');
+});
+
+test('a saudacao so oferece ajuda quando ha contatos', () => {
+  const withContacts = sessionWith([atendente]).start();
+  const without = sessionWith([]).start();
+  assert.match(said(withContacts), /diga preciso de ajuda a qualquer momento/);
+  assert.doesNotMatch(said(without), /preciso de ajuda/);
+});
+
+test('silencio demais durante o pedido de ajuda encerra sem ligar', () => {
+  const session = sessionWith([atendente, seguranca]);
+  session.start();
+  session.hear(['preciso de ajuda']);
+  let last;
+  for (let i = 0; i < MAX_SILENCE_RETRIES; i++) last = session.silence();
+  assert.equal(last.phase, 'idle');
+  assert.equal(last.action, undefined);
+});

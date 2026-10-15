@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Testes da bancada web (motor e conversa)
-        run: node --test web/test/engine.test.mjs web/test/conversation.test.mjs
+        run: node --test web/test/engine.test.mjs web/test/conversation.test.mjs web/test/contacts.test.mjs
 
   build:
     runs-on: ubuntu-latest

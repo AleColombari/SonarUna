@@ -119,6 +119,28 @@ form button {
   cursor: pointer;
 }
 
+.call {
+  margin: 0 0 1.5rem;
+  padding: 1rem;
+  border: 2px solid var(--listening);
+  border-radius: 0.5rem;
+}
+
+.call-link {
+  display: block;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: var(--listening);
+  color: var(--accent-fg);
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+#contacts input { width: 100%; margin-bottom: 0.75rem; }
+#contacts button { margin-top: 0.25rem; }
+#contacts-message { min-height: 1.5rem; }
+
 details { margin-top: 1.5rem; color: var(--muted); }
 summary { cursor: pointer; }
 code { color: var(--fg); }

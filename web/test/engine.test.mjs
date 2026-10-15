@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  ateLugar, buildInstructions, classifyCommand, emLugar, paraLugar, roundSteps, stepsPhrase, classifyYesNo, findEntrance, findPlace, loadMap, normalize, parseRoomCode, planRoute,
+  ateLugar, buildInstructions, classifyCommand, emLugar, findContact, paraLugar, roundSteps, stepsPhrase, classifyYesNo, findEntrance, findPlace, loadMap, normalize, parseRoomCode, planRoute,
 } from '../engine.js';
 
 const map = loadMap(JSON.parse(readFileSync(new URL('../../data/bloco-a.json', import.meta.url), 'utf8')));
@@ -191,4 +191,23 @@ test('metros do mapa viram passos pela media de 0,7 m: 7 m = 10 passos exatos, 4
   assert.match(buildInstructions(exact, exact.entrances[0], planRoute(exact, 'a', 'b'))[0].texto, /^Siga em frente e ande 10 passos\./);
   const entrance = map.entrances.find((e) => e.id === 'entrada-principal');
   assert.match(buildInstructions(map, entrance, planRoute(map, 'entrada-principal', 'A1'))[0].texto, /ande cerca de 15 passos\./);
+});
+
+test('pedido de ajuda e separado do comando "ajuda"', () => {
+  for (const text of ['preciso de ajuda', 'Preciso de ajuda!', 'socorro', 'me ajuda', 'estou perdido', 'quero falar com a segurança', 'chamar atendente']) {
+    assert.equal(classifyCommand(text), 'assist', text);
+  }
+  assert.equal(classifyCommand('ajuda'), 'help');
+  assert.equal(classifyCommand('quero ir para a sala A12'), null);
+});
+
+test('findContact acha o contato pelo apelido, sem acento', () => {
+  const contacts = [
+    { id: 'a', aliases: ['atendente', 'atendimento'] },
+    { id: 's', aliases: ['seguranca', 'vigilante'] },
+  ];
+  assert.equal(findContact(contacts, 'com a segurança').id, 's');
+  assert.equal(findContact(contacts, 'Atendimento').id, 'a');
+  assert.equal(findContact(contacts, 'banana'), null);
+  assert.equal(findContact([], 'segurança'), null);
 });
