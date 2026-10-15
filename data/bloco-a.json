@@ -1,0 +1,80 @@
+{
+  "aviso": "DADOS FICTICIOS DE EXEMPLO. Distancias, salas e referencias foram inventadas para testar o aplicativo. Substitua pelas medidas reais do Bloco A (veja docs/MAPEAMENTO.md).",
+  "bloco": "A",
+  "andar": "terreo",
+  "passoMetros": 0.7,
+  "entradas": [
+    {
+      "id": "entrada-principal",
+      "nome": "entrada principal",
+      "aliases": ["principal", "porta principal", "portaria", "porta da frente", "frente"],
+      "ponto": "entrada-principal",
+      "rumo": 0
+    },
+    {
+      "id": "entrada-lateral",
+      "nome": "entrada lateral",
+      "aliases": ["lateral", "porta lateral", "porta do lado", "lado"],
+      "ponto": "entrada-lateral",
+      "rumo": 270
+    }
+  ],
+  "pontos": [
+    { "id": "entrada-principal", "nome": "entrada principal", "tipo": "entrada" },
+    { "id": "entrada-lateral", "nome": "entrada lateral", "tipo": "entrada" },
+    { "id": "hall", "nome": "hall de entrada", "tipo": "corredor", "artigo": "o", "aliases": ["hall", "recepcao"] },
+    { "id": "cruzamento", "nome": "cruzamento do corredor principal", "tipo": "corredor" },
+    { "id": "oeste-1", "nome": "corredor oeste 1", "tipo": "corredor" },
+    { "id": "oeste-2", "nome": "corredor oeste 2", "tipo": "corredor" },
+    { "id": "oeste-3", "nome": "corredor oeste 3", "tipo": "corredor" },
+    { "id": "leste-1", "nome": "corredor leste 1", "tipo": "corredor" },
+    { "id": "leste-2", "nome": "corredor leste 2", "tipo": "corredor" },
+    { "id": "leste-3", "nome": "corredor leste 3", "tipo": "corredor" },
+    { "id": "secretaria", "nome": "secretaria", "tipo": "servico", "aliases": ["secretaria"] },
+    { "id": "banheiro", "nome": "banheiro", "tipo": "servico", "artigo": "o", "aliases": ["banheiro", "sanitario", "toalete", "wc"] },
+    { "id": "elevador", "nome": "elevador", "tipo": "servico", "artigo": "o", "aliases": ["elevador"] },
+    { "id": "escada", "nome": "escada", "tipo": "servico", "aliases": ["escada", "escadas"] },
+    { "id": "A1", "nome": "sala A1", "tipo": "sala", "codigo": "A1" },
+    { "id": "A2", "nome": "sala A2", "tipo": "sala", "codigo": "A2" },
+    { "id": "A3", "nome": "sala A3", "tipo": "sala", "codigo": "A3" },
+    { "id": "A4", "nome": "sala A4", "tipo": "sala", "codigo": "A4" },
+    { "id": "A5", "nome": "sala A5", "tipo": "sala", "codigo": "A5" },
+    { "id": "A6", "nome": "sala A6", "tipo": "sala", "codigo": "A6" },
+    { "id": "A7", "nome": "sala A7", "tipo": "sala", "codigo": "A7" },
+    { "id": "A8", "nome": "sala A8", "tipo": "sala", "codigo": "A8" },
+    { "id": "A9", "nome": "sala A9", "tipo": "sala", "codigo": "A9" },
+    { "id": "A10", "nome": "sala A10", "tipo": "sala", "codigo": "A10" },
+    { "id": "A11", "nome": "sala A11", "tipo": "sala", "codigo": "A11" },
+    { "id": "A12", "nome": "sala A12", "tipo": "sala", "codigo": "A12" }
+  ],
+  "trechos": [
+    { "de": "entrada-principal", "para": "hall", "metros": 6, "rumo": 0, "referencias": ["piso tátil no centro"] },
+    { "de": "hall", "para": "cruzamento", "metros": 6, "rumo": 0 },
+    { "de": "hall", "para": "secretaria", "metros": 4, "rumo": 270 },
+    { "de": "hall", "para": "banheiro", "metros": 5, "rumo": 90 },
+    { "de": "cruzamento", "para": "elevador", "metros": 5, "rumo": 0 },
+
+    { "de": "cruzamento", "para": "oeste-1", "metros": 10, "rumo": 270, "referencias": ["piso tátil no centro do corredor"] },
+    { "de": "oeste-1", "para": "oeste-2", "metros": 8, "rumo": 270 },
+    { "de": "oeste-2", "para": "oeste-3", "metros": 8, "rumo": 270 },
+    { "de": "oeste-3", "para": "escada", "metros": 3, "rumo": 270 },
+
+    { "de": "cruzamento", "para": "leste-1", "metros": 10, "rumo": 90, "referencias": ["piso tátil no centro do corredor"] },
+    { "de": "leste-1", "para": "leste-2", "metros": 8, "rumo": 90 },
+    { "de": "leste-2", "para": "leste-3", "metros": 8, "rumo": 90 },
+    { "de": "leste-3", "para": "entrada-lateral", "metros": 4, "rumo": 90 },
+
+    { "de": "oeste-1", "para": "A1", "metros": 4, "rumo": 0 },
+    { "de": "oeste-1", "para": "A2", "metros": 4, "rumo": 180 },
+    { "de": "oeste-2", "para": "A3", "metros": 4, "rumo": 0 },
+    { "de": "oeste-2", "para": "A4", "metros": 4, "rumo": 180 },
+    { "de": "oeste-3", "para": "A5", "metros": 4, "rumo": 0 },
+    { "de": "oeste-3", "para": "A6", "metros": 4, "rumo": 180 },
+    { "de": "leste-1", "para": "A7", "metros": 4, "rumo": 0 },
+    { "de": "leste-1", "para": "A8", "metros": 4, "rumo": 180 },
+    { "de": "leste-2", "para": "A9", "metros": 4, "rumo": 0 },
+    { "de": "leste-2", "para": "A10", "metros": 4, "rumo": 180 },
+    { "de": "leste-3", "para": "A11", "metros": 4, "rumo": 0 },
+    { "de": "leste-3", "para": "A12", "metros": 4, "rumo": 180 }
+  ]
+}

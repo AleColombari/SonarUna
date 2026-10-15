@@ -1,0 +1,124 @@
+:root {
+  --bg: #0b0f14;
+  --fg: #f4f7fb;
+  --muted: #b4c0cf;
+  --accent: #ffd54a;
+  --accent-fg: #14181f;
+  --listening: #5ee1a1;
+  --panel: #161d27;
+  --border: #3a4656;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 1.125rem/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+h1 { margin: 0 0 1rem; font-size: 1.75rem; }
+h2 { font-size: 1.1rem; color: var(--muted); }
+
+.notice {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--accent);
+  border-radius: 0.5rem;
+}
+
+#mic {
+  display: block;
+  width: min(80vw, 18rem);
+  height: min(80vw, 18rem);
+  margin: 1.5rem auto 1rem;
+  border: 0.5rem solid var(--fg);
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font: inherit;
+  font-size: 1.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#mic[data-state="speaking"] { background: var(--fg); }
+#mic[data-state="listening"] {
+  background: var(--listening);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% { box-shadow: 0 0 0 1.25rem rgba(94, 225, 161, 0.25); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #mic[data-state="listening"] { animation: none; }
+}
+
+:focus-visible {
+  outline: 0.25rem solid var(--fg);
+  outline-offset: 0.25rem;
+}
+
+#status {
+  min-height: 2rem;
+  margin: 0 0 1.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+#log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+#log li {
+  margin: 0 0 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--panel);
+}
+
+#log li[data-who="you"] { border-left: 0.25rem solid var(--listening); }
+#log li[data-who="app"] { border-left: 0.25rem solid var(--accent); }
+
+form { margin-top: 1.5rem; }
+label { display: block; margin-bottom: 0.25rem; color: var(--muted); }
+.row { display: flex; gap: 0.5rem; }
+
+input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--panel);
+  color: var(--fg);
+  font: inherit;
+}
+
+form button {
+  padding: 0.75rem 1.25rem;
+  border: 2px solid var(--fg);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+details { margin-top: 1.5rem; color: var(--muted); }
+summary { cursor: pointer; }
+code { color: var(--fg); }

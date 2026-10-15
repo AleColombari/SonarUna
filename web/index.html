@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SonarUna – bancada de testes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <h1>SonarUna</h1>
+    <p id="notice" class="notice" hidden></p>
+    <p id="support" class="notice" hidden></p>
+
+    <button id="mic" type="button" aria-label="Começar orientação">
+      <span id="mic-label">Começar</span>
+    </button>
+    <p id="status" role="status">Carregando…</p>
+
+    <section aria-labelledby="log-title">
+      <h2 id="log-title">Conversa</h2>
+      <ol id="log"></ol>
+    </section>
+
+    <form id="typed" autocomplete="off">
+      <label for="typed-text">Ou digite o que você diria</label>
+      <div class="row">
+        <input id="typed-text" type="text" placeholder="Ex.: entrada principal, sala A12, pronto">
+        <button type="submit">Enviar</button>
+      </div>
+    </form>
+
+    <details>
+      <summary>Como usar</summary>
+      <p>Use o Google Chrome ou o Edge, em <code>localhost</code>, e permita o microfone. Toque no botão, responda às perguntas em voz alta e diga <strong>pronto</strong> a cada passo concluído. Você pode dizer a qualquer momento: <em>repetir</em>, <em>voltar</em>, <em>recomeçar</em>, <em>ajuda</em> ou <em>parar</em>.</p>
+    </details>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
