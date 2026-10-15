@@ -18,7 +18,7 @@ Abra <http://localhost:8080/> e permita o microfone. O Chrome envia o áudio ao 
 2. Diga "entrada principal" ou "entrada lateral".
 3. Diga o destino: "sala A12", "a doze", "secretaria", "banheiro".
 4. Confirme com "sim" (ou "não" para trocar).
-5. A cada passo, diga "pronto" para o próximo. Você também pode dizer "repetir", "voltar", "recomeçar", "ajuda" ou "parar".
+5. A cada etapa, diga "pronto" para a próxima. Você também pode dizer "repetir", "voltar", "recomeçar", "ajuda" ou "parar".
 
 Se o microfone não funcionar, use o campo de texto da página: ele passa pela mesma conversa.
 
@@ -40,13 +40,13 @@ node --test web/test/engine.test.mjs web/test/conversation.test.mjs
 
 ## Trocar os dados fictícios pelos reais
 
-Edite `data/bloco-a.json` seguindo o roteiro em [docs/MAPEAMENTO.md](../docs/MAPEAMENTO.md). Cada trecho tem `metros` e `rumo`, a direção da caminhada em graus pela bússola: 0 = norte, 90 = leste, 180 = sul, 270 = oeste. O app calcula sozinho o lado da curva ("vire à direita") comparando um rumo com o seguinte, e inverte quando o caminho é feito na volta.
+Edite `data/bloco-a.json` seguindo o roteiro em [docs/MAPEAMENTO.md](../docs/MAPEAMENTO.md). Cada trecho tem `metros`, `rumo` (a direção da caminhada em graus pela bússola: 0 = norte, 90 = leste, 180 = sul, 270 = oeste) e, opcionalmente, `passos` contados caminhando. O app **fala em passos**: usa os `passos` do trecho quando existem e, senão, converte os metros com `passoMetros` (0,7 m por passo). O app calcula sozinho o lado da curva ("vire à direita") comparando um rumo com o seguinte, e inverte quando o caminho é feito na volta.
 
 Se o arquivo tiver erro (ponto que não existe, trecho com 0 metros), o carregamento falha com uma mensagem clara.
 
 ## Limites desta versão
 
 - O mapa é fictício e cobre só o térreo.
-- O app não sabe onde a pessoa está: ela confirma cada passo com "pronto".
-- Sem equipamento no prédio, a distância em passos é aproximada.
+- O app não sabe onde a pessoa está: ela confirma cada etapa com "pronto".
+- Passos variam de pessoa para pessoa. O app diz "cerca de" e arredonda de 5 em 5 acima de 10 passos.
 - Não substitui bengala, cão-guia nem ajuda humana.

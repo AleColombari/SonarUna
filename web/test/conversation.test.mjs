@@ -24,14 +24,14 @@ test('fluxo completo: entrada principal, sala A12, confirmacao e tres passos', (
 
   const route = session.hear(['sim']);
   assert.equal(route.phase, 'navigating');
-  assert.match(said(route), /Rota até a sala A12: cerca de 42 metros, em 3 passos/);
-  assert.match(said(route), /Passo 1 de 3\. Siga em frente/);
+  assert.match(said(route), /Rota até a sala A12: cerca de 55 passos, em 3 etapas/);
+  assert.match(said(route), /Etapa 1 de 3\. Siga em frente/);
 
-  assert.match(said(session.hear(['pronto'])), /Passo 2 de 3\. Vire à direita/);
-  assert.match(said(session.hear(['repetir'])), /Passo 2 de 3/);
-  assert.match(said(session.hear(['voltar'])), /Passo 1 de 3/);
+  assert.match(said(session.hear(['pronto'])), /Etapa 2 de 3\. Vire à direita/);
+  assert.match(said(session.hear(['repetir'])), /Etapa 2 de 3/);
+  assert.match(said(session.hear(['voltar'])), /Etapa 1 de 3/);
   session.hear(['próximo']);
-  assert.match(said(session.hear(['pronto'])), /Passo 3 de 3/);
+  assert.match(said(session.hear(['pronto'])), /Etapa 3 de 3/);
 
   const arrived = session.hear(['pronto']);
   assert.equal(arrived.phase, 'idle');
@@ -127,6 +127,6 @@ test('instrucao nao entendida durante a rota nao muda de passo', () => {
   session.hear(['sala A12']);
   session.hear(['sim']);
   const result = session.hear(['banana']);
-  assert.match(said(result), /Diga pronto para o próximo passo/);
-  assert.match(said(session.hear(['repetir'])), /Passo 1 de 2/);
+  assert.match(said(result), /Diga pronto para a próxima etapa/);
+  assert.match(said(session.hear(['repetir'])), /Etapa 1 de 2/);
 });

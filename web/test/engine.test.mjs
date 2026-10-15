@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  ateLugar, buildInstructions, classifyCommand, emLugar, paraLugar, classifyYesNo, findEntrance, findPlace, loadMap, normalize, parseRoomCode, planRoute,
+  ateLugar, buildInstructions, classifyCommand, emLugar, paraLugar, roundSteps, classifyYesNo, findEntrance, findPlace, loadMap, normalize, parseRoomCode, planRoute,
 } from '../engine.js';
 
 const map = loadMap(JSON.parse(readFileSync(new URL('../../data/bloco-a.json', import.meta.url), 'utf8')));
@@ -83,9 +83,9 @@ test('instrucoes: A12 pela entrada principal junta a reta e vira a esquerda no f
   const entrance = map.entrances.find((e) => e.id === 'entrada-principal');
   const steps = buildInstructions(map, entrance, planRoute(map, 'entrada-principal', 'A12'));
   assert.equal(steps.length, 3);
-  assert.match(steps[0].texto, /^Siga em frente e ande cerca de 12 metros, ou 17 passos\./);
-  assert.match(steps[1].texto, /^Vire à direita e ande cerca de 26 metros, ou 37 passos\./);
-  assert.match(steps[2].texto, /^Vire à direita e ande cerca de 4 metros/);
+  assert.match(steps[0].texto, /^Siga em frente e ande cerca de 15 passos\./);
+  assert.match(steps[1].texto, /^Vire à direita e ande cerca de 35 passos\./);
+  assert.match(steps[2].texto, /^Vire à direita e ande cerca de 6 passos/);
   assert.match(steps[2].texto, /Você chegará na sala A12/);
 });
 
@@ -93,8 +93,8 @@ test('o lado da curva se inverte pela entrada lateral', () => {
   const entrance = map.entrances.find((e) => e.id === 'entrada-lateral');
   const steps = buildInstructions(map, entrance, planRoute(map, 'entrada-lateral', 'A12'));
   assert.equal(steps.length, 2);
-  assert.match(steps[0].texto, /^Siga em frente e ande cerca de 4 metros/);
-  assert.match(steps[1].texto, /^Vire à esquerda e ande cerca de 4 metros/);
+  assert.match(steps[0].texto, /^Siga em frente e ande cerca de 6 passos/);
+  assert.match(steps[1].texto, /^Vire à esquerda e ande cerca de 6 passos/);
 });
 
 test('A1 pela entrada principal: esquerda no corredor, depois direita para a sala', () => {
@@ -136,4 +136,37 @@ test('artigos: sala e feminino, banheiro e masculino', () => {
   assert.equal(ateLugar(banheiro), 'até o banheiro');
   assert.equal(emLugar(sala), 'na sala A12');
   assert.equal(emLugar(banheiro), 'no banheiro');
+});
+
+test('a fala usa passos e nunca metros', () => {
+  const entrance = map.entrances.find((e) => e.id === 'entrada-principal');
+  for (const place of ['A1', 'A12', 'banheiro', 'escada']) {
+    for (const step of buildInstructions(map, entrance, planRoute(map, 'entrada-principal', place))) {
+      assert.doesNotMatch(step.texto, /metro/);
+      assert.match(step.texto, /cerca de \d+ passos?\./);
+    }
+  }
+});
+
+test('arredondamento de passos: exato ate 10, de 5 em 5 depois', () => {
+  assert.deepEqual([0.4, 1, 6, 10, 11, 12, 13, 17, 43].map(roundSteps), [1, 1, 6, 10, 10, 10, 15, 15, 45]);
+});
+
+test('passos medidos no trecho valem mais que metros / passoMetros e somam ao juntar a reta', () => {
+  const measured = loadMap({
+    passoMetros: 0.7,
+    entradas: [{ id: 'e', nome: 'entrada', ponto: 'a', rumo: 0 }],
+    pontos: [{ id: 'a', nome: 'a', tipo: 'entrada' }, { id: 'b', nome: 'b' }, { id: 'c', nome: 'sala C', tipo: 'sala', codigo: 'C1' }],
+    trechos: [
+      { de: 'a', para: 'b', metros: 10, passos: 20, rumo: 0 },
+      { de: 'b', para: 'c', metros: 10, rumo: 0 },
+    ],
+  });
+  const steps = buildInstructions(measured, measured.entrances[0], planRoute(measured, 'a', 'c'));
+  assert.equal(steps.length, 1);
+  assert.equal(steps[0].passos, 35);
+  assert.throws(() => loadMap({
+    pontos: [{ id: 'a', nome: 'a' }, { id: 'b', nome: 'b' }],
+    trechos: [{ de: 'a', para: 'b', metros: 3, passos: 0, rumo: 0 }],
+  }), /passos/);
 });

@@ -149,9 +149,13 @@ export function loadMap(raw) {
       if (!points.has(end)) throw new Error(`Trecho usa ponto inexistente: ${end}`);
     }
     if (!(edge.metros > 0)) throw new Error(`Trecho ${edge.de} -> ${edge.para} precisa de metros maiores que zero`);
+    if (edge.passos !== undefined && !(edge.passos > 0)) {
+      throw new Error(`Trecho ${edge.de} -> ${edge.para} precisa de passos maiores que zero`);
+    }
     const references = edge.referencias ?? [];
-    adjacency.get(edge.de).push({ to: edge.para, metros: edge.metros, rumo: mod360(edge.rumo), referencias: references });
-    adjacency.get(edge.para).push({ to: edge.de, metros: edge.metros, rumo: mod360(edge.rumo + 180), referencias: references });
+    const common = { metros: edge.metros, passos: edge.passos, referencias: references };
+    adjacency.get(edge.de).push({ to: edge.para, rumo: mod360(edge.rumo), ...common });
+    adjacency.get(edge.para).push({ to: edge.de, rumo: mod360(edge.rumo + 180), ...common });
   }
   const entrances = (raw.entradas ?? []).map((entrance) => {
     if (!points.has(entrance.ponto)) throw new Error(`Entrada ${entrance.id} usa ponto inexistente: ${entrance.ponto}`);
@@ -247,7 +251,7 @@ export function planRoute(map, fromId, toId) {
   const segments = [];
   for (let at = toId; at !== fromId; at = previous.get(at).from) {
     const { from, edge } = previous.get(at);
-    segments.unshift({ de: from, para: at, metros: edge.metros, rumo: edge.rumo, referencias: edge.referencias });
+    segments.unshift({ de: from, para: at, metros: edge.metros, passos: edge.passos, rumo: edge.rumo, referencias: edge.referencias });
   }
   return segments;
 }
@@ -262,11 +266,18 @@ function turnPhrase(angle) {
   return angle > 0 ? 'Vire à direita' : 'Vire à esquerda';
 }
 
+/** Passos de um trecho: o valor medido no mapa ou, se faltar, metros / tamanho do passo. */
+const stepsOf = (map, segment) => segment.passos ?? segment.metros / map.passoMetros;
+
+/** Ate 10 passos conta exato; depois arredonda de 5 em 5, para nao fingir uma precisao que o passo nao tem. */
+export const roundSteps = (steps) => (steps <= 10 ? Math.max(1, Math.round(steps)) : Math.round(steps / 5) * 5);
+
 const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
 
 /**
  * Uma instrucao por mudanca de direcao. Trechos em linha reta seguidos viram uma unica instrucao.
- * Cada item: { texto, metros, passos }.
+ * Cada item: { texto, metros, passos }. A fala usa so passos, que a pessoa sente andando; os metros
+ * ficam no mapa como fonte (passos medidos no trecho, quando existirem, valem mais que metros / passoMetros).
  */
 export function buildInstructions(map, entrance, segments) {
   const groups = [];
@@ -276,12 +287,14 @@ export function buildInstructions(map, entrance, segments) {
     const last = groups[groups.length - 1];
     if (last && Math.abs(angle) < 30) {
       last.metros += segment.metros;
+      last.passos += stepsOf(map, segment);
       last.referencias.push(...segment.referencias);
       last.destino = segment.para;
     } else {
       groups.push({
         virar: turnPhrase(angle),
         metros: segment.metros,
+        passos: stepsOf(map, segment),
         referencias: [...segment.referencias],
         destino: segment.para,
       });
@@ -290,11 +303,11 @@ export function buildInstructions(map, entrance, segments) {
   }
   return groups.map((group, index) => {
     const metros = Math.round(group.metros);
-    const passos = Math.max(1, Math.round(group.metros / map.passoMetros));
+    const passos = roundSteps(group.passos);
     const referencias = [...new Set(group.referencias)];
     const isLast = index === groups.length - 1;
     const parts = [
-      `${group.virar} e ande cerca de ${plural(metros, 'metro', 'metros')}, ou ${plural(passos, 'passo', 'passos')}.`,
+      `${group.virar} e ande cerca de ${plural(passos, 'passo', 'passos')}.`,
     ];
     if (referencias.length > 0) parts.push(`Referência: ${referencias.join(', ')}.`);
     if (isLast) {

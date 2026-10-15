@@ -29,14 +29,17 @@ Para cada par de pontos vizinhos, caminhando de um ao outro:
 
 | Campo | Exemplo |
 | --- | --- |
-| De / Para | `A-entrada` → `A-corredor-1` |
-| Distância | 18 passos (ou 12 metros). Escolha uma unidade só e use sempre a mesma |
-| Direção ao chegar | segue em frente / vira à direita / vira à esquerda |
+| De / Para | `entrada-principal` → `hall` |
+| Passos | 18, **contados caminhando o trecho**. O app fala em passos, então este é o número mais importante |
+| Metros | 12, da planta ou de uma trena. Obrigatório no arquivo; serve de reserva quando faltam os passos |
+| Rumo | Direção da caminhada pela bússola do celular: 0 = norte, 90 = leste, 180 = sul, 270 = oeste |
 | Acessível a quem tem deficiência visual? | sim / não (degrau, rampa íngreme, obstáculo) |
 | Referências no caminho | "parede à esquerda", "piso tátil", "porta antes do fim" |
 | Perigos | degrau, vidro, buraco, obra, porta que abre para o corredor |
 
-Cada trecho vale nos dois sentidos, mas **a direção da curva se inverte** na volta. Anote os dois ou avise que é simétrico.
+Cada trecho vale nos dois sentidos. O app inverte o rumo (soma 180°) e descobre sozinho se a curva é à direita ou à esquerda na volta, então **não precisa anotar os dois sentidos**.
+
+**Sobre os passos:** o tamanho do passo muda de pessoa para pessoa, então o app diz "cerca de" e arredonda de 5 em 5 acima de 10 passos. Conte os passos em ritmo normal, sem pisar com cuidado demais. Confira o trecho com outra pessoa: se a contagem diferir muito, anote a média. Uma referência que a pessoa sente (parede, piso tátil, porta) vale mais que o número.
 
 ## 4. Como o app vai saber onde a pessoa está
 
@@ -48,30 +51,22 @@ O GPS não funciona bem dentro de prédios, então este é o ponto mais importan
 
 Pergunte na faculdade: é permitido colar etiquetas ou instalar beacons? Quem autoriza?
 
-## 5. Exemplo do formato final
+## 5. Formato do arquivo
 
-Este exemplo é uma proposta e pode mudar. Ele é só para mostrar o nível de detalhe:
+O app lê [data/bloco-a.json](../data/bloco-a.json). Hoje esse arquivo tem **dados fictícios**: troque pelas medidas reais. Um trecho se escreve assim:
 
 ```json
 {
-  "pontos": [
-    { "id": "A-entrada", "nome": "entrada do bloco A", "tipo": "porta", "andar": 1 },
-    { "id": "A15", "nome": "sala A15", "tipo": "sala", "andar": 1 }
-  ],
-  "trechos": [
-    {
-      "de": "A-entrada",
-      "para": "A15",
-      "distancia": 18,
-      "unidade": "passos",
-      "curva": "direita",
-      "acessivel": true,
-      "referencias": ["piso tátil", "parede à esquerda"],
-      "perigos": ["porta abre para o corredor após 10 passos"]
-    }
-  ]
+  "de": "entrada-principal",
+  "para": "hall",
+  "metros": 6,
+  "passos": 9,
+  "rumo": 0,
+  "referencias": ["piso tátil no centro"]
 }
 ```
+
+Só `de`, `para`, `metros` e `rumo` são obrigatórios; `passos` e `referencias` são opcionais. Se o arquivo tiver erro, o app diz qual (ponto que não existe, trecho com 0 metros).
 
 ## 6. Cuidados
 
