@@ -24,7 +24,7 @@ test('fluxo completo: entrada principal, sala A12, confirmacao e tres passos', (
 
   const route = session.hear(['sim']);
   assert.equal(route.phase, 'navigating');
-  assert.match(said(route), /Rota até a sala A12: cerca de 55 passos, em 3 etapas/);
+  assert.match(said(route), /Rota até a sala A12: 60 passos, em 3 etapas/);
   assert.match(said(route), /Etapa 1 de 3\. Siga em frente/);
 
   assert.match(said(session.hear(['pronto'])), /Etapa 2 de 3\. Vire à direita/);

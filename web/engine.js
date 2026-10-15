@@ -274,9 +274,16 @@ export const roundSteps = (steps) => (steps <= 10 ? Math.max(1, Math.round(steps
 
 const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
 
+/** "cerca de 15 passos" quando a conta quebrou e foi arredondada; "10 passos" quando fecha exata. */
+export function stepsPhrase(rawSteps) {
+  const steps = roundSteps(rawSteps);
+  const approximate = Math.abs(rawSteps - steps) > 0.05;
+  return `${approximate ? 'cerca de ' : ''}${plural(steps, 'passo', 'passos')}`;
+}
+
 /**
  * Uma instrucao por mudanca de direcao. Trechos em linha reta seguidos viram uma unica instrucao.
- * Cada item: { texto, metros, passos }. A fala usa so passos, que a pessoa sente andando; os metros
+ * Cada item: { texto, metros, passos (arredondado), bruto (sem arredondar) }. A fala usa so passos, que a pessoa sente andando; os metros
  * ficam no mapa como fonte (passos medidos no trecho, quando existirem, valem mais que metros / passoMetros).
  */
 export function buildInstructions(map, entrance, segments) {
@@ -307,7 +314,7 @@ export function buildInstructions(map, entrance, segments) {
     const referencias = [...new Set(group.referencias)];
     const isLast = index === groups.length - 1;
     const parts = [
-      `${group.virar} e ande cerca de ${plural(passos, 'passo', 'passos')}.`,
+      `${group.virar} e ande ${stepsPhrase(group.passos)}.`,
     ];
     if (referencias.length > 0) parts.push(`Referência: ${referencias.join(', ')}.`);
     if (isLast) {
@@ -315,7 +322,7 @@ export function buildInstructions(map, entrance, segments) {
     } else {
       parts.push('Quando terminar, diga pronto.');
     }
-    return { texto: parts.join(' '), metros, passos };
+    return { texto: parts.join(' '), metros, passos, bruto: group.passos };
   });
 }
 

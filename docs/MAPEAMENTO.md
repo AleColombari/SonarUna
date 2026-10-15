@@ -39,7 +39,21 @@ Para cada par de pontos vizinhos, caminhando de um ao outro:
 
 Cada trecho vale nos dois sentidos. O app inverte o rumo (soma 180°) e descobre sozinho se a curva é à direita ou à esquerda na volta, então **não precisa anotar os dois sentidos**.
 
-**Sobre os passos:** o tamanho do passo muda de pessoa para pessoa, então o app diz "cerca de" e arredonda de 5 em 5 acima de 10 passos. Conte os passos em ritmo normal, sem pisar com cuidado demais. Confira o trecho com outra pessoa: se a contagem diferir muito, anote a média. Uma referência que a pessoa sente (parede, piso tátil, porta) vale mais que o número.
+**Pode coletar só em metros.** O app converte para passos usando **0,7 m por passo**, a média de um adulto: a literatura e os apps de saúde usam cerca de 0,76 m para homens e 0,67 m para mulheres ([Omni Calculator](https://www.omnicalculator.com/pt/esportes/calculadora-passos-para-km), [Marathon Handbook](https://marathonhandbook.com/average-stride-length/)), cuja média dá 0,71 m. O valor fica em `passoMetros` no [data/bloco-a.json](../data/bloco-a.json) e pode ser mudado num só lugar.
+
+A fala segue duas regras: até 10 passos o número é exato; acima disso é arredondado de 5 em 5. O app diz **"cerca de"** sempre que a conta quebra e foi arredondada, e fala o número seco só quando fecha exata.
+
+| Metros | Conta | O app fala |
+| --- | --- | --- |
+| 3 | 4,3 | cerca de 4 passos |
+| 4 | 5,7 | cerca de 6 passos |
+| 7 | 10,0 | 10 passos |
+| 10 | 14,3 | cerca de 15 passos |
+| 14 | 20,0 | 20 passos |
+| 20 | 28,6 | cerca de 30 passos |
+| 30 | 42,9 | cerca de 45 passos |
+
+**Atenção:** estudos pequenos indicam que pessoas cegas dão passos um pouco mais curtos que pessoas que enxergam ([exemplo](https://jrrs.mui.ac.ir/article_16918.html)). Se isso acontecer nos testes, o app vai dizer menos passos do que a pessoa precisa. Teste um trecho com uma pessoa com deficiência visual, conte os passos reais e, se for preciso, baixe `passoMetros` (por exemplo, para 0,6). Para um trecho específico, você ainda pode escrever os `passos` medidos no próprio trecho, e eles valem mais que a conversão.
 
 ## 4. Como o app vai saber onde a pessoa está
 

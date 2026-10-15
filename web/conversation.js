@@ -2,7 +2,7 @@
 // Nao fala nem ouve: recebe o que foi ouvido e devolve o que deve ser dito. Quem fala e ouve e o app.js.
 
 import {
-  ateLugar, buildInstructions, classifyCommand, classifyYesNo, emLugar, findEntrance, findPlace, paraLugar, planRoute, roundSteps,
+  ateLugar, buildInstructions, classifyCommand, classifyYesNo, emLugar, findEntrance, findPlace, paraLugar, planRoute, stepsPhrase,
 } from './engine.js';
 
 export const MAX_SILENCE_RETRIES = 3;
@@ -123,9 +123,9 @@ export function createSession(map) {
     steps = buildInstructions(map, entrance, segments);
     index = 0;
     phase = 'navigating';
-    const total = roundSteps(steps.reduce((sum, step) => sum + step.passos, 0));
+    const total = stepsPhrase(steps.reduce((sum, step) => sum + step.bruto, 0));
     return reply([
-      `Rota ${ateLugar(destination)}: cerca de ${total} passos, em ${steps.length} ${steps.length === 1 ? 'etapa' : 'etapas'}.`,
+      `Rota ${ateLugar(destination)}: ${total}, em ${steps.length} ${steps.length === 1 ? 'etapa' : 'etapas'}.`,
       stepLine(0),
     ]);
   }

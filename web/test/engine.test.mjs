@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  ateLugar, buildInstructions, classifyCommand, emLugar, paraLugar, roundSteps, classifyYesNo, findEntrance, findPlace, loadMap, normalize, parseRoomCode, planRoute,
+  ateLugar, buildInstructions, classifyCommand, emLugar, paraLugar, roundSteps, stepsPhrase, classifyYesNo, findEntrance, findPlace, loadMap, normalize, parseRoomCode, planRoute,
 } from '../engine.js';
 
 const map = loadMap(JSON.parse(readFileSync(new URL('../../data/bloco-a.json', import.meta.url), 'utf8')));
@@ -143,7 +143,7 @@ test('a fala usa passos e nunca metros', () => {
   for (const place of ['A1', 'A12', 'banheiro', 'escada']) {
     for (const step of buildInstructions(map, entrance, planRoute(map, 'entrada-principal', place))) {
       assert.doesNotMatch(step.texto, /metro/);
-      assert.match(step.texto, /cerca de \d+ passos?\./);
+      assert.match(step.texto, /ande (cerca de )?\d+ passos?\./);
     }
   }
 });
@@ -169,4 +169,26 @@ test('passos medidos no trecho valem mais que metros / passoMetros e somam ao ju
     pontos: [{ id: 'a', nome: 'a' }, { id: 'b', nome: 'b' }],
     trechos: [{ de: 'a', para: 'b', metros: 3, passos: 0, rumo: 0 }],
   }), /passos/);
+});
+
+test('"cerca de" so aparece quando a conta quebra', () => {
+  assert.equal(stepsPhrase(10), '10 passos');
+  assert.equal(stepsPhrase(1), '1 passo');
+  assert.equal(stepsPhrase(20.01), '20 passos');
+  assert.equal(stepsPhrase(5 / 0.7), 'cerca de 7 passos');
+  assert.equal(stepsPhrase(37.14), 'cerca de 35 passos');
+  assert.equal(stepsPhrase(0.4), 'cerca de 1 passo');
+});
+
+test('metros do mapa viram passos pela media de 0,7 m: 7 m = 10 passos exatos, 4 m = cerca de 6', () => {
+  assert.equal(map.passoMetros, 0.7);
+  const exact = loadMap({
+    passoMetros: 0.7,
+    entradas: [{ id: 'e', nome: 'entrada', ponto: 'a', rumo: 0 }],
+    pontos: [{ id: 'a', nome: 'a', tipo: 'entrada' }, { id: 'b', nome: 'sala B', tipo: 'sala', codigo: 'B1' }],
+    trechos: [{ de: 'a', para: 'b', metros: 7, rumo: 0 }],
+  });
+  assert.match(buildInstructions(exact, exact.entrances[0], planRoute(exact, 'a', 'b'))[0].texto, /^Siga em frente e ande 10 passos\./);
+  const entrance = map.entrances.find((e) => e.id === 'entrada-principal');
+  assert.match(buildInstructions(map, entrance, planRoute(map, 'entrada-principal', 'A1'))[0].texto, /ande cerca de 15 passos\./);
 });

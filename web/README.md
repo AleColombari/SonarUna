@@ -40,7 +40,7 @@ node --test web/test/engine.test.mjs web/test/conversation.test.mjs
 
 ## Trocar os dados fictícios pelos reais
 
-Edite `data/bloco-a.json` seguindo o roteiro em [docs/MAPEAMENTO.md](../docs/MAPEAMENTO.md). Cada trecho tem `metros`, `rumo` (a direção da caminhada em graus pela bússola: 0 = norte, 90 = leste, 180 = sul, 270 = oeste) e, opcionalmente, `passos` contados caminhando. O app **fala em passos**: usa os `passos` do trecho quando existem e, senão, converte os metros com `passoMetros` (0,7 m por passo). O app calcula sozinho o lado da curva ("vire à direita") comparando um rumo com o seguinte, e inverte quando o caminho é feito na volta.
+Edite `data/bloco-a.json` seguindo o roteiro em [docs/MAPEAMENTO.md](../docs/MAPEAMENTO.md). Cada trecho tem `metros`, `rumo` (a direção da caminhada em graus pela bússola: 0 = norte, 90 = leste, 180 = sul, 270 = oeste) e, opcionalmente, `passos` contados caminhando. O app **fala em passos**: usa os `passos` do trecho quando existem e, senão, converte os metros com `passoMetros` (0,7 m por passo, a média de um adulto; veja a tabela em [docs/MAPEAMENTO.md](../docs/MAPEAMENTO.md)). O app calcula sozinho o lado da curva ("vire à direita") comparando um rumo com o seguinte, e inverte quando o caminho é feito na volta.
 
 Se o arquivo tiver erro (ponto que não existe, trecho com 0 metros), o carregamento falha com uma mensagem clara.
 
@@ -48,5 +48,5 @@ Se o arquivo tiver erro (ponto que não existe, trecho com 0 metros), o carregam
 
 - O mapa é fictício e cobre só o térreo.
 - O app não sabe onde a pessoa está: ela confirma cada etapa com "pronto".
-- Passos variam de pessoa para pessoa. O app diz "cerca de" e arredonda de 5 em 5 acima de 10 passos.
+- Passos variam de pessoa para pessoa. O app diz "cerca de" quando a conta quebra e arredonda de 5 em 5 acima de 10 passos.
 - Não substitui bengala, cão-guia nem ajuda humana.
