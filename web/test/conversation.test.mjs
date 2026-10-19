@@ -75,6 +75,20 @@ test('responder nao na confirmacao volta a pedir o destino', () => {
   assert.equal(session.phase, 'confirm');
 });
 
+test('confirmacao aceita frases e troca o destino quando outro lugar e citado', () => {
+  const session = createSession(map);
+  session.start();
+  session.hear(['principal']);
+  session.hear(['sala A12']);
+  // "quero" nao confirma A12 quando a pessoa pede outro lugar.
+  const changed = session.hear(['não, quero ir para a secretaria']);
+  assert.equal(changed.phase, 'confirm');
+  assert.match(said(changed), /secretaria/);
+  assert.match(said(session.hear(['quero ir para a sala 30'])), /Não encontrei a sala 30/);
+  session.hear(['banheiro']);
+  assert.equal(session.hear(['acho que sim, pode ir']).phase, 'navigating');
+});
+
 test('parar, recomecar e ajuda funcionam em qualquer etapa', () => {
   const session = createSession(map);
   session.start();

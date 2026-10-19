@@ -365,21 +365,36 @@ export function buildInstructions(map, entrance, segments) {
 // ---------------------------------------------------------------------------------------------
 // Comandos de voz
 
-const POSITIVE = new Set([
-  'sim', 'correto', 'isso', 'isso mesmo', 'esta certo', 'esta correto', 'certo', 'confirmo', 'confirmado',
-  'pode confirmar', 'sim correto', 'sim esta correto', 'sim esta certo', 'sim isso', 'sim isso mesmo',
-  'sim confirmo', 'sim pode confirmar', 'positivo', 'pode ser', 'claro',
-]);
-const NEGATIVE = new Set([
-  'nao', 'errado', 'incorreto', 'nao esta correto', 'nao esta certo', 'esta errado', 'nao esta certo nao',
-  'nao esta correto nao', 'nao e isso', 'nao confirmo', 'corrigir', 'quero corrigir', 'nao correto', 'negativo',
-]);
+// Palavras e expressoes soltas em qualquer parte da frase: "acho que sim", "sim sim", "isso ai, pode ir".
+const POSITIVE = [
+  'sim', 'isso', 'correto', 'correta', 'certo', 'certa', 'confirmo', 'confirmado', 'confirma', 'exato', 'exatamente',
+  'claro', 'ok', 'okay', 'beleza', 'positivo', 'afirmativo', 'perfeito', 'uhum', 'aham', 'certeza', 'pode',
+  'quero', 'bora', 'vamos', 'ta bom', 'esta bom', 'tudo bem', 'e esse', 'e essa', 'e ela', 'e ele', 'esse mesmo',
+  'essa mesma', 'yes',
+];
+const NEGATIVE = [
+  'nao', 'errado', 'errada', 'incorreto', 'incorreta', 'negativo', 'nunca', 'corrigir', 'corrige', 'trocar',
+  'troca', 'mudar', 'muda', 'nem', 'enganei',
+];
+// Duvida declarada: nao e resposta, mesmo com "nao" no meio.
+const UNSURE = ['nao sei', 'sei la', 'talvez', 'duvida', 'nao tenho certeza'];
 
-/** Frases inteiras, para "nao esta correto" nunca virar "correto". Devolve 'yes', 'no' ou null. */
+const containsAny = (normalizedText, phrases) => phrases.some((phrase) => containsPhrase(normalizedText, phrase));
+
+/**
+ * Le sim ou nao em qualquer parte da frase. A negacao vence ("nao esta correto", "acho que nao, isso nao"),
+ * "sim" e "nao" juntos sao contradicao, e "nao esta errado" (dupla negacao) fica sem resposta.
+ * Devolve 'yes', 'no' ou null.
+ */
 export function classifyYesNo(text) {
   const normalized = normalize(text);
-  if (POSITIVE.has(normalized)) return 'yes';
-  if (NEGATIVE.has(normalized)) return 'no';
+  if (!normalized || containsAny(normalized, UNSURE)) return null;
+  const saysYes = containsPhrase(normalized, 'sim');
+  const saysNo = containsPhrase(normalized, 'nao');
+  if (saysYes && saysNo) return null;
+  if (saysNo && containsAny(normalized, ['errado', 'errada', 'incorreto', 'incorreta'])) return null;
+  if (containsAny(normalized, NEGATIVE)) return 'no';
+  if (containsAny(normalized, POSITIVE)) return 'yes';
   return null;
 }
 

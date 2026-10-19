@@ -172,6 +172,12 @@ export function createSession(map, getContacts = () => []) {
   }
 
   function hearConfirmation(alternatives) {
+    // Citar outro lugar troca o destino ("não, a secretaria"), em vez de "quero" contar como sim.
+    for (const text of alternatives) {
+      const result = findPlace(map, text);
+      const same = result.kind === 'found' && result.place.id === candidate.id;
+      if (result.kind !== 'none' && !same) return hearDestination(alternatives);
+    }
     for (const text of alternatives) {
       const answer = classifyYesNo(text);
       if (answer === 'yes') return beginRoute();

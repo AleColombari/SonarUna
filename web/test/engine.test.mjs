@@ -172,6 +172,20 @@ test('confirmacoes usam frase inteira', () => {
   for (const text of ['talvez', 'sim ou não', 'não está errado', 'simples']) assert.equal(classifyYesNo(text), null, text);
 });
 
+test('sim e nao dentro de frases mais longas', () => {
+  const yes = [
+    'sim sim', 'sim sim sim', 'acho que sim', 'é isso aí', 'isso mesmo, pode ir', 'com certeza', 'pode ser',
+    'claro que sim', 'tá bom', 'beleza', 'é esse', 'sim, quero ir pra lá', 'quero sim', 'uhum', 'exatamente',
+  ];
+  for (const text of yes) assert.equal(classifyYesNo(text), 'yes', text);
+  const no = [
+    'não não', 'acho que não', 'não é isso', 'está errado', 'errado, quero outro', 'quero trocar',
+    'não, me enganei', 'me enganei', 'não quero', 'nem pensar',
+  ];
+  for (const text of no) assert.equal(classifyYesNo(text), 'no', text);
+  for (const text of ['não sei', 'sei lá', 'banana', '']) assert.equal(classifyYesNo(text), null, text);
+});
+
 test('comandos de voz', () => {
   assert.equal(classifyCommand('pronto'), 'next');
   assert.equal(classifyCommand('já cheguei'), 'next');
