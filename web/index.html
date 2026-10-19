@@ -3,19 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SonarUna – bancada de testes</title>
+  <title>SonarUna</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main>
-    <h1>SonarUna</h1>
-    <p id="notice" class="notice" hidden></p>
-    <p id="support" class="notice" hidden></p>
-
+    <!-- Como no app Android: um unico botao. O resto so aparece quando precisa ou com ?teste na URL. -->
     <button id="mic" type="button" aria-label="Começar orientação">
-      <span id="mic-label">Começar</span>
+      <svg class="icon icon-mic" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12,14c1.66,0 3,-1.34 3,-3V5c0,-1.66 -1.34,-3 -3,-3S9,3.34 9,5v6c0,1.66 1.34,3 3,3zM17,11c0,2.76 -2.24,5 -5,5s-5,-2.24 -5,-5H5c0,3.53 2.61,6.43 6,6.92V21h2v-3.08c3.39,-0.49 6,-3.39 6,-6.92h-2z"/>
+      </svg>
+      <svg class="icon icon-stop" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M6,6h12v12H6z"/>
+      </svg>
     </button>
-    <p id="status" role="status">Carregando…</p>
+
+    <!-- O que o microfone esta ouvindo, para conferir que ele funciona. Leitores de tela ja ouvem a conversa. -->
+    <p id="transcript" aria-hidden="true"></p>
+    <p id="status" class="visually-hidden" role="status">Carregando…</p>
 
     <section id="call" class="call" aria-labelledby="call-title" hidden>
       <h2 id="call-title">Ligação</h2>
@@ -23,36 +28,41 @@
       <a id="call-link" class="call-link" href="#">Ligar</a>
     </section>
 
-    <section aria-labelledby="log-title">
-      <h2 id="log-title">Conversa</h2>
-      <ol id="log"></ol>
-    </section>
-
-    <form id="typed" autocomplete="off">
-      <label for="typed-text">Ou digite o que você diria</label>
+    <form id="typed" autocomplete="off" hidden>
+      <label for="typed-text">Sem microfone: digite o que você diria</label>
       <div class="row">
         <input id="typed-text" type="text" placeholder="Ex.: entrada principal, sala A12, pronto">
         <button type="submit">Enviar</button>
       </div>
     </form>
 
-    <details id="contacts-panel">
-      <summary>Contatos de ajuda</summary>
-      <form id="contacts" autocomplete="off">
-        <p>Quando a pessoa diz <em>preciso de ajuda</em>, o app oferece ligar para um destes números. Os telefones ficam <strong>só neste navegador</strong>: não vão para o GitHub nem para o mapa. Para testar, use o seu próprio número.</p>
-        <label for="phone-atendente">Telefone do atendente</label>
-        <input id="phone-atendente" type="tel" inputmode="tel" placeholder="16 99999-9999">
-        <label for="phone-seguranca">Telefone da segurança</label>
-        <input id="phone-seguranca" type="tel" inputmode="tel" placeholder="16 99999-9999">
-        <button type="submit">Guardar telefones</button>
-        <p id="contacts-message" role="status"></p>
-      </form>
-    </details>
+    <div id="debug" hidden>
+      <p id="notice" class="notice" hidden></p>
+      <p id="support" class="notice" hidden></p>
 
-    <details>
-      <summary>Como usar</summary>
-      <p>Use o Google Chrome ou o Edge, em <code>localhost</code>, e permita o microfone. Toque no botão, responda às perguntas em voz alta e diga <strong>pronto</strong> a cada etapa concluída. Você pode dizer a qualquer momento: <em>repetir</em>, <em>voltar</em>, <em>recomeçar</em>, <em>ajuda</em> ou <em>parar</em>. Diga <em>preciso de ajuda</em> para falar com um atendente ou com a segurança.</p>
-    </details>
+      <section aria-labelledby="log-title">
+        <h2 id="log-title">Conversa</h2>
+        <ol id="log"></ol>
+      </section>
+
+      <details id="contacts-panel">
+        <summary>Contatos de ajuda</summary>
+        <form id="contacts" autocomplete="off">
+          <p>Quando a pessoa diz <em>preciso de ajuda</em>, o app oferece ligar para um destes números. Os telefones ficam <strong>só neste navegador</strong>: não vão para o GitHub nem para o mapa. Para testar, use o seu próprio número.</p>
+          <label for="phone-atendente">Telefone do atendente</label>
+          <input id="phone-atendente" type="tel" inputmode="tel" placeholder="16 99999-9999">
+          <label for="phone-seguranca">Telefone da segurança</label>
+          <input id="phone-seguranca" type="tel" inputmode="tel" placeholder="16 99999-9999">
+          <button type="submit">Guardar telefones</button>
+          <p id="contacts-message" role="status"></p>
+        </form>
+      </details>
+
+      <details>
+        <summary>Como usar</summary>
+        <p>Use o Google Chrome ou o Edge, em <code>localhost</code>, e permita o microfone. Toque no botão, responda às perguntas em voz alta e diga <strong>pronto</strong> a cada etapa concluída. Você pode falar por cima do app para responder antes de ele terminar. Diga a qualquer momento: <em>repetir</em>, <em>voltar</em>, <em>recomeçar</em>, <em>ajuda</em> ou <em>parar</em>. Diga <em>preciso de ajuda</em> para falar com um atendente ou com a segurança.</p>
+      </details>
+    </div>
   </main>
   <script type="module" src="app.js"></script>
 </body>

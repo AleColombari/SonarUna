@@ -20,7 +20,9 @@ Abra <http://localhost:8080/> e permita o microfone. O Chrome envia o áudio ao 
 4. Confirme com "sim" (ou "não" para trocar).
 5. A cada etapa, diga "pronto" para a próxima. Você também pode dizer "repetir", "voltar", "recomeçar", "ajuda" ou "parar".
 
-Se o microfone não funcionar, use o campo de texto da página: ele passa pela mesma conversa.
+A tela é igual à do app Android: fundo branco e só o botão. Abaixo dele aparece, enquanto você fala, o que o microfone está ouvindo. Você pode **falar por cima do app**: assim que ele ouve a sua voz, para de falar e processa a sua resposta. Com alto-falante, o microfone também ouve o próprio app; por isso, enquanto ele fala, palavras que ele já disse são tratadas como eco. Com fone de ouvido a interrupção funciona com qualquer resposta.
+
+Se o microfone não funcionar, aparece um campo de texto que passa pela mesma conversa. Para ver o histórico da conversa, o campo de texto e os contatos de ajuda, abra <http://localhost:8080/web/?teste>.
 
 ## Testes automáticos
 

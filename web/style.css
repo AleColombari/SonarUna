@@ -1,16 +1,16 @@
+/* Igual ao app Android: fundo branco e um botao circular preto com icone branco. */
 :root {
-  --bg: #0b0f14;
-  --fg: #f4f7fb;
-  --muted: #b4c0cf;
-  --accent: #ffd54a;
-  --accent-fg: #14181f;
-  --listening: #5ee1a1;
-  --panel: #161d27;
-  --border: #3a4656;
-  color-scheme: dark;
+  --bg: #ffffff;
+  --fg: #000000;
+  --muted: #4a4a4a;
+  --panel: #f2f2f2;
+  --border: #8a8a8a;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
+
+html, body { height: 100%; }
 
 body {
   margin: 0;
@@ -20,44 +20,43 @@ body {
 }
 
 main {
+  min-height: 100%;
   max-width: 40rem;
   margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
-}
-
-h1 { margin: 0 0 1rem; font-size: 1.75rem; }
-h2 { font-size: 1.1rem; color: var(--muted); }
-
-.notice {
-  margin: 0 0 1rem;
-  padding: 0.75rem 1rem;
-  border: 2px solid var(--accent);
-  border-radius: 0.5rem;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 #mic {
-  display: block;
-  width: min(80vw, 18rem);
-  height: min(80vw, 18rem);
-  margin: 1.5rem auto 1rem;
-  border: 0.5rem solid var(--fg);
+  /* 68% do menor lado da tela, ate 280px, como no MainScreen.kt */
+  width: min(68vw, 68vh, 280px);
+  height: min(68vw, 68vh, 280px);
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
   border-radius: 50%;
-  background: var(--accent);
-  color: var(--accent-fg);
-  font: inherit;
-  font-size: 1.75rem;
-  font-weight: 700;
+  background: var(--fg);
+  color: var(--bg);
   cursor: pointer;
 }
 
-#mic[data-state="speaking"] { background: var(--fg); }
-#mic[data-state="listening"] {
-  background: var(--listening);
-  animation: pulse 1.4s ease-in-out infinite;
-}
+#mic:disabled { cursor: wait; }
+
+.icon { width: 45%; height: 45%; fill: currentColor; }
+.icon-stop { display: none; }
+#mic[data-state="listening"] .icon-mic,
+#mic[data-state="speaking"] .icon-mic { display: none; }
+#mic[data-state="listening"] .icon-stop,
+#mic[data-state="speaking"] .icon-stop { display: block; }
+
+#mic[data-state="listening"] { animation: pulse 1.4s ease-in-out infinite; }
 
 @keyframes pulse {
-  50% { box-shadow: 0 0 0 1.25rem rgba(94, 225, 161, 0.25); }
+  50% { box-shadow: 0 0 0 1.25rem rgba(0, 0, 0, 0.15); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -66,15 +65,40 @@ h2 { font-size: 1.1rem; color: var(--muted); }
 
 :focus-visible {
   outline: 0.25rem solid var(--fg);
-  outline-offset: 0.25rem;
+  outline-offset: 0.35rem;
 }
 
-#status {
-  min-height: 2rem;
-  margin: 0 0 1.5rem;
+#transcript {
+  min-height: 3em;
+  max-width: 100%;
+  margin: 1.5rem 0 0;
+  color: var(--muted);
+  font-size: 1.25rem;
   text-align: center;
-  font-weight: 600;
+  overflow-wrap: anywhere;
 }
+
+#transcript[data-live] { color: var(--fg); }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+#call, #typed, #debug { width: 100%; }
+
+.notice {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--fg);
+  border-radius: 0.5rem;
+}
+
+h2 { font-size: 1.1rem; color: var(--muted); }
 
 #log {
   margin: 0;
@@ -91,20 +115,20 @@ h2 { font-size: 1.1rem; color: var(--muted); }
   background: var(--panel);
 }
 
-#log li[data-who="you"] { border-left: 0.25rem solid var(--listening); }
-#log li[data-who="app"] { border-left: 0.25rem solid var(--accent); }
+#log li[data-who="you"] { border-left: 0.25rem solid var(--fg); }
+#log li[data-who="app"] { border-left: 0.25rem solid var(--border); }
 
 form { margin-top: 1.5rem; }
 label { display: block; margin-bottom: 0.25rem; color: var(--muted); }
 .row { display: flex; gap: 0.5rem; }
 
-input[type="text"] {
+input[type="text"], input[type="tel"] {
   flex: 1;
   min-width: 0;
   padding: 0.75rem;
   border: 2px solid var(--border);
   border-radius: 0.5rem;
-  background: var(--panel);
+  background: var(--bg);
   color: var(--fg);
   font: inherit;
 }
@@ -113,16 +137,16 @@ form button {
   padding: 0.75rem 1.25rem;
   border: 2px solid var(--fg);
   border-radius: 0.5rem;
-  background: transparent;
+  background: var(--bg);
   color: var(--fg);
   font: inherit;
   cursor: pointer;
 }
 
 .call {
-  margin: 0 0 1.5rem;
+  margin: 1.5rem 0 0;
   padding: 1rem;
-  border: 2px solid var(--listening);
+  border: 2px solid var(--fg);
   border-radius: 0.5rem;
 }
 
@@ -130,8 +154,8 @@ form button {
   display: block;
   padding: 1rem;
   border-radius: 0.5rem;
-  background: var(--listening);
-  color: var(--accent-fg);
+  background: var(--fg);
+  color: var(--bg);
   font-weight: 700;
   text-align: center;
   text-decoration: none;
@@ -143,4 +167,3 @@ form button {
 
 details { margin-top: 1.5rem; color: var(--muted); }
 summary { cursor: pointer; }
-code { color: var(--fg); }

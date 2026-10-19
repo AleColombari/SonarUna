@@ -1,14 +1,20 @@
 // Interface web do SonarUna: ouve pelo microfone, fala com a voz do navegador e usa o mapa em data/bloco-a.json.
 
-import { loadMap } from './engine.js';
+import { loadMap, normalize } from './engine.js';
 import { createSession } from './conversation.js';
 import { ROLES, callMode, loadStoredPhones, maskPhone, readContacts, savePhones } from './contacts.js';
 
-const SPEECH_START_DELAY_MS = 250;
+const SPEECH_START_DELAY_MS = 150;
+// Um pouco mais rapido que o padrao do navegador (1,0), que soa arrastado nas instrucoes longas.
+const SPEECH_RATE = 1.2;
+// Fracao de palavras ouvidas que, se tambem estao na fala do app, indica que o microfone pegou o alto-falante.
+const ECHO_RATIO = 0.6;
+const DEBUG = new URLSearchParams(window.location.search).has('teste');
 
 const els = {
   mic: document.getElementById('mic'),
-  micLabel: document.getElementById('mic-label'),
+  transcript: document.getElementById('transcript'),
+  debug: document.getElementById('debug'),
   status: document.getElementById('status'),
   log: document.getElementById('log'),
   notice: document.getElementById('notice'),
@@ -32,13 +38,15 @@ let generation = 0;
 let state = 'loading';
 let micBlocked = false;
 let envPhones = {};
+// Fala atual do app: permite interromper e reconhecer o eco do alto-falante.
+let speech = { interrupted: false, words: new Set(), active: false };
 
 const STATES = {
-  loading: { label: 'Aguarde', status: 'Carregando o mapa…', aria: 'Carregando' },
-  idle: { label: 'Começar', status: 'Toque no botão para começar.', aria: 'Começar orientação' },
-  speaking: { label: 'Parar', status: 'Falando…', aria: 'Parar orientação. Falando' },
-  listening: { label: 'Ouvindo', status: 'Ouvindo… pode falar.', aria: 'Parar orientação. Ouvindo' },
-  typing: { label: 'Parar', status: 'Sem microfone. Digite sua resposta abaixo.', aria: 'Parar orientação' },
+  loading: { status: 'Carregando o mapa…', aria: 'Carregando' },
+  idle: { status: 'Toque no botão para começar.', aria: 'Começar orientação' },
+  speaking: { status: 'Falando… você pode responder por cima.', aria: 'Parar orientação. Falando' },
+  listening: { status: 'Ouvindo… pode falar.', aria: 'Parar orientação. Ouvindo' },
+  typing: { status: 'Sem microfone. Digite sua resposta abaixo.', aria: 'Parar orientação' },
 };
 
 function setState(next, statusOverride) {
@@ -47,8 +55,16 @@ function setState(next, statusOverride) {
   els.mic.dataset.state = next;
   els.mic.disabled = next === 'loading';
   els.mic.setAttribute('aria-label', info.aria);
-  els.micLabel.textContent = info.label;
   els.status.textContent = statusOverride ?? info.status;
+  els.form.hidden = next !== 'typing' && !DEBUG;
+  if (next === 'listening' && !('live' in els.transcript.dataset)) showTranscript('Ouvindo…', false);
+}
+
+/** Mostra abaixo do botao o que o microfone esta ouvindo; live = texto vindo da fala da pessoa. */
+function showTranscript(text, live) {
+  els.transcript.textContent = text;
+  if (live) els.transcript.dataset.live = '';
+  else delete els.transcript.dataset.live;
 }
 
 function addLog(who, text) {
@@ -70,6 +86,7 @@ function speakSentence(text) {
   return new Promise((resolve) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'pt-BR';
+    utterance.rate = SPEECH_RATE;
     if (voice) utterance.voice = voice;
     utterance.onend = utterance.onerror = () => resolve();
     synthesis.speak(utterance);
@@ -79,25 +96,56 @@ function speakSentence(text) {
 // O Chrome interrompe falas longas; falar frase por frase evita isso.
 async function speak(text, gen) {
   for (const sentence of text.split(/(?<=[.!?])\s+/)) {
-    if (gen !== generation) return;
-    if (sentence.trim()) await speakSentence(sentence);
+    if (gen !== generation || speech.interrupted) return;
+    if (!sentence.trim()) continue;
+    // So o que o app ja comecou a dizer pode voltar como eco pelo microfone.
+    for (const word of normalize(sentence).split(' ')) speech.words.add(word);
+    await speakSentence(sentence);
   }
 }
 
 // --- Fluxo -----------------------------------------------------------------------------------
 
 async function deliver(result, gen) {
+  const current = { interrupted: false, words: new Set(), active: true };
+  speech = current;
+  setState('speaking');
+  // Quando o app espera resposta, o microfone ja escuta enquanto ele fala: a pessoa pode responder por cima.
+  if (result.listen && !result.action && SpeechRecognitionApi && !micBlocked) listen(gen, true);
   for (const line of result.say) {
-    if (gen !== generation) return;
+    if (gen !== generation || current.interrupted) break;
     addLog('app', line);
-    setState('speaking');
     await speak(line, gen);
   }
-  if (gen !== generation) return;
+  current.active = false;
+  // Interrompido: a escuta aberta durante a fala continua e entrega a resposta.
+  if (gen !== generation || current.interrupted) return;
   if (result.action?.type === 'call') placeCall(result.action.contact);
   if (!result.listen) return setState('idle');
+  stopRecognition();
   await new Promise((resolve) => setTimeout(resolve, SPEECH_START_DELAY_MS));
   if (gen === generation) listen(gen);
+}
+
+/** A pessoa comecou a falar: a fala dela tem prioridade sobre a do app. */
+function interruptSpeech() {
+  speech.interrupted = true;
+  synthesis?.cancel();
+  setState('listening');
+}
+
+/** O microfone ouviu o proprio app pelo alto-falante, e nao a pessoa. */
+function isEcho(text) {
+  const words = normalize(text).split(' ').filter(Boolean);
+  if (words.length === 0) return true;
+  const repeated = words.filter((word) => speech.words.has(word)).length;
+  return repeated / words.length >= ECHO_RATIO;
+}
+
+function stopRecognition() {
+  const attempt = recognition;
+  recognition = null;
+  try { attempt?.abort(); } catch { /* ja encerrado */ }
 }
 
 // --- Ligacao ---------------------------------------------------------------------------------
@@ -169,27 +217,43 @@ els.contactsForm.addEventListener('submit', (event) => {
 
 function handle(alternatives, gen) {
   addLog('you', alternatives[0]);
+  showTranscript(alternatives[0], false);
   return deliver(session.hear(alternatives), gen);
 }
 
-function listen(gen) {
+/**
+ * Uma resposta por tentativa. Com duringSpeech, a tentativa comeca enquanto o app fala e so assume a conversa
+ * quando ouve a pessoa (nao o eco do alto-falante); se acabar antes, e reaberta enquanto a fala continuar.
+ */
+function listen(gen, duringSpeech = false) {
   if (!SpeechRecognitionApi || micBlocked) return setState('typing');
   const attempt = new SpeechRecognitionApi();
   recognition = attempt;
   attempt.lang = 'pt-BR';
-  attempt.interimResults = false;
+  attempt.interimResults = true;
   attempt.continuous = false;
   attempt.maxAlternatives = 4;
 
   let heard = null;
   let failure = null;
+  let userSpoke = !duringSpeech;
   attempt.onresult = (event) => {
-    heard = Array.from(event.results[0], (alternative) => alternative.transcript);
+    if (recognition !== attempt) return;
+    const results = Array.from(event.results);
+    const text = results.map((result) => result[0].transcript).join(' ').trim();
+    if (!userSpoke) {
+      if (isEcho(text)) return;
+      userSpoke = true;
+      interruptSpeech();
+    }
+    showTranscript(text, true);
+    const final = results.find((result) => result.isFinal);
+    if (final) heard = Array.from(final, (alternative) => alternative.transcript);
   };
   attempt.onerror = (event) => { failure = event.error; };
   attempt.onend = () => {
-    if (gen !== generation) return;
-    if (heard) return void handle(heard, gen);
+    if (gen !== generation || recognition !== attempt) return;
+    recognition = null;
     const fatal = {
       'not-allowed': 'O microfone está bloqueado. Libere o microfone no ícone ao lado do endereço e toque no botão.',
       'service-not-allowed': 'O navegador não permitiu o reconhecimento de voz. Tente no Google Chrome.',
@@ -201,26 +265,39 @@ function listen(gen) {
       // A conversa continua pelo campo de texto; o microfone so volta a ser tentado ao tocar no botao.
       micBlocked = true;
       generation++;
+      speech = { interrupted: false, words: new Set(), active: false };
+      synthesis?.cancel();
       addLog('app', fatal);
       setState('typing', fatal);
       return void speak(fatal, generation);
     }
+    if (!userSpoke) {
+      // So ouviu silencio ou o eco do app: reabre enquanto ele fala; depois, deliver abre a tentativa normal.
+      if (speech.active) {
+        setTimeout(() => {
+          if (gen === generation && speech.active && !recognition) listen(gen, true);
+        }, 100);
+      }
+      return;
+    }
+    if (heard) return void handle(heard, gen);
     deliver(session.silence(), gen);
   };
 
-  setState('listening');
+  if (!duringSpeech) setState('listening');
   try {
     attempt.start();
   } catch {
-    setState('typing');
+    recognition = null;
+    if (!duringSpeech) setState('typing');
   }
 }
 
 function cancelEverything() {
   generation++;
+  speech.active = false;
   synthesis?.cancel();
-  try { recognition?.abort(); } catch { /* ja encerrado */ }
-  recognition = null;
+  stopRecognition();
 }
 
 function begin() {
@@ -235,6 +312,7 @@ function begin() {
 function end() {
   cancelEverything();
   session.stop();
+  showTranscript('', false);
   setState('idle', 'Orientação encerrada.');
 }
 
@@ -256,6 +334,7 @@ els.form.addEventListener('submit', (event) => {
 // --- Inicio ----------------------------------------------------------------------------------
 
 async function init() {
+  els.debug.hidden = !DEBUG;
   if (synthesis) {
     pickVoice();
     synthesis.addEventListener?.('voiceschanged', pickVoice);
@@ -266,6 +345,8 @@ async function init() {
   if (problems.length > 0) {
     els.support.textContent = problems.join(' ');
     els.support.hidden = false;
+    // Fora do modo de teste, o aviso aparece abaixo do botao, no lugar da transcricao.
+    showTranscript(problems.join(' '), false);
   }
   try {
     const response = await fetch('../data/bloco-a.json');
