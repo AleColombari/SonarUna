@@ -51,6 +51,28 @@ class RoomCodeParserTest {
     }
 
     @Test
+    fun `block after the number becomes the same letter-first code`() {
+        val texts = listOf(
+            "30A", "30 A", "30-a", "trinta a", "Trinta Á", "sala 30A", "sala trinta a",
+            "quero ir para a sala 30 a", "trinta a por favor", "três zero a",
+        )
+        for (text in texts) {
+            assertEquals("Unexpected result for $text", "A30", canonical(text))
+        }
+        assertEquals("B12", canonical("doze b"))
+        assertEquals("C105", canonical("sala cento e cinco c"))
+    }
+
+    @Test
+    fun `a letter after the number in the middle of the phrase is not a block`() {
+        assertEquals("20", canonical("sala 20 a esquerda"))
+        assertEquals("12", canonical("sala 12 e"))
+        assertEquals("12", canonical("sala 12 o"))
+        assertNull(RoomCodeParser.parse("30"))
+        assertNull(RoomCodeParser.parse("a"))
+    }
+
+    @Test
     fun `places without a room code return nothing`() {
         for (text in listOf("biblioteca", "Estou no laboratório de informática", "secretaria", "", "???")) {
             assertNull("Unexpected code for $text", RoomCodeParser.parse(text))

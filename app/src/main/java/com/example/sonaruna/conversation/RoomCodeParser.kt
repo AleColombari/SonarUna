@@ -10,7 +10,9 @@ data class RoomCode(val block: Char?, val number: Int) {
 
 /**
  * Extracts a room code from a spoken answer. Recognizers return "A15", "a 15" or "a quinze"
- * for the same room, so all of them are reduced to one code. Pure Kotlin, testable without Android.
+ * for the same room, so all of them are reduced to one code. The block may also come after the
+ * number ("30A", "trinta a"); the canonical form is always letter first ("A30").
+ * Pure Kotlin, testable without Android.
  */
 object RoomCodeParser {
     private const val UNIT = 1
@@ -48,10 +50,25 @@ object RoomCodeParser {
         ).forEachIndexed { index, word -> put(word, NumberWord(200 + 100 * index, HUNDREDS)) }
     }
 
+    /** Courtesy words at the end of a phrase, skipped when looking for the letter that closes "30 A". */
+    private val trailingCourtesy = listOf(listOf("por", "favor"), listOf("obrigado"), listOf("obrigada"))
+
     fun parse(text: String): RoomCode? {
-        val terms = toTerms(tokenize(text))
-        return blockAndRoom(terms) ?: letterAndNumber(terms) ?: roomOnly(terms)
+        val terms = toTerms(withoutTrailingCourtesy(tokenize(text)))
+        return blockAndRoom(terms) ?: letterAndNumber(terms) ?: numberAndLetter(terms) ?: roomOnly(terms)
     }
+
+    private fun withoutTrailingCourtesy(tokens: List<String>): List<String> {
+        for (phrase in trailingCourtesy) {
+            if (tokens.size > phrase.size && tokens.takeLast(phrase.size) == phrase) {
+                return tokens.dropLast(phrase.size)
+            }
+        }
+        return tokens
+    }
+
+    private fun isBlockLetter(term: Term): Boolean =
+        term is Term.Word && term.text.length == 1 && term.text[0] in 'a'..'z' && term.text !in "eo"
 
     /** "bloco B sala 3" and "sala 3 do bloco B", in any order. */
     private fun blockAndRoom(terms: List<Term>): RoomCode? {
@@ -68,9 +85,23 @@ object RoomCodeParser {
         for (index in 0 until terms.size - 1) {
             val letter = terms[index]
             val number = terms[index + 1]
-            if (letter is Term.Word && letter.text.length == 1 && letter.text !in "eo" && number is Term.Num) {
+            if (isBlockLetter(letter) && letter is Term.Word && number is Term.Num) {
                 return RoomCode(letter.text[0].uppercaseChar(), number.value)
             }
+        }
+        return null
+    }
+
+    /**
+     * "30A", "trinta a": the block after the number. Only when the letter closes the phrase,
+     * because in "sala 20 a esquerda" the "a" is the preposition.
+     */
+    private fun numberAndLetter(terms: List<Term>): RoomCode? {
+        if (terms.size < 2) return null
+        val number = terms[terms.size - 2]
+        val letter = terms.last()
+        if (isBlockLetter(letter) && letter is Term.Word && number is Term.Num) {
+            return RoomCode(letter.text[0].uppercaseChar(), number.value)
         }
         return null
     }

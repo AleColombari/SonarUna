@@ -41,6 +41,24 @@ test('bloco e sala em qualquer ordem; sala sem bloco guarda so o numero', () => 
   for (const text of ['biblioteca', 'secretaria', '', '???']) assert.equal(parseRoomCode(text), null, text);
 });
 
+test('bloco depois do numero: "30A" e "trinta a" viram A30', () => {
+  for (const text of ['30A', '30 A', '30-a', 'trinta a', 'Trinta Á', 'sala 30A', 'sala trinta a', 'quero ir para a sala 30 a',
+    'trinta a por favor']) {
+    assert.equal(canonical(text), 'A30', text);
+  }
+  assert.equal(canonical('doze b'), 'B12');
+  assert.equal(canonical('sala cento e cinco c'), 'C105');
+  assert.equal(canonical('três zero a'), 'A30');
+});
+
+test('letra depois do numero no meio da frase nao vira bloco', () => {
+  assert.equal(canonical('sala 20 a esquerda'), '20');
+  assert.equal(canonical('sala 12 e'), '12');
+  assert.equal(canonical('sala 12 o'), '12');
+  assert.equal(parseRoomCode('30'), null);
+  assert.equal(parseRoomCode('a'), null);
+});
+
 test('o mapa fictício do bloco A carrega e todos os pontos estao ligados', () => {
   assert.ok(map.points.size > 20);
   for (const id of map.points.keys()) {
@@ -71,6 +89,21 @@ test('destinos: codigo, numero solto, apelido e erros', () => {
   assert.equal(placeId('sala A30'), 'unknown-room');
   assert.equal(placeId('sala 30'), 'unknown-room');
   assert.equal(placeId('cantina'), 'none');
+});
+
+test('destino falado "30A" acha a sala com o codigo escrito em qualquer ordem', () => {
+  for (const codigo of ['A30', '30A', '30a']) {
+    const small = loadMap({
+      pontos: [{ id: 'hall', nome: 'hall' }, { id: 'sala', nome: 'sala 30A', tipo: 'sala', codigo }],
+      trechos: [{ de: 'hall', para: 'sala', metros: 3, rumo: 0 }],
+    });
+    for (const text of ['trinta a', 'sala 30A', 'a trinta']) {
+      const result = findPlace(small, text);
+      assert.equal(result.kind === 'found' && result.place.id, 'sala', `${codigo} / ${text}`);
+    }
+  }
+  assert.equal(placeId('trinta a'), 'unknown-room');
+  assert.equal(placeId('doze a'), 'A12');
 });
 
 test('rota da entrada principal ate A12 e a mais curta', () => {

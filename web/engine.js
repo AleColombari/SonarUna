@@ -100,12 +100,26 @@ function numberAfter(terms, keyword) {
   return null;
 }
 
+const isBlockLetter = (term) => isLetter(term) && !'eo'.includes(term.word);
+
+/** Palavras de cortesia no fim da frase, ignoradas para achar a letra que fecha "30 A". */
+const TRAILING_COURTESY = ['por favor', 'obrigado', 'obrigada'];
+
+function withoutTrailingCourtesy(tokens) {
+  const text = ` ${tokens.join(' ')} `;
+  for (const phrase of TRAILING_COURTESY) {
+    if (text.endsWith(` ${phrase} `)) return tokens.slice(0, tokens.length - phrase.split(' ').length);
+  }
+  return tokens;
+}
+
 /**
- * "A15", "a 15", "a quinze", "bloco B sala 3", "sala 20". As letras "e" e "o" sao ignoradas como bloco,
- * pois quase sempre sao a conjuncao ou o artigo ("sala 12 e 15").
+ * "A15", "a 15", "a quinze", "30A", "trinta a", "bloco B sala 3", "sala 20". O bloco vem antes ou depois
+ * do numero; o canonico e sempre letra + numero ("30A" -> "A30"). As letras "e" e "o" sao ignoradas
+ * como bloco, pois quase sempre sao a conjuncao ou o artigo ("sala 12 e 15").
  */
 export function parseRoomCode(text) {
-  const terms = toTerms(normalize(text).split(' ').filter(Boolean));
+  const terms = toTerms(withoutTrailingCourtesy(normalize(text).split(' ').filter(Boolean)));
   const make = (block, number) => ({ block, number, canonical: `${block ?? ''}${number}` });
 
   const blockLetter = letterAfter(terms, 'bloco');
@@ -113,9 +127,14 @@ export function parseRoomCode(text) {
   if (blockLetter && roomNumber !== null) return make(blockLetter.toUpperCase(), roomNumber);
 
   for (let i = 0; i < terms.length - 1; i++) {
-    if (isLetter(terms[i]) && !'eo'.includes(terms[i].word) && terms[i + 1].num !== undefined) {
+    if (isBlockLetter(terms[i]) && terms[i + 1].num !== undefined) {
       return make(terms[i].word.toUpperCase(), terms[i + 1].num);
     }
+  }
+  // Letra depois do numero so quando fecha a frase: em "sala 20 a esquerda", o "a" e a crase.
+  const last = terms.length - 1;
+  if (last >= 1 && isBlockLetter(terms[last]) && terms[last - 1].num !== undefined) {
+    return make(terms[last].word.toUpperCase(), terms[last - 1].num);
   }
   if (roomNumber !== null) return make(null, roomNumber);
   return null;
@@ -198,7 +217,8 @@ export function findPlace(map, text) {
   const code = parseRoomCode(text);
   if (code) {
     if (code.block) {
-      const room = rooms.find((point) => point.codigo === code.canonical);
+      // O mapa pode escrever o codigo "A30" ou "30A"; os dois viram o mesmo canonico.
+      const room = rooms.find((point) => parseRoomCode(point.codigo)?.canonical === code.canonical);
       return room ? { kind: 'found', place: room } : { kind: 'unknown-room', code: code.canonical };
     }
     const matches = rooms.filter((point) => Number(point.codigo.replace(/\D/g, '')) === code.number);

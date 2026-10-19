@@ -33,7 +33,7 @@ node --test web/test/engine.test.mjs web/test/conversation.test.mjs web/test/con
 | Arquivo | O que faz |
 | --- | --- |
 | `../data/bloco-a.json` | Mapa do bloco A: entradas, pontos e trechos. **Hoje são dados fictícios.** |
-| `engine.js` | Reconhece sala e entrada ("a quinze" → A15), calcula a rota e escreve as instruções. |
+| `engine.js` | Reconhece sala e entrada ("a quinze" → A15, "trinta a" → A30), calcula a rota e escreve as instruções. |
 | `conversation.js` | A conversa: entrada → destino → confirmação → passos. Não depende do navegador. |
 | `app.js`, `index.html`, `style.css` | Interface, microfone e voz. |
 | `contacts.js` | Telefones de ajuda: validação, armazenamento local e modo de ligação (real ou simulada). |
