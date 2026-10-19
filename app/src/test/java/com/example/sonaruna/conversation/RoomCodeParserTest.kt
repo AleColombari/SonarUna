@@ -66,10 +66,47 @@ class RoomCodeParserTest {
     @Test
     fun `a letter after the number in the middle of the phrase is not a block`() {
         assertEquals("20", canonical("sala 20 a esquerda"))
-        assertEquals("12", canonical("sala 12 e"))
-        assertEquals("12", canonical("sala 12 o"))
         assertNull(RoomCodeParser.parse("30"))
         assertNull(RoomCodeParser.parse("a"))
+    }
+
+    @Test
+    fun `blocks E and O count at the start, after sala or bloco and at the end, not as words`() {
+        val blockE = listOf(
+            "E12", "12E", "é doze", "doze e", "sala e 12", "sala 12 e", "bloco e sala 12", "sala 12 do bloco e",
+        )
+        for (text in blockE) {
+            assertEquals("Unexpected result for $text", "E12", canonical(text))
+        }
+        for (text in listOf("O5", "o cinco", "sala o 5", "cinco o")) {
+            assertEquals("Unexpected result for $text", "O5", canonical(text))
+        }
+        assertEquals("12", canonical("sala 12 e 15"))
+        assertEquals("10", canonical("sala dez e quinze"))
+        assertNull(RoomCodeParser.parse("quero ir para o 12"))
+        assertNull(RoomCodeParser.parse("o banheiro"))
+        assertNull(RoomCodeParser.parse("sala de aula"))
+    }
+
+    @Test
+    fun `letters spoken by name count before or after the number`() {
+        val cases = mapOf(
+            "bê doze" to "B12", "doze bê" to "B12", "cê 3" to "C3", "dê 4" to "D4", "efe dez" to "F10",
+            "gê 1" to "G1", "agá 3" to "H3", "jota 2" to "J2", "ká 8" to "K8", "ele 7" to "L7",
+            "eme 9" to "M9", "ene 6" to "N6", "pê 5" to "P5", "quê 11" to "Q11", "erre 20" to "R20",
+            "esse 4" to "S4", "sala 15 erre" to "R15", "bloco jota sala 2" to "J2",
+        )
+        for ((text, code) in cases) {
+            assertEquals("Unexpected result for $text", code, canonical(text))
+        }
+    }
+
+    @Test
+    fun `only blocks A to S count`() {
+        for (text in listOf("z65", "65 z", "sala t 3", "x 10")) {
+            assertNull("Unexpected code for $text", canonical(text))
+        }
+        assertEquals("S9", canonical("s9"))
     }
 
     @Test

@@ -10,11 +10,15 @@ data class RoomCode(val block: Char?, val number: Int) {
 
 /**
  * Extracts a room code from a spoken answer. Recognizers return "A15", "a 15" or "a quinze"
- * for the same room, so all of them are reduced to one code. The block may also come after the
- * number ("30A", "trinta a"); the canonical form is always letter first ("A30").
+ * for the same room, so all of them are reduced to one code. The block may come before or after
+ * the number ("30A", "trinta a"), as a letter or by its spoken name ("bê doze"); the canonical
+ * form is always letter first ("A30"). Only the letters in [BLOCKS] count.
  * Pure Kotlin, testable without Android.
  */
 object RoomCodeParser {
+    /** Blocks that exist on campus. To add another (architecture, music), add its letter here. */
+    const val BLOCKS = "abcdefghijklmnopqrs"
+
     private const val UNIT = 1
     private const val TENS = 2
     private const val HUNDREDS = 3
@@ -67,8 +71,23 @@ object RoomCodeParser {
         return tokens
     }
 
-    private fun isBlockLetter(term: Term): Boolean =
-        term is Term.Word && term.text.length == 1 && term.text[0] in 'a'..'z' && term.text !in "eo"
+    /** How the recognizer may write each letter: alone ("b") or by its name ("be" from "bê"). */
+    private val letterNames: Map<String, Char> = buildMap {
+        BLOCKS.forEach { put(it.toString(), it) }
+        mapOf(
+            "be" to 'b', "ce" to 'c', "de" to 'd', "efe" to 'f', "ge" to 'g', "aga" to 'h',
+            "jota" to 'j', "ka" to 'k', "ca" to 'k', "ele" to 'l', "eme" to 'm', "ene" to 'n',
+            "pe" to 'p', "que" to 'q', "erre" to 'r', "esse" to 's',
+        ).filterValues { it in BLOCKS }.forEach { (name, letter) -> put(name, letter) }
+    }
+
+    /**
+     * Also common words ("sala 12 e 15", "o banheiro", "sala de aula"). Before a number they only
+     * count as a block at the start of the phrase or right after "sala" or "bloco".
+     */
+    private val ambiguousLetters = setOf("e", "o", "de", "que", "ele", "esse")
+
+    private fun blockOf(term: Term?): Char? = (term as? Term.Word)?.let { letterNames[it.text] }
 
     /** "bloco B sala 3" and "sala 3 do bloco B", in any order. */
     private fun blockAndRoom(terms: List<Term>): RoomCode? {
@@ -77,17 +96,15 @@ object RoomCodeParser {
         return RoomCode(block.uppercaseChar(), room)
     }
 
-    /**
-     * "A15", "a quinze", "sala a vinte e dois". The letters "e" and "o" are skipped because
-     * they are far more likely to be the conjunction or the article, as in "sala 12 e 15".
-     */
+    /** "A15", "a quinze", "sala a vinte e dois", "é doze", but not the "e" in "sala 12 e 15". */
     private fun letterAndNumber(terms: List<Term>): RoomCode? {
         for (index in 0 until terms.size - 1) {
-            val letter = terms[index]
-            val number = terms[index + 1]
-            if (isBlockLetter(letter) && letter is Term.Word && number is Term.Num) {
-                return RoomCode(letter.text[0].uppercaseChar(), number.value)
-            }
+            val block = blockOf(terms[index]) ?: continue
+            val number = terms[index + 1] as? Term.Num ?: continue
+            val word = (terms[index] as Term.Word).text
+            val previous = (terms.getOrNull(index - 1) as? Term.Word)?.text
+            if (word in ambiguousLetters && index > 0 && previous != "sala" && previous != "bloco") continue
+            return RoomCode(block.uppercaseChar(), number.value)
         }
         return null
     }
@@ -98,12 +115,9 @@ object RoomCodeParser {
      */
     private fun numberAndLetter(terms: List<Term>): RoomCode? {
         if (terms.size < 2) return null
-        val number = terms[terms.size - 2]
-        val letter = terms.last()
-        if (isBlockLetter(letter) && letter is Term.Word && number is Term.Num) {
-            return RoomCode(letter.text[0].uppercaseChar(), number.value)
-        }
-        return null
+        val number = terms[terms.size - 2] as? Term.Num ?: return null
+        val block = blockOf(terms.last()) ?: return null
+        return RoomCode(block.uppercaseChar(), number.value)
     }
 
     private fun roomOnly(terms: List<Term>): RoomCode? =
@@ -113,9 +127,7 @@ object RoomCodeParser {
         for (index in 0 until terms.size - 1) {
             val current = terms[index]
             val next = terms[index + 1]
-            if (current is Term.Word && current.text == keyword && next is Term.Word && next.text.length == 1) {
-                return next.text[0]
-            }
+            if (current is Term.Word && current.text == keyword) blockOf(next)?.let { return it }
         }
         return null
     }

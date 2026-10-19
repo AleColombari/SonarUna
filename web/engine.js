@@ -84,11 +84,27 @@ function toTerms(tokens) {
   return terms;
 }
 
-const isLetter = (term) => term.word !== undefined && term.word.length === 1 && /[a-z]/.test(term.word);
+/** Blocos que existem no campus. Para incluir outro (arquitetura, musica), acrescente a letra aqui. */
+export const BLOCOS = 'abcdefghijklmnopqrs';
+
+// Como o reconhecedor pode escrever cada letra: sozinha ("b") ou pelo nome ("be" de "bê").
+const LETTER_NAMES = new Map([...BLOCOS].map((letter) => [letter, letter]));
+for (const [name, letter] of Object.entries({
+  be: 'b', ce: 'c', de: 'd', efe: 'f', ge: 'g', aga: 'h', jota: 'j', ka: 'k', ca: 'k', ele: 'l', eme: 'm',
+  ene: 'n', pe: 'p', que: 'q', erre: 'r', esse: 's',
+})) {
+  if (BLOCOS.includes(letter)) LETTER_NAMES.set(name, letter);
+}
+
+// Tambem sao palavras comuns ("sala 12 e 15", "o banheiro", "sala de aula"). Antes do numero, so valem como
+// bloco no inicio da frase ou logo depois de "sala"/"bloco".
+const AMBIGUOUS_LETTERS = new Set(['e', 'o', 'de', 'que', 'ele', 'esse']);
+
+const blockOf = (term) => (term?.word !== undefined ? LETTER_NAMES.get(term.word) ?? null : null);
 
 function letterAfter(terms, keyword) {
   for (let i = 0; i < terms.length - 1; i++) {
-    if (terms[i].word === keyword && isLetter(terms[i + 1])) return terms[i + 1].word;
+    if (terms[i].word === keyword && blockOf(terms[i + 1])) return blockOf(terms[i + 1]);
   }
   return null;
 }
@@ -99,8 +115,6 @@ function numberAfter(terms, keyword) {
   }
   return null;
 }
-
-const isBlockLetter = (term) => isLetter(term) && !'eo'.includes(term.word);
 
 /** Palavras de cortesia no fim da frase, ignoradas para achar a letra que fecha "30 A". */
 const TRAILING_COURTESY = ['por favor', 'obrigado', 'obrigada'];
@@ -114,9 +128,9 @@ function withoutTrailingCourtesy(tokens) {
 }
 
 /**
- * "A15", "a 15", "a quinze", "30A", "trinta a", "bloco B sala 3", "sala 20". O bloco vem antes ou depois
- * do numero; o canonico e sempre letra + numero ("30A" -> "A30"). As letras "e" e "o" sao ignoradas
- * como bloco, pois quase sempre sao a conjuncao ou o artigo ("sala 12 e 15").
+ * "A15", "a quinze", "30A", "trinta a", "bê doze", "é doze", "bloco B sala 3", "sala 20". O bloco vem antes ou
+ * depois do numero, como letra ou pelo nome; o canonico e sempre letra + numero ("30A" -> "A30"). So valem as
+ * letras de BLOCOS.
  */
 export function parseRoomCode(text) {
   const terms = toTerms(withoutTrailingCourtesy(normalize(text).split(' ').filter(Boolean)));
@@ -127,14 +141,16 @@ export function parseRoomCode(text) {
   if (blockLetter && roomNumber !== null) return make(blockLetter.toUpperCase(), roomNumber);
 
   for (let i = 0; i < terms.length - 1; i++) {
-    if (isBlockLetter(terms[i]) && terms[i + 1].num !== undefined) {
-      return make(terms[i].word.toUpperCase(), terms[i + 1].num);
-    }
+    const block = blockOf(terms[i]);
+    if (!block || terms[i + 1].num === undefined) continue;
+    const previous = terms[i - 1]?.word;
+    if (AMBIGUOUS_LETTERS.has(terms[i].word) && i > 0 && previous !== 'sala' && previous !== 'bloco') continue;
+    return make(block.toUpperCase(), terms[i + 1].num);
   }
   // Letra depois do numero so quando fecha a frase: em "sala 20 a esquerda", o "a" e a crase.
   const last = terms.length - 1;
-  if (last >= 1 && isBlockLetter(terms[last]) && terms[last - 1].num !== undefined) {
-    return make(terms[last].word.toUpperCase(), terms[last - 1].num);
+  if (last >= 1 && blockOf(terms[last]) && terms[last - 1].num !== undefined) {
+    return make(blockOf(terms[last]).toUpperCase(), terms[last - 1].num);
   }
   if (roomNumber !== null) return make(null, roomNumber);
   return null;

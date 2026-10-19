@@ -7,7 +7,7 @@ Para cada trecho que a pessoa percorre, o aplicativo precisa saber a **distânci
 ## 1. Escopo (decidir antes de sair medindo)
 
 - Qual bloco será o piloto? Sugestão: um único bloco, um andar, de dois a cinco destinos (por exemplo: entrada, A15, banheiro, escada, saída).
-- Quais salas e locais a pessoa pode pedir? Liste o nome oficial **e como as pessoas falam** (exemplo: "A15", "sala quinze do bloco A", "cantina"). O código da sala pode ser escrito com a letra antes ou depois do número ("A30" ou "30A"): o app entende "a trinta", "trinta a" e "sala 30A" como a mesma sala.
+- Quais salas e locais a pessoa pode pedir? Liste o nome oficial **e como as pessoas falam** (exemplo: "A15", "sala quinze do bloco A", "cantina"). O código da sala pode ser escrito com a letra antes ou depois do número ("A30" ou "30A"): o app entende "a trinta", "trinta a" e "sala 30A" como a mesma sala. A letra também pode ser dita pelo nome ("bê doze", "doze efe", "é doze"). Os blocos aceitos ficam em `BLOCOS` ([web/engine.js](../web/engine.js)) e `BLOCKS` (`RoomCodeParser.kt`), hoje de A a S; para incluir outro bloco, acrescente a letra nos dois.
 
 ## 2. Pontos (nós do mapa)
 

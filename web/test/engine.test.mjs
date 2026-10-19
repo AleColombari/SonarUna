@@ -53,10 +53,34 @@ test('bloco depois do numero: "30A" e "trinta a" viram A30', () => {
 
 test('letra depois do numero no meio da frase nao vira bloco', () => {
   assert.equal(canonical('sala 20 a esquerda'), '20');
-  assert.equal(canonical('sala 12 e'), '12');
-  assert.equal(canonical('sala 12 o'), '12');
   assert.equal(parseRoomCode('30'), null);
   assert.equal(parseRoomCode('a'), null);
+});
+
+test('blocos E e O: valem no inicio, depois de "sala"/"bloco" e no fim; nao como conjuncao ou artigo', () => {
+  for (const text of ['E12', '12E', 'é doze', 'doze e', 'sala e 12', 'sala 12 e', 'bloco e sala 12', 'sala 12 do bloco e']) {
+    assert.equal(canonical(text), 'E12', text);
+  }
+  for (const text of ['O5', 'o cinco', 'sala o 5', 'cinco o']) assert.equal(canonical(text), 'O5', text);
+  assert.equal(canonical('sala 12 e 15'), '12');
+  assert.equal(canonical('sala dez e quinze'), '10');
+  assert.equal(canonical('quero ir para o 12'), null);
+  assert.equal(parseRoomCode('o banheiro'), null);
+  assert.equal(parseRoomCode('sala de aula'), null);
+});
+
+test('letras pelo nome falado ("bê", "efe", "agá"), antes ou depois do numero', () => {
+  const cases = {
+    'bê doze': 'B12', 'doze bê': 'B12', 'cê 3': 'C3', 'dê 4': 'D4', 'efe dez': 'F10', 'gê 1': 'G1', 'agá 3': 'H3',
+    'jota 2': 'J2', 'ká 8': 'K8', 'ele 7': 'L7', 'eme 9': 'M9', 'ene 6': 'N6', 'pê 5': 'P5', 'quê 11': 'Q11',
+    'erre 20': 'R20', 'esse 4': 'S4', 'sala 15 erre': 'R15', 'bloco jota sala 2': 'J2',
+  };
+  for (const [text, code] of Object.entries(cases)) assert.equal(canonical(text), code, text);
+});
+
+test('so valem os blocos de A a S', () => {
+  for (const text of ['z65', '65 z', 'sala t 3', 'x 10']) assert.equal(canonical(text), null, text);
+  assert.equal(canonical('s9'), 'S9');
 });
 
 test('o mapa fictício do bloco A carrega e todos os pontos estao ligados', () => {
