@@ -1,6 +1,6 @@
 # Mapa da UNAERP
 
-O arquivo [data/unaerp.json](../data/unaerp.json) foi montado em 21/10/2026 a partir do esboço em folha de caderno e das fotos dos pisos táteis. **Não há medidas**: o app guia pelo piso tátil, contando os cruzamentos que a pessoa sente com a bengala. A versão web usa este mapa por padrão; o mapa fictício antigo, com metros, abre em `/web/?mapa=bloco-a`.
+O arquivo [data/unaerp.json](../data/unaerp.json) foi montado em 21/10/2026 a partir do esboço em folha de caderno, das fotos dos pisos táteis e das respostas do Alexandre sobre o esboço. **Não há medidas**: o app guia pelo piso tátil, contando os cruzamentos que a pessoa sente com a bengala. A versão web usa este mapa por padrão; o mapa fictício antigo, com metros, abre em `/web/?mapa=bloco-a`.
 
 As fotos e o esboço não estão no repositório: mostram pessoas e não precisam ser versionados.
 
@@ -12,6 +12,8 @@ As fotos e o esboço não estão no repositório: mostram pessoas e não precisa
 | Quadrado | Cruzamento que leva a mais caminhos |
 | Três pontos (`...`) | Caminho para mapear no futuro; ainda não entra no mapa |
 | Zigue-zague entre dois traços | Escada (`"escada"` no trecho) |
+| Seta (triângulo) | "Continua aqui": liga dois pedaços do desenho que são o mesmo lugar |
+| Traço cortando o piso | Porta; a do começo do bloco B fica sempre aberta |
 | Traço no fim da linha | Fim do piso |
 | B F / B M | Banheiro feminino / masculino |
 | AV | Sala de audiovisual |
@@ -19,30 +21,29 @@ As fotos e o esboço não estão no repositório: mostram pessoas e não precisa
 | MA | Multiatendimento |
 | Prof | Sala dos professores |
 | Info | Balcão de informações |
+| LIAPE | Assistência de informática, no fim do corredor A |
 
-O desenho foi lido com a folha deitada: o corredor do bloco B fica em cima, o do bloco A embaixo, e a passarela os liga pela direita e pela esquerda. Os `rumo` seguem esse desenho (0 = para cima na folha, 90 = direita, 180 = baixo, 270 = esquerda). Não são pontos cardeais: o app só compara um rumo com o seguinte para saber se a curva é à direita ou à esquerda.
+O desenho foi lido com a folha deitada: o corredor do bloco B fica em cima e o do bloco A embaixo. A linha comprida que parece ligar os dois pela passarela só abria espaço no papel. A seta indica que a escada do fim do bloco B e a do começo do bloco A são **a mesma escada**.
+
+Os `rumo` seguem o desenho (0 = para cima na folha, 90 = direita, 180 = baixo, 270 = esquerda). Não são pontos cardeais: o app só compara um rumo com o seguinte para saber se a curva é à direita ou à esquerda.
 
 ## O que o mapa tem
 
-- **Corredor do bloco B** (`b01` a `b21`): 20B, 18B, 17B, banheiro feminino e audiovisual, banheiro masculino, 16B a 8B, 5B, Direito e multiatendimento.
-- **Saída do bloco B** (`b21` para baixo): financeiro e cobrança no mesmo cruzamento, depois uma escada.
-- **Passarela** (`curva-1` e `curva-2`): ligação entre os blocos, com duas curvas.
-- **Chegada ao bloco A**: triângulo, escada, sala dos professores, balcão de informações e protocolo.
-- **Corredor do bloco A** (`a01` a `a15`): departamento, 9A, 6A, 7A e sala sem número, 5A, banheiro masculino, 3A, banheiro feminino, 1A, 4A, 2A e uma sala no fim do corredor.
+- **Entrada do bloco B** (`entrada-b`), no começo do corredor, seguida de uma porta que fica sempre aberta. O app cita a porta como referência.
+- **Corredor do bloco B** (`b02` a `b21`): 20B e 18B à esquerda e 17B à direita de quem vem da entrada; banheiro feminino e audiovisual; banheiro masculino; 16B a 8B; 5B; Direito; multiatendimento.
+- **Escada entre os blocos**: começa no cruzamento do financeiro e da cobrança e **desce** do bloco B para o bloco A. Na volta, o app diz "Suba a escada".
+- **Chegada ao bloco A**: sala dos professores, balcão de informações e protocolo.
+- **Corredor do bloco A** (`a01` a `a15`): sala de estudos (computadores, portas de vidro), 9A, 6A, 7A e sala sem número, 5A, banheiro masculino, 3A, banheiro feminino, 1A, 4A, 2A e LIAPE.
+- **Escadas dos quadrados** `b07` (bloco B) e `a07` (bloco A): sobem para caminhos ainda não mapeados. Estão anotadas no campo `nota` desses pontos.
 
 A conversa começa perguntando **onde a pessoa está** (`"origem": "lugar"`), e não por qual entrada ela entrou. Ela sai do lugar pelo único trecho de piso que chega até ele. Pedir só "banheiro" leva ao mais perto; "não, feminino" na confirmação troca para o banheiro feminino mais perto.
 
-## Dúvidas a confirmar no campus
+## Ainda a confirmar
 
 Também estão no campo `duvidas` do JSON.
 
-1. **Nome no fim do corredor A.** O texto escrito acima do último ponto, depois da 2A, não ficou legível. Por enquanto o lugar se chama "sala do fim do corredor A".
-2. **Triângulo.** Não sabemos o que ele marca, entre a passarela e a escada que desce para os professores. Ele não muda as instruções: o app diz "até a escada".
-3. **Escadas.** Não sabemos se as duas escadas da rota sobem ou descem. Hoje o app só avisa "Atenção, escada. Use o corrimão." Quando souber, troque `"indefinida"` por `"sobe"` ou `"desce"` no sentido do trecho.
-4. **Começo do bloco B.** As salas foram lidas como 20B e 18B em cima e 17B embaixo.
-5. **Primeira sala de cima do corredor A.** Foi lida como 6A; pela ordem dos números, poderia ser 8A.
-6. **Departamento.** Há três cruzamentos logo depois das Informações, com ramais para baixo. O Departamento foi posto no primeiro.
-7. **Traço que corta o piso no começo do bloco B**, entre os quadrados e a sala 20B. Pode ser uma porta; hoje não entra no mapa.
+1. **Sentido da escada entre os blocos.** O mapa considera que ela desce indo do bloco B para o bloco A. Se for o contrário, troque `"desce"` por `"sobe"` no trecho `fin` → `pe-escada`.
+2. **Portas da sala de estudos.** A sala tem várias portas de vidro, ligadas aos três cruzamentos logo depois das Informações. O mapa usa só a primeira. Os outros dois cruzamentos (`a02`, `a03`) continuam contando.
 
 ## Limites
 

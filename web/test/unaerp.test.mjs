@@ -5,7 +5,7 @@ import { buildInstructions, exitHeading, findPlace, loadMap, planRoute } from '.
 import { createSession } from '../conversation.js';
 
 const map = loadMap(JSON.parse(readFileSync(new URL('../../data/unaerp.json', import.meta.url), 'utf8')));
-const places = [...map.points.values()].filter((point) => !['cruzamento', 'curva', 'patamar', 'marco'].includes(point.tipo));
+const places = [...map.points.values()].filter((point) => !['cruzamento', 'curva', 'patamar'].includes(point.tipo));
 
 const route = (fromId, toId) => {
   const origin = { ponto: fromId, rumo: exitHeading(map, fromId) };
@@ -40,23 +40,32 @@ test('salas e servicos sao achados pelo que a pessoa fala', () => {
   assert.equal(id('sala de audiovisual'), 'audiovisual');
   assert.equal(id('direito'), 'direito');
   assert.equal(id('banheiro feminino do bloco a'), 'banheiro-f-a');
+  assert.equal(id('estou na entrada'), 'entrada-b');
+  assert.equal(id('liape'), 'liape');
+  assert.equal(id('sala dos computadores'), 'sala-estudos');
+  assert.equal(id('departamento'), 'sala-estudos');
   assert.equal(findPlace(map, 'sala 9').kind, 'ambiguous');
   assert.equal(findPlace(map, 'banheiro').kind, 'several');
 });
 
-test('das informacoes ate a 15B: escadas, curvas da passarela e contagem de cruzamentos', () => {
+test('das informacoes ate a 15B: sobe a escada entre os blocos e conta os cruzamentos', () => {
   assert.deepEqual(route('informacoes', '15B'), [
     'Siga em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.',
     'Vire à esquerda e siga o piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto.',
-    'Atenção, escada. Use o corrimão. Quando terminar, diga pronto.',
-    'Siga em frente pelo piso tátil até a curva do piso. Quando terminar, diga pronto.',
-    'Vire à direita e siga o piso tátil até a curva do piso. Referência: passarela entre os blocos. Quando terminar, diga pronto.',
-    'Vire à esquerda e siga o piso tátil até a escada. Quando terminar, diga pronto.',
-    'Atenção, escada. Use o corrimão. Quando terminar, diga pronto.',
+    'Suba a escada. Quando terminar, diga pronto.',
     'Siga em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.',
     'Vire à esquerda e siga o piso tátil até o 12º cruzamento. Quando terminar, diga pronto.',
     'Vire à esquerda e siga o piso tátil até o fim. Você chegará na sala 15B. Quando chegar, diga pronto.',
   ]);
+  assert.ok(route('15B', 'protocolo').includes('Desça a escada. Quando terminar, diga pronto.'));
+});
+
+test('da entrada do bloco B: porta aberta como referencia, 20B a esquerda e 17B a direita', () => {
+  assert.deepEqual(route('entrada-b', '20B'), [
+    'Siga em frente pelo piso tátil até o segundo cruzamento. Referência: porta sempre aberta. Quando terminar, diga pronto.',
+    'Vire à esquerda e siga o piso tátil até o fim. Você chegará na sala 20B. Quando chegar, diga pronto.',
+  ]);
+  assert.match(route('entrada-b', '17B')[1], /^Vire à direita/);
 });
 
 test('lado da curva depende do sentido: sair da 20B e sair do protocolo', () => {
@@ -71,7 +80,7 @@ test('lado da curva depende do sentido: sair da 20B e sair do protocolo', () => 
 
 test('conversa: onde voce esta, banheiro mais perto e troca para o feminino', () => {
   const session = createSession(map);
-  assert.match(session.start().say.join(' '), /Onde você está agora\? Diga a sala ou o lugar, por exemplo, balcão de informações ou sala 5A\./);
+  assert.match(session.start().say.join(' '), /Onde você está agora\? Diga a sala ou o lugar, por exemplo, entrada do bloco B, balcão de informações ou sala 5A\./);
   assert.match(session.hear(['estou na sala 5A']).say[0], /^Você está na sala 5A\./);
   assert.match(session.hear(['banheiro']).say[0], /banheiro masculino do bloco A/);
   assert.match(session.hear(['não, feminino']).say[0], /banheiro feminino do bloco A/);
