@@ -48,13 +48,15 @@ test('salas e servicos sao achados pelo que a pessoa fala', () => {
   assert.equal(findPlace(map, 'banheiro').kind, 'several');
 });
 
-test('das informacoes ate a 15B: sobe a escada entre os blocos e conta os cruzamentos', () => {
+test('das informacoes ate a 15B: sobe a escada e divide o corredor B em etapas de ate 5 cruzamentos', () => {
   assert.deepEqual(route('informacoes', '15B'), [
     'Siga em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.',
     'Vire à esquerda e siga o piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto.',
     'Suba a escada. Quando terminar, diga pronto.',
     'Siga em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.',
-    'Vire à esquerda e siga o piso tátil até o 12º cruzamento. Quando terminar, diga pronto.',
+    'Vire à esquerda e siga o piso tátil até o quinto cruzamento, na altura da sala 10B. Quando terminar, diga pronto.',
+    'Continue em frente pelo piso tátil até o quinto cruzamento, na altura da sala 13B. Quando terminar, diga pronto.',
+    'Continue em frente pelo piso tátil até o segundo cruzamento. Quando terminar, diga pronto.',
     'Vire à esquerda e siga o piso tátil até o fim. Você chegará na sala 15B. Quando chegar, diga pronto.',
   ]);
   assert.ok(route('15B', 'protocolo').includes('Desça a escada. Quando terminar, diga pronto.'));
@@ -75,7 +77,12 @@ test('lado da curva depende do sentido: sair da 20B e sair do protocolo', () => 
     'Vire à esquerda e siga o piso tátil até o fim. Você chegará no banheiro feminino do bloco B. Quando chegar, diga pronto.',
   ]);
   assert.match(route('protocolo', '4A')[1], /^Vire à direita/);
-  assert.match(route('protocolo', '4A')[2], /^Vire à direita e siga o piso tátil até o 13º cruzamento/);
+  assert.deepEqual(route('protocolo', '4A').slice(2), [
+    'Vire à direita e siga o piso tátil até o quinto cruzamento, na altura da sala 6A. Quando terminar, diga pronto.',
+    'Continue em frente pelo piso tátil até o quinto cruzamento, na altura da sala 3A. Quando terminar, diga pronto.',
+    'Continue em frente pelo piso tátil até o terceiro cruzamento. Quando terminar, diga pronto.',
+    'Vire à esquerda e siga o piso tátil até o fim. Você chegará na sala 4A. Quando chegar, diga pronto.',
+  ]);
 });
 
 test('conversa: onde voce esta, banheiro mais perto e troca para o feminino', () => {
@@ -87,6 +94,17 @@ test('conversa: onde voce esta, banheiro mais perto e troca para o feminino', ()
   const go = session.hear(['isso']);
   assert.equal(go.phase, 'navigating');
   assert.match(go.say[0], /^Rota até o banheiro feminino do bloco A, em 3 etapas/);
+});
+
+test('nenhuma etapa do mapa pede para contar mais de 5 cruzamentos', () => {
+  for (const from of places) {
+    for (const to of places) {
+      if (from === to) continue;
+      for (const text of route(from.id, to.id)) {
+        assert.doesNotMatch(text, /(sexto|sétimo|oitavo|nono|décimo|\dº) cruzamento|passando por ([6-9]|\d\d) cruzamentos/, `${from.id} -> ${to.id}: ${text}`);
+      }
+    }
+  }
 });
 
 test('origem com nome repetido pede o nome completo', () => {

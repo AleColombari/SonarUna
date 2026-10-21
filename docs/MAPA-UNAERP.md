@@ -47,6 +47,6 @@ Também estão no campo `duvidas` do JSON.
 
 ## Limites
 
-- Contar cruzamentos longos ("até o 12º cruzamento") é difícil. Vale testar com quem usa bengala e, se for preciso, acrescentar `referencias` nos trechos (bebedouro, porta de vidro, mudança de piso).
+- Nenhuma etapa pede para contar mais de 5 cruzamentos (`cruzamentosPorEtapa`). Uma reta longa, como atravessar o bloco B, vira várias etapas, e cada pausa cita a sala daquele cruzamento ("na altura da sala 10B"). Ainda vale testar com quem usa bengala, ajustar esse limite e acrescentar `referencias` nos trechos (bebedouro, porta de vidro, mudança de piso).
 - Os ramais sem nome do esboço, como o que sai do quadrado dos professores para a direita, não entram no mapa. Eles não mudam a contagem, porque ficam fora da linha principal.
 - O app nunca afirma que um caminho é seguro. Ele não substitui bengala, cão-guia nem ajuda humana.

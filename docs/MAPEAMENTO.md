@@ -95,6 +95,7 @@ Com `"guia": "piso"` no topo do arquivo, os trechos **não precisam de metros**.
 - `rumo` é a direção do desenho (0 = para cima na folha, 90 = direita, 180 = baixo, 270 = esquerda). Não precisa ser o norte real: o app só compara um rumo com o seguinte para saber o lado da curva.
 - `escada` (`"sobe"` ou `"desce"`, no sentido de `de` para `para`) vira uma etapa própria ("Suba a escada"); na volta o app inverte.
 - `peso` (opcional, padrão 1) faz o app evitar um trecho quando há outro caminho, por exemplo uma escada quando existe rampa.
+- `cruzamentosPorEtapa` (no topo do arquivo, padrão 5) limita quantos cruzamentos a pessoa conta numa etapa. Uma reta mais longa vira várias etapas: "até o quinto cruzamento, na altura da sala 10B", depois "Continue em frente pelo piso tátil até o quinto cruzamento", e assim por diante. Cada pausa cita o primeiro lugar com nome ligado àquele cruzamento, para a pessoa poder confirmar onde está.
 
 ## 6. Cuidados
 

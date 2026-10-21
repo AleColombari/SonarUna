@@ -79,3 +79,44 @@ test('conversa no modo piso fala etapas, sem passos', () => {
   assert.match(route.say[1], /^Etapa 1 de 2\. Siga em frente pelo piso tátil até o segundo cruzamento/);
   assert.doesNotMatch(route.say.join(' '), /passo/);
 });
+
+// Reta para o norte com `n` cruzamentos e, no fim, a sala Z (em frente) ou uma curva para a direita ate Z.
+function corridor(n, { turn = false, limit } = {}) {
+  const ids = Array.from({ length: n }, (_, i) => `c${i + 1}`);
+  const pontos = [{ id: 'inicio', nome: 'início', tipo: 'sala' }, ...ids.map((id) => ({ id, nome: id, tipo: 'cruzamento' })),
+    { id: 'Z', nome: 'sala Z', tipo: 'sala' }];
+  const chain = ['inicio', ...ids];
+  const trechos = chain.slice(1).map((id, i) => ({ de: chain[i], para: id, rumo: 0 }));
+  trechos.push({ de: ids[n - 1], para: 'Z', rumo: turn ? 90 : 0 });
+  const m = loadMap({ guia: 'piso', cruzamentosPorEtapa: limit, pontos, trechos });
+  return buildInstructions(m, { ponto: 'inicio', rumo: 0 }, planRoute(m, 'inicio', 'Z')).map((step) => step.texto.split('. ')[0]);
+}
+
+test('reta longa ate o fim vira etapas de ate 5 cruzamentos', () => {
+  assert.deepEqual(corridor(11), [
+    'Siga em frente pelo piso tátil até o quinto cruzamento',
+    'Continue em frente pelo piso tátil até o quinto cruzamento',
+    'Continue em frente pelo piso tátil, passando por 1 cruzamento, até o fim',
+  ]);
+  assert.deepEqual(corridor(5), ['Siga em frente pelo piso tátil, passando por 5 cruzamentos, até o fim']);
+});
+
+test('o cruzamento onde se vira tambem conta para o limite', () => {
+  assert.deepEqual(corridor(5, { turn: true }), [
+    'Siga em frente pelo piso tátil até o quinto cruzamento',
+    'Vire à direita e siga o piso tátil até o fim',
+  ]);
+  assert.deepEqual(corridor(6, { turn: true }), [
+    'Siga em frente pelo piso tátil até o quinto cruzamento',
+    'Continue em frente pelo piso tátil até o primeiro cruzamento',
+    'Vire à direita e siga o piso tátil até o fim',
+  ]);
+});
+
+test('cruzamentosPorEtapa no mapa muda o limite', () => {
+  assert.deepEqual(corridor(7, { limit: 3 }), [
+    'Siga em frente pelo piso tátil até o terceiro cruzamento',
+    'Continue em frente pelo piso tátil até o terceiro cruzamento',
+    'Continue em frente pelo piso tátil, passando por 1 cruzamento, até o fim',
+  ]);
+});

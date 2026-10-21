@@ -161,6 +161,7 @@ const article = (point) => point.artigo === 'o' ? 'o' : 'a';
 export const paraLugar = (point) => `para ${article(point)} ${point.nome}`;
 export const ateLugar = (point) => `até ${article(point)} ${point.nome}`;
 export const emLugar = (point) => `n${article(point)} ${point.nome}`;
+export const deLugar = (point) => `d${article(point)} ${point.nome}`;
 
 const containsPhrase = (normalizedText, phrase) => ` ${normalizedText} `.includes(` ${phrase} `);
 
@@ -223,6 +224,8 @@ export function loadMap(raw) {
     nome: raw.nome ?? (raw.bloco ? `bloco ${raw.bloco}` : null),
     exemplo: raw.exemplo ?? 'sala A12',
     exemploOrigem: raw.exemploOrigem ?? null,
+    // Mais que isso numa reta vira varias etapas: contar 20 cruzamentos com a bengala nao da.
+    cruzamentosPorEtapa: raw.cruzamentosPorEtapa ?? 5,
     origem,
     guia,
     passoMetros: raw.passoMetros ?? 0.7,
@@ -419,9 +422,10 @@ const ORDINAIS = ['primeiro', 'segundo', 'terceiro', 'quarto', 'quinto', 'sexto'
 const ordinal = (n) => ORDINAIS[n - 1] ?? `${n}º`;
 
 /**
- * Guia pelo piso tatil, sem medidas: cada etapa vai ate uma curva, uma escada ou o destino, e diz em qual
- * cruzamento do piso parar. Todo ponto no meio de uma reta conta como cruzamento, porque no mapa de piso os
- * pontos sao as interseccoes que a pessoa sente com a bengala. Cada item: { texto, cruzamentos, bruto: null }.
+ * Guia pelo piso tatil, sem medidas: cada etapa vai ate uma curva, uma escada, o destino ou, numa reta longa,
+ * ate um cruzamento no meio do caminho, e diz em qual cruzamento do piso parar. Todo ponto no meio de uma reta
+ * conta como cruzamento (menos curvas e patamares), porque no mapa de piso os pontos sao as interseccoes que a
+ * pessoa sente com a bengala. Cada item: { texto, cruzamentos, bruto: null }.
  */
 function buildFloorInstructions(map, entrance, segments) {
   const groups = [];
@@ -431,43 +435,83 @@ function buildFloorInstructions(map, entrance, segments) {
     const angle = turnAngle(heading, segment.rumo);
     const last = groups[groups.length - 1];
     if (last && !last.escada && !segment.escada && Math.abs(angle) < 30) {
-      last.pontos.push(segment.para);
-      last.referencias.push(...segment.referencias);
+      last.trechos.push(segment);
     } else {
-      groups.push({
-        virar: turnPhrase(angle),
-        escada: segment.escada,
-        pontos: [segment.para],
-        referencias: [...segment.referencias],
-      });
+      groups.push({ virar: turnPhrase(angle), escada: segment.escada, trechos: [segment] });
     }
     heading = segment.rumo;
   }
-  const isCrossing = (id) => !['curva', 'patamar'].includes(map.points.get(id).tipo);
-  return groups.map((group, index) => {
+  const steps = [];
+  groups.forEach((group, index) => {
     const isLast = index === groups.length - 1;
     const next = groups[index + 1];
-    const passed = group.pontos.slice(0, -1).filter(isCrossing).length;
-    const end = map.points.get(group.pontos[group.pontos.length - 1]);
-    const parts = [];
     if (group.escada) {
       const action = { sobe: 'Suba a escada', desce: 'Desça a escada' }[group.escada];
       const turn = group.virar === 'Siga em frente' ? '' : `${group.virar}. `;
-      parts.push(action ? `${turn}${action}.` : `${turn}Atenção, escada. Use o corrimão.`);
-    } else {
-      const go = group.virar === 'Siga em frente' ? 'Siga em frente pelo piso tátil' : `${group.virar} e siga o piso tátil`;
-      const passing = passed > 0 ? `, passando por ${plural(passed, 'cruzamento', 'cruzamentos')},` : '';
-      if (isLast) parts.push(`${go}${passing} até o fim.`);
-      else if (next.escada) parts.push(`${go}${passing} até a escada.`);
-      else if (end.tipo === 'curva') parts.push(`${go}${passing} até a curva do piso.`);
-      else parts.push(`${go} até o ${ordinal(passed + 1)} cruzamento.`);
+      steps.push(floorStep(map, group.trechos, [action ? `${turn}${action}.` : `${turn}Atenção, escada. Use o corrimão.`], isLast));
+      return;
     }
-    const referencias = [...new Set(group.referencias)];
-    if (referencias.length > 0) parts.push(`Referência: ${referencias.join(', ')}.`);
-    if (isLast) parts.push(`Você chegará ${emLugar(end)}. Quando chegar, diga pronto.`);
-    else parts.push('Quando terminar, diga pronto.');
-    return { texto: parts.join(' '), cruzamentos: passed, bruto: null };
+    for (const [i, chunk] of splitLongStraight(map, group.trechos, isLast || next.escada).entries()) {
+      const go = i > 0 ? 'Continue em frente pelo piso tátil'
+        : group.virar === 'Siga em frente' ? 'Siga em frente pelo piso tátil' : `${group.virar} e siga o piso tátil`;
+      const end = map.points.get(chunk.trechos[chunk.trechos.length - 1].para);
+      const passing = chunk.passados > 0 ? `, passando por ${plural(chunk.passados, 'cruzamento', 'cruzamentos')},` : '';
+      let text;
+      if (chunk.pausa) text = `${go} até o ${ordinal(chunk.passados + 1)} cruzamento${landmark(map, end.id)}.`;
+      else if (isLast) text = `${go}${passing} até o fim.`;
+      else if (next.escada) text = `${go}${passing} até a escada.`;
+      else if (end.tipo === 'curva') text = `${go}${passing} até a curva do piso.`;
+      else text = `${go} até o ${ordinal(chunk.passados + 1)} cruzamento.`;
+      steps.push(floorStep(map, chunk.trechos, [text], isLast && !chunk.pausa, chunk.passados));
+    }
   });
+  return steps;
+}
+
+const isCrossing = (map, id) => !['curva', 'patamar'].includes(map.points.get(id).tipo);
+
+/**
+ * Corta uma reta em pedacos de ate `cruzamentosPorEtapa` cruzamentos a contar. Os pedacos do meio terminam num
+ * cruzamento (`pausa`); o ultimo mantem o fim original da reta (curva, escada, destino ou cruzamento de virar).
+ * Quando a reta termina num cruzamento de virar, ele tambem conta, pois a pessoa precisa conta-lo para parar.
+ */
+function splitLongStraight(map, trechos, endsWithoutTurn) {
+  const limit = map.cruzamentosPorEtapa;
+  const chunks = [];
+  let current = [];
+  let counted = 0;
+  trechos.forEach((segment, i) => {
+    current.push(segment);
+    const isEnd = i === trechos.length - 1;
+    if (isEnd || !isCrossing(map, segment.para)) return;
+    counted++;
+    // Restam cruzamentos a contar depois deste? So entao vale pausar aqui.
+    const remaining = trechos.slice(i + 1, -1).filter((s) => isCrossing(map, s.para)).length
+      + (endsWithoutTurn ? 0 : 1);
+    if (counted === limit && remaining > 0) {
+      chunks.push({ trechos: current, passados: counted - 1, pausa: true });
+      current = [];
+      counted = 0;
+    }
+  });
+  chunks.push({ trechos: current, passados: counted, pausa: false });
+  return chunks;
+}
+
+/** ", na altura da sala 14B": o primeiro lugar com nome ligado ao cruzamento, para a pessoa confirmar onde parou. */
+function landmark(map, crossingId) {
+  const named = map.adjacency.get(crossingId)
+    .map((edge) => map.points.get(edge.to))
+    .find((point) => !['cruzamento', 'curva', 'patamar'].includes(point.tipo));
+  return named ? `, na altura ${deLugar(named)}` : '';
+}
+
+function floorStep(map, trechos, parts, arrives, passados = 0) {
+  const referencias = [...new Set(trechos.flatMap((segment) => segment.referencias))];
+  if (referencias.length > 0) parts.push(`Referência: ${referencias.join(', ')}.`);
+  const end = map.points.get(trechos[trechos.length - 1].para);
+  parts.push(arrives ? `Você chegará ${emLugar(end)}. Quando chegar, diga pronto.` : 'Quando terminar, diga pronto.');
+  return { texto: parts.join(' '), cruzamentos: passados, bruto: null };
 }
 
 // ---------------------------------------------------------------------------------------------
