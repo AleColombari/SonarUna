@@ -167,8 +167,13 @@ const containsPhrase = (normalizedText, phrase) => ` ${normalizedText} `.include
 // ---------------------------------------------------------------------------------------------
 // Mapa
 
-/** Valida o JSON do mapa e monta a lista de vizinhos. Falha com mensagem clara se algo estiver errado. */
+/**
+ * Valida o JSON do mapa e monta a lista de vizinhos. Falha com mensagem clara se algo estiver errado.
+ * Com "guia": "piso" os trechos nao precisam de metros: a rota conta cruzamentos do piso tatil, e o
+ * "peso" opcional de um trecho (padrao 1) so serve para preferir um caminho a outro.
+ */
 export function loadMap(raw) {
+  const guia = raw.guia === 'piso' ? 'piso' : 'passos';
   const points = new Map();
   for (const point of raw.pontos ?? []) {
     if (points.has(point.id)) throw new Error(`Ponto repetido: ${point.id}`);
@@ -183,14 +188,25 @@ export function loadMap(raw) {
     for (const end of [edge.de, edge.para]) {
       if (!points.has(end)) throw new Error(`Trecho usa ponto inexistente: ${end}`);
     }
-    if (!(edge.metros > 0)) throw new Error(`Trecho ${edge.de} -> ${edge.para} precisa de metros maiores que zero`);
-    if (edge.passos !== undefined && !(edge.passos > 0)) {
-      throw new Error(`Trecho ${edge.de} -> ${edge.para} precisa de passos maiores que zero`);
+    const name = `Trecho ${edge.de} -> ${edge.para}`;
+    if (guia === 'passos' && !(edge.metros > 0)) throw new Error(`${name} precisa de metros maiores que zero`);
+    if (edge.metros !== undefined && !(edge.metros > 0)) throw new Error(`${name} precisa de metros maiores que zero`);
+    if (edge.passos !== undefined && !(edge.passos > 0)) throw new Error(`${name} precisa de passos maiores que zero`);
+    if (edge.peso !== undefined && !(edge.peso > 0)) throw new Error(`${name} precisa de peso maior que zero`);
+    if (typeof edge.rumo !== 'number') throw new Error(`${name} precisa de rumo`);
+    if (edge.escada !== undefined && !['sobe', 'desce'].includes(edge.escada)) {
+      throw new Error(`${name}: escada deve ser "sobe" ou "desce" (no sentido de "de" para "para")`);
     }
     const references = edge.referencias ?? [];
-    const common = { metros: edge.metros, passos: edge.passos, referencias: references };
-    adjacency.get(edge.de).push({ to: edge.para, rumo: mod360(edge.rumo), ...common });
-    adjacency.get(edge.para).push({ to: edge.de, rumo: mod360(edge.rumo + 180), ...common });
+    const common = {
+      metros: edge.metros ?? null,
+      passos: edge.passos,
+      peso: edge.peso ?? (guia === 'piso' ? 1 : edge.metros),
+      referencias: references,
+    };
+    const back = { sobe: 'desce', desce: 'sobe' }[edge.escada];
+    adjacency.get(edge.de).push({ to: edge.para, rumo: mod360(edge.rumo), escada: edge.escada, ...common });
+    adjacency.get(edge.para).push({ to: edge.de, rumo: mod360(edge.rumo + 180), escada: back, ...common });
   }
   const entrances = (raw.entradas ?? []).map((entrance) => {
     if (!points.has(entrance.ponto)) throw new Error(`Entrada ${entrance.id} usa ponto inexistente: ${entrance.ponto}`);
@@ -202,6 +218,7 @@ export function loadMap(raw) {
   });
   return {
     bloco: raw.bloco,
+    guia,
     passoMetros: raw.passoMetros ?? 0.7,
     entrances,
     points,
@@ -258,7 +275,7 @@ export function findPlace(map, text) {
 // ---------------------------------------------------------------------------------------------
 // Rota
 
-/** Caminho mais curto em metros (Dijkstra). Devolve a lista de trechos, [] se origem = destino, ou null se nao ha caminho. */
+/** Caminho mais curto pelo peso dos trechos: metros, ou 1 por trecho no modo piso (Dijkstra). Devolve a lista de trechos, [] se origem = destino, ou null se nao ha caminho. */
 export function planRoute(map, fromId, toId) {
   if (!map.points.has(fromId) || !map.points.has(toId)) return null;
   const distance = new Map([[fromId, 0]]);
@@ -275,7 +292,7 @@ export function planRoute(map, fromId, toId) {
     done.add(current);
     for (const edge of map.adjacency.get(current)) {
       if (done.has(edge.to)) continue;
-      const candidate = distance.get(current) + edge.metros;
+      const candidate = distance.get(current) + edge.peso;
       if (!distance.has(edge.to) || candidate < distance.get(edge.to)) {
         distance.set(edge.to, candidate);
         previous.set(edge.to, { from: current, edge });
@@ -287,7 +304,10 @@ export function planRoute(map, fromId, toId) {
   const segments = [];
   for (let at = toId; at !== fromId; at = previous.get(at).from) {
     const { from, edge } = previous.get(at);
-    segments.unshift({ de: from, para: at, metros: edge.metros, passos: edge.passos, rumo: edge.rumo, referencias: edge.referencias });
+    segments.unshift({
+      de: from, para: at, metros: edge.metros, passos: edge.passos, rumo: edge.rumo, escada: edge.escada,
+      referencias: edge.referencias,
+    });
   }
   return segments;
 }
@@ -323,6 +343,7 @@ export function stepsPhrase(rawSteps) {
  * ficam no mapa como fonte (passos medidos no trecho, quando existirem, valem mais que metros / passoMetros).
  */
 export function buildInstructions(map, entrance, segments) {
+  if (map.guia === 'piso') return buildFloorInstructions(map, entrance, segments);
   const groups = [];
   let heading = entrance.rumo;
   for (const segment of segments) {
@@ -359,6 +380,57 @@ export function buildInstructions(map, entrance, segments) {
       parts.push('Quando terminar, diga pronto.');
     }
     return { texto: parts.join(' '), metros, passos, bruto: group.passos };
+  });
+}
+
+const ORDINAIS = ['primeiro', 'segundo', 'terceiro', 'quarto', 'quinto', 'sexto', 'sétimo', 'oitavo', 'nono', 'décimo'];
+const ordinal = (n) => ORDINAIS[n - 1] ?? `${n}º`;
+
+/**
+ * Guia pelo piso tatil, sem medidas: cada etapa vai ate uma curva, uma escada ou o destino, e diz em qual
+ * cruzamento do piso parar. Todo ponto no meio de uma reta conta como cruzamento, porque no mapa de piso os
+ * pontos sao as interseccoes que a pessoa sente com a bengala. Cada item: { texto, cruzamentos, bruto: null }.
+ */
+function buildFloorInstructions(map, entrance, segments) {
+  const groups = [];
+  let heading = entrance.rumo;
+  for (const segment of segments) {
+    const angle = turnAngle(heading, segment.rumo);
+    const last = groups[groups.length - 1];
+    if (last && !last.escada && !segment.escada && Math.abs(angle) < 30) {
+      last.pontos.push(segment.para);
+      last.referencias.push(...segment.referencias);
+    } else {
+      groups.push({
+        virar: turnPhrase(angle),
+        escada: segment.escada,
+        pontos: [segment.para],
+        referencias: [...segment.referencias],
+      });
+    }
+    heading = segment.rumo;
+  }
+  return groups.map((group, index) => {
+    const isLast = index === groups.length - 1;
+    const next = groups[index + 1];
+    const passed = group.pontos.length - 1;
+    const end = map.points.get(group.pontos[group.pontos.length - 1]);
+    const parts = [];
+    if (group.escada) {
+      const action = group.escada === 'sobe' ? 'Suba a escada' : 'Desça a escada';
+      parts.push(group.virar === 'Siga em frente' ? `${action}.` : `${group.virar} e ${action.toLowerCase()}.`);
+    } else {
+      const go = group.virar === 'Siga em frente' ? 'Siga em frente pelo piso tátil' : `${group.virar} e siga o piso tátil`;
+      const passing = passed > 0 ? `, passando por ${plural(passed, 'cruzamento', 'cruzamentos')},` : '';
+      if (isLast) parts.push(`${go}${passing} até o fim.`);
+      else if (next.escada) parts.push(`${go}${passing} até a escada.`);
+      else parts.push(`${go} até o ${ordinal(passed + 1)} cruzamento.`);
+    }
+    const referencias = [...new Set(group.referencias)];
+    if (referencias.length > 0) parts.push(`Referência: ${referencias.join(', ')}.`);
+    if (isLast) parts.push(`Você chegará ${emLugar(end)}. Quando chegar, diga pronto.`);
+    else parts.push('Quando terminar, diga pronto.');
+    return { texto: parts.join(' '), cruzamentos: passed, bruto: null };
   });
 }
 

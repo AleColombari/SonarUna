@@ -27,7 +27,7 @@ Se o microfone não funcionar, aparece um campo de texto que passa pela mesma co
 ## Testes automáticos
 
 ```bash
-node --test web/test/engine.test.mjs web/test/conversation.test.mjs web/test/contacts.test.mjs
+node --test web/test/engine.test.mjs web/test/conversation.test.mjs web/test/contacts.test.mjs web/test/piso.test.mjs
 ```
 
 ## Arquivos

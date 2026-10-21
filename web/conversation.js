@@ -200,11 +200,12 @@ export function createSession(map, getContacts = () => []) {
     steps = buildInstructions(map, entrance, segments);
     index = 0;
     phase = 'navigating';
-    const total = stepsPhrase(steps.reduce((sum, step) => sum + step.bruto, 0));
-    return reply([
-      `Rota ${ateLugar(destination)}: ${total}, em ${steps.length} ${steps.length === 1 ? 'etapa' : 'etapas'}.`,
-      stepLine(0),
-    ]);
+    const etapas = `${steps.length} ${steps.length === 1 ? 'etapa' : 'etapas'}`;
+    // No modo piso nao ha medida: a rota so diz quantas etapas tem.
+    const summary = map.guia === 'piso'
+      ? `Rota ${ateLugar(destination)}, em ${etapas}, seguindo o piso tátil.`
+      : `Rota ${ateLugar(destination)}: ${stepsPhrase(steps.reduce((sum, step) => sum + step.bruto, 0))}, em ${etapas}.`;
+    return reply([summary, stepLine(0)]);
   }
 
   function hearNavigation(alternatives) {

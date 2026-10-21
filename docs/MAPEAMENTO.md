@@ -82,6 +82,20 @@ O app lê [data/bloco-a.json](../data/bloco-a.json). Hoje esse arquivo tem **dad
 
 Só `de`, `para`, `metros` e `rumo` são obrigatórios; `passos` e `referencias` são opcionais. Se o arquivo tiver erro, o app diz qual (ponto que não existe, trecho com 0 metros).
 
+### Guia pelo piso tátil, sem medidas
+
+Com `"guia": "piso"` no topo do arquivo, os trechos **não precisam de metros**. O app não fala distâncias: conta os cruzamentos do piso tátil que a pessoa sente com a bengala ("Siga em frente pelo piso tátil até o segundo cruzamento", "Vire à direita e siga o piso tátil até o fim"). Para isso, **todo cruzamento do piso entra como ponto**, inclusive os que levam a salas que ninguém vai pedir; senão a contagem fica errada.
+
+```json
+{ "de": "corredor-1", "para": "corredor-2", "rumo": 0 }
+{ "de": "corredor-2", "para": "sala-A1", "rumo": 90 }
+{ "de": "corredor-3", "para": "topo-escada", "rumo": 0, "escada": "sobe" }
+```
+
+- `rumo` é a direção do desenho (0 = para cima na folha, 90 = direita, 180 = baixo, 270 = esquerda). Não precisa ser o norte real: o app só compara um rumo com o seguinte para saber o lado da curva.
+- `escada` (`"sobe"` ou `"desce"`, no sentido de `de` para `para`) vira uma etapa própria ("Suba a escada"); na volta o app inverte.
+- `peso` (opcional, padrão 1) faz o app evitar um trecho quando há outro caminho, por exemplo uma escada quando existe rampa.
+
 ## 6. Cuidados
 
 - Peça a alguém com deficiência visual para **testar o trajeto descrito**. A pessoa percebe o que quem enxerga não nota.
