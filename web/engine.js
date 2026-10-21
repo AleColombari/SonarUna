@@ -194,8 +194,8 @@ export function loadMap(raw) {
     if (edge.passos !== undefined && !(edge.passos > 0)) throw new Error(`${name} precisa de passos maiores que zero`);
     if (edge.peso !== undefined && !(edge.peso > 0)) throw new Error(`${name} precisa de peso maior que zero`);
     if (typeof edge.rumo !== 'number') throw new Error(`${name} precisa de rumo`);
-    if (edge.escada !== undefined && !['sobe', 'desce'].includes(edge.escada)) {
-      throw new Error(`${name}: escada deve ser "sobe" ou "desce" (no sentido de "de" para "para")`);
+    if (edge.escada !== undefined && !['sobe', 'desce', 'indefinida'].includes(edge.escada)) {
+      throw new Error(`${name}: escada deve ser "sobe", "desce" (no sentido de "de" para "para") ou "indefinida"`);
     }
     const references = edge.referencias ?? [];
     const common = {
@@ -204,7 +204,7 @@ export function loadMap(raw) {
       peso: edge.peso ?? (guia === 'piso' ? 1 : edge.metros),
       referencias: references,
     };
-    const back = { sobe: 'desce', desce: 'sobe' }[edge.escada];
+    const back = { sobe: 'desce', desce: 'sobe' }[edge.escada] ?? edge.escada;
     adjacency.get(edge.de).push({ to: edge.para, rumo: mod360(edge.rumo), escada: edge.escada, ...common });
     adjacency.get(edge.para).push({ to: edge.de, rumo: mod360(edge.rumo + 180), escada: back, ...common });
   }
@@ -216,8 +216,14 @@ export function loadMap(raw) {
       rumo: mod360(entrance.rumo),
     };
   });
+  // "origem": "lugar" pergunta onde a pessoa esta (qualquer sala ou lugar do mapa), em vez de por qual entrada entrou.
+  const origem = raw.origem === 'lugar' ? 'lugar' : 'entrada';
   return {
     bloco: raw.bloco,
+    nome: raw.nome ?? (raw.bloco ? `bloco ${raw.bloco}` : null),
+    exemplo: raw.exemplo ?? 'sala A12',
+    exemploOrigem: raw.exemploOrigem ?? null,
+    origem,
     guia,
     passoMetros: raw.passoMetros ?? 0.7,
     entrances,
@@ -243,7 +249,10 @@ export function findEntrance(map, text) {
 }
 
 /**
- * Resultado: { kind: 'found', place } | { kind: 'ambiguous', places } | { kind: 'unknown-room', code } | { kind: 'none' }.
+ * Resultado: { kind: 'found', place } | { kind: 'ambiguous', places } | { kind: 'several', places } |
+ * { kind: 'unknown-room', code } | { kind: 'none' }.
+ * 'ambiguous': um numero de sala sem bloco que existe em mais de um bloco (a pessoa precisa escolher).
+ * 'several': varios lugares atendem pelo mesmo nome ("banheiro"); quem chama pode escolher o mais perto.
  */
 export function findPlace(map, text) {
   const rooms = [...map.points.values()].filter((point) => point.codigo);
@@ -260,16 +269,39 @@ export function findPlace(map, text) {
     return { kind: 'unknown-room', code: String(code.number) };
   }
   const query = normalize(text);
-  let best = null;
+  // Vence o apelido mais longo; empate entre lugares diferentes ("banheiro feminino") devolve todos.
+  let bestLength = 0;
+  let best = [];
   for (const point of map.points.values()) {
     if (point.codigo || point.tipo === 'entrada') continue;
-    for (const alias of point.aliases) {
-      if (alias && containsPhrase(query, alias) && (!best || alias.length > best.length)) {
-        best = { point, length: alias.length };
-      }
-    }
+    const length = Math.max(0, ...point.aliases.filter((alias) => alias && containsPhrase(query, alias)).map((a) => a.length));
+    if (length === 0 || length < bestLength) continue;
+    if (length > bestLength) best = [];
+    bestLength = length;
+    best.push(point);
   }
-  return best ? { kind: 'found', place: best.point } : { kind: 'none' };
+  if (best.length === 1) return { kind: 'found', place: best[0] };
+  if (best.length > 1) return { kind: 'several', places: best };
+  return { kind: 'none' };
+}
+
+/** Peso total da rota (Infinity sem caminho): serve para escolher o lugar mais perto entre varios. */
+export function routeWeight(map, fromId, toId) {
+  const segments = planRoute(map, fromId, toId);
+  if (!segments) return Infinity;
+  let total = 0;
+  let at = fromId;
+  for (const segment of segments) {
+    total += map.adjacency.get(at).find((edge) => edge.to === segment.para).peso;
+    at = segment.para;
+  }
+  return total;
+}
+
+/** Direcao de quem sai de um lugar pelo seu unico trecho (porta de sala ou ponta do piso), ou null. */
+export function exitHeading(map, pointId) {
+  const edges = map.adjacency.get(pointId) ?? [];
+  return edges.length === 1 ? edges[0].rumo : null;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -393,7 +425,8 @@ const ordinal = (n) => ORDINAIS[n - 1] ?? `${n}º`;
  */
 function buildFloorInstructions(map, entrance, segments) {
   const groups = [];
-  let heading = entrance.rumo;
+  // Sem direcao conhecida (partida de um ponto com varios trechos), a primeira etapa nao fala em virar.
+  let heading = entrance.rumo ?? segments[0]?.rumo;
   for (const segment of segments) {
     const angle = turnAngle(heading, segment.rumo);
     const last = groups[groups.length - 1];
@@ -410,20 +443,23 @@ function buildFloorInstructions(map, entrance, segments) {
     }
     heading = segment.rumo;
   }
+  const isCrossing = (id) => !['curva', 'patamar'].includes(map.points.get(id).tipo);
   return groups.map((group, index) => {
     const isLast = index === groups.length - 1;
     const next = groups[index + 1];
-    const passed = group.pontos.length - 1;
+    const passed = group.pontos.slice(0, -1).filter(isCrossing).length;
     const end = map.points.get(group.pontos[group.pontos.length - 1]);
     const parts = [];
     if (group.escada) {
-      const action = group.escada === 'sobe' ? 'Suba a escada' : 'Desça a escada';
-      parts.push(group.virar === 'Siga em frente' ? `${action}.` : `${group.virar} e ${action.toLowerCase()}.`);
+      const action = { sobe: 'Suba a escada', desce: 'Desça a escada' }[group.escada];
+      const turn = group.virar === 'Siga em frente' ? '' : `${group.virar}. `;
+      parts.push(action ? `${turn}${action}.` : `${turn}Atenção, escada. Use o corrimão.`);
     } else {
       const go = group.virar === 'Siga em frente' ? 'Siga em frente pelo piso tátil' : `${group.virar} e siga o piso tátil`;
       const passing = passed > 0 ? `, passando por ${plural(passed, 'cruzamento', 'cruzamentos')},` : '';
       if (isLast) parts.push(`${go}${passing} até o fim.`);
       else if (next.escada) parts.push(`${go}${passing} até a escada.`);
+      else if (end.tipo === 'curva') parts.push(`${go}${passing} até a curva do piso.`);
       else parts.push(`${go} até o ${ordinal(passed + 1)} cruzamento.`);
     }
     const referencias = [...new Set(group.referencias)];

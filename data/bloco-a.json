@@ -3,6 +3,7 @@
   "bloco": "A",
   "andar": "terreo",
   "passoMetros": 0.7,
+  "exemplo": "sala A12, secretaria ou banheiro",
   "entradas": [
     {
       "id": "entrada-principal",

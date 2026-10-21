@@ -1,4 +1,4 @@
-// Interface web do SonarUna: ouve pelo microfone, fala com a voz do navegador e usa o mapa em data/bloco-a.json.
+// Interface web do SonarUna: ouve pelo microfone, fala com a voz do navegador e usa o mapa em data/unaerp.json.
 
 import { loadMap, normalize } from './engine.js';
 import { createSession } from './conversation.js';
@@ -349,14 +349,16 @@ async function init() {
     showTranscript(problems.join(' '), false);
   }
   try {
-    const response = await fetch('../data/bloco-a.json');
+    // Mapa real da UNAERP por padrao; ?mapa=bloco-a abre o mapa ficticio antigo, com metros.
+    const mapName = new URLSearchParams(window.location.search).get('mapa') === 'bloco-a' ? 'bloco-a' : 'unaerp';
+    const response = await fetch(`../data/${mapName}.json`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const map = loadMap(await response.json());
     await loadEnvPhones();
     session = createSession(map, getContacts);
     fillContactsForm();
     if (map.aviso) {
-      els.notice.textContent = 'Dados de exemplo: o bloco A usado aqui é fictício.';
+      els.notice.textContent = map.aviso;
       els.notice.hidden = false;
     }
     setState('idle');

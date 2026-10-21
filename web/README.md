@@ -14,11 +14,13 @@ Abra <http://localhost:8080/> e permita o microfone. O Chrome envia o áudio ao 
 
 ## Roteiro de teste
 
-1. Toque no botão. O app pergunta por qual entrada você entrou.
-2. Diga "entrada principal" ou "entrada lateral".
-3. Diga o destino: "sala A12", "a doze", "secretaria", "banheiro".
-4. Confirme com "sim" (ou "não" para trocar).
+1. Toque no botão. O app pergunta onde você está.
+2. Diga um lugar do mapa: "balcão de informações", "sala 5A", "financeiro".
+3. Diga o destino: "sala 15B", "quinze b", "sala dos professores", "banheiro" (vai para o mais perto).
+4. Confirme com "sim" (ou "não" para trocar; "não, feminino" troca o banheiro).
 5. A cada etapa, diga "pronto" para a próxima. Você também pode dizer "repetir", "voltar", "recomeçar", "ajuda" ou "parar".
+
+O mapa usado é o da UNAERP ([docs/MAPA-UNAERP.md](../docs/MAPA-UNAERP.md)), que guia pelo piso tátil sem medidas. O mapa fictício antigo, com entradas e passos, abre em <http://localhost:8080/web/?mapa=bloco-a>.
 
 A tela é igual à do app Android: fundo branco e só o botão. Abaixo dele aparece, enquanto você fala, o que o microfone está ouvindo. Você pode **falar por cima do app**: assim que ele ouve a sua voz, para de falar e processa a sua resposta. Com alto-falante, o microfone também ouve o próprio app; por isso, enquanto ele fala, palavras que ele já disse são tratadas como eco. Com fone de ouvido a interrupção funciona com qualquer resposta.
 
@@ -27,23 +29,24 @@ Se o microfone não funcionar, aparece um campo de texto que passa pela mesma co
 ## Testes automáticos
 
 ```bash
-node --test web/test/engine.test.mjs web/test/conversation.test.mjs web/test/contacts.test.mjs web/test/piso.test.mjs
+node --test web/test/engine.test.mjs web/test/conversation.test.mjs web/test/contacts.test.mjs web/test/piso.test.mjs web/test/unaerp.test.mjs
 ```
 
 ## Arquivos
 
 | Arquivo | O que faz |
 | --- | --- |
-| `../data/bloco-a.json` | Mapa do bloco A: entradas, pontos e trechos. **Hoje são dados fictícios.** |
+| `../data/unaerp.json` | Mapa da UNAERP feito do esboço, guiado pelo piso tátil. Dúvidas em [docs/MAPA-UNAERP.md](../docs/MAPA-UNAERP.md). |
+| `../data/bloco-a.json` | Mapa fictício do bloco A, com metros e entradas. Usado nos testes e em `?mapa=bloco-a`. |
 | `engine.js` | Reconhece sala e entrada ("a quinze" → A15, "trinta a" → A30), calcula a rota e escreve as instruções. |
-| `conversation.js` | A conversa: entrada → destino → confirmação → passos. Não depende do navegador. |
+| `conversation.js` | A conversa: onde você está (ou entrada) → destino → confirmação → etapas. Não depende do navegador. |
 | `app.js`, `index.html`, `style.css` | Interface, microfone e voz. |
 | `contacts.js` | Telefones de ajuda: validação, armazenamento local e modo de ligação (real ou simulada). |
 | `serve.mjs` | Servidor local sem dependências. Também lê o `.env` e entrega os telefones em `/config.json`. |
 
-## Trocar os dados fictícios pelos reais
+## Editar o mapa
 
-Edite `data/bloco-a.json` seguindo o roteiro em [docs/MAPEAMENTO.md](../docs/MAPEAMENTO.md). Cada trecho tem `metros`, `rumo` (a direção da caminhada em graus pela bússola: 0 = norte, 90 = leste, 180 = sul, 270 = oeste) e, opcionalmente, `passos` contados caminhando. O app **fala em passos**: usa os `passos` do trecho quando existem e, senão, converte os metros com `passoMetros` (0,7 m por passo, a média de um adulto; veja a tabela em [docs/MAPEAMENTO.md](../docs/MAPEAMENTO.md)). O app calcula sozinho o lado da curva ("vire à direita") comparando um rumo com o seguinte, e inverte quando o caminho é feito na volta.
+O mapa da UNAERP usa `"guia": "piso"`: trechos sem metros, rota contada em cruzamentos (veja a seção "Guia pelo piso tátil" em [docs/MAPEAMENTO.md](../docs/MAPEAMENTO.md)). Para um mapa com medidas, edite `data/bloco-a.json` seguindo o roteiro em [docs/MAPEAMENTO.md](../docs/MAPEAMENTO.md). Cada trecho tem `metros`, `rumo` (a direção da caminhada em graus pela bússola: 0 = norte, 90 = leste, 180 = sul, 270 = oeste) e, opcionalmente, `passos` contados caminhando. O app **fala em passos**: usa os `passos` do trecho quando existem e, senão, converte os metros com `passoMetros` (0,7 m por passo, a média de um adulto; veja a tabela em [docs/MAPEAMENTO.md](../docs/MAPEAMENTO.md)). O app calcula sozinho o lado da curva ("vire à direita") comparando um rumo com o seguinte, e inverte quando o caminho é feito na volta.
 
 Se o arquivo tiver erro (ponto que não existe, trecho com 0 metros), o carregamento falha com uma mensagem clara.
 
@@ -70,7 +73,7 @@ O microfone e o reconhecimento de voz só funcionam em páginas **HTTPS** (ou `l
 
 ## Limites desta versão
 
-- O mapa é fictício e cobre só o térreo.
+- O mapa da UNAERP foi feito de um esboço e ainda tem pontos a confirmar no campus ([docs/MAPA-UNAERP.md](../docs/MAPA-UNAERP.md)).
 - O app não sabe onde a pessoa está: ela confirma cada etapa com "pronto".
-- Passos variam de pessoa para pessoa. O app diz "cerca de" quando a conta quebra e arredonda de 5 em 5 acima de 10 passos.
+- No mapa fictício, com passos, eles variam de pessoa para pessoa: o app diz "cerca de" quando a conta quebra e arredonda de 5 em 5 acima de 10 passos.
 - Não substitui bengala, cão-guia nem ajuda humana.
