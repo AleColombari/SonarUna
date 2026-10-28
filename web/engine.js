@@ -458,6 +458,7 @@ function buildFloorInstructions(map, entrance, segments) {
       const passing = chunk.passados > 0 ? `, passando por ${plural(chunk.passados, 'cruzamento', 'cruzamentos')},` : '';
       let text;
       if (chunk.pausa) text = `${go} até o ${ordinal(chunk.passados + 1)} cruzamento${landmark(map, end.id)}.`;
+      else if (isLast && end.tipo === 'porta') text = `${go}${passing} até a porta.`;
       else if (isLast) text = `${go}${passing} até o fim.`;
       else if (next.escada) text = `${go}${passing} até a escada.`;
       else if (end.tipo === 'curva') text = `${go}${passing} até a curva do piso.`;
@@ -468,7 +469,8 @@ function buildFloorInstructions(map, entrance, segments) {
   return steps;
 }
 
-const isCrossing = (map, id) => !['curva', 'patamar'].includes(map.points.get(id).tipo);
+// Portas e marcos (corrimao) ficam no caminho, mas nao sao cruzamentos que a bengala sente no piso.
+const isCrossing = (map, id) => !['curva', 'patamar', 'porta', 'marco'].includes(map.points.get(id).tipo);
 
 /**
  * Corta uma reta em pedacos de ate `cruzamentosPorEtapa` cruzamentos a contar. Os pedacos do meio terminam num

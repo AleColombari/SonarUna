@@ -41,7 +41,7 @@ const SIGLAS = {
   'banheiro-f-b': 'BF', 'banheiro-m-b': 'BM', 'banheiro-f-a': 'BF', 'banheiro-m-a': 'BM', audiovisual: 'AV',
   direito: 'Direito', multiatendimento: 'MA', financeiro: 'Financeiro', cobranca: 'Cobrança', professores: 'Prof',
   informacoes: 'Info', protocolo: 'Protocolo', 'sala-estudos': 'Sala de estudos', 'sem-numero': 'sem nº',
-  liape: 'LIAPE', 'entrada-b': 'Entrada B',
+  liape: 'LIAPE', 'entrada-b': 'porta do bloco B', 'entrada-principal': 'ENTRADA PRINCIPAL', corrimao: 'corrimão',
 };
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 

@@ -5,7 +5,8 @@ import { buildInstructions, exitHeading, findPlace, loadMap, planRoute } from '.
 import { createSession } from '../conversation.js';
 
 const map = loadMap(JSON.parse(readFileSync(new URL('../../data/unaerp.json', import.meta.url), 'utf8')));
-const places = [...map.points.values()].filter((point) => !['cruzamento', 'curva', 'patamar'].includes(point.tipo));
+// Lugares com saida unica; portas ficam no meio do piso e tem duas.
+const places = [...map.points.values()].filter((point) => !['cruzamento', 'curva', 'patamar', 'porta'].includes(point.tipo));
 
 const route = (fromId, toId) => {
   const origin = { ponto: fromId, rumo: exitHeading(map, fromId) };
@@ -40,7 +41,8 @@ test('salas e servicos sao achados pelo que a pessoa fala', () => {
   assert.equal(id('sala de audiovisual'), 'audiovisual');
   assert.equal(id('direito'), 'direito');
   assert.equal(id('banheiro feminino do bloco a'), 'banheiro-f-a');
-  assert.equal(id('estou na entrada'), 'entrada-b');
+  assert.equal(id('estou na entrada'), 'entrada-principal');
+  assert.equal(id('entrada do bloco b'), 'entrada-b');
   assert.equal(id('liape'), 'liape');
   assert.equal(id('sala dos computadores'), 'sala-estudos');
   assert.equal(id('departamento'), 'sala-estudos');
@@ -62,12 +64,17 @@ test('das informacoes ate a 15B: sobe a escada e divide o corredor B em etapas d
   assert.ok(route('15B', 'protocolo').includes('Desça a escada. Quando terminar, diga pronto.'));
 });
 
-test('da entrada do bloco B: porta aberta como referencia, 20B a esquerda e 17B a direita', () => {
-  assert.deepEqual(route('entrada-b', '20B'), [
-    'Siga em frente pelo piso tátil até o segundo cruzamento. Referência: porta sempre aberta. Quando terminar, diga pronto.',
+test('da entrada principal: vira no primeiro cruzamento, passa a porta do bloco B; 20B a esquerda, 17B a direita', () => {
+  assert.deepEqual(route('entrada-principal', '20B'), [
+    'Siga em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.',
+    'Vire à esquerda e siga o piso tátil até o segundo cruzamento. Referência: porta da entrada do bloco B, sempre aberta. Quando terminar, diga pronto.',
     'Vire à esquerda e siga o piso tátil até o fim. Você chegará na sala 20B. Quando chegar, diga pronto.',
   ]);
-  assert.match(route('entrada-b', '17B')[1], /^Vire à direita/);
+  assert.match(route('entrada-principal', '17B')[2], /^Vire à direita/);
+  // A porta nao conta como cruzamento: da entrada do bloco B, a 18B e o terceiro.
+  const fromDoor = buildInstructions(map, { ponto: 'entrada-b', rumo: null }, planRoute(map, 'entrada-b', '18B'));
+  assert.match(fromDoor[0].texto, /^Siga em frente pelo piso tátil até o terceiro cruzamento/);
+  assert.match(route('20B', 'entrada-b').at(-1), /até a porta\. Você chegará na entrada do bloco B/);
 });
 
 test('lado da curva depende do sentido: sair da 20B e sair do protocolo', () => {
@@ -87,7 +94,7 @@ test('lado da curva depende do sentido: sair da 20B e sair do protocolo', () => 
 
 test('conversa: onde voce esta, banheiro mais perto e troca para o feminino', () => {
   const session = createSession(map);
-  assert.match(session.start().say.join(' '), /Onde você está agora\? Diga a sala ou o lugar, por exemplo, entrada do bloco B, balcão de informações ou sala 5A\./);
+  assert.match(session.start().say.join(' '), /Onde você está agora\? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A\./);
   assert.match(session.hear(['estou na sala 5A']).say[0], /^Você está na sala 5A\./);
   assert.match(session.hear(['banheiro']).say[0], /banheiro masculino do bloco A/);
   assert.match(session.hear(['não, feminino']).say[0], /banheiro feminino do bloco A/);

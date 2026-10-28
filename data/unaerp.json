@@ -4,14 +4,18 @@
   "guia": "piso",
   "origem": "lugar",
   "exemplo": "sala 15B, financeiro ou banheiro",
-  "exemploOrigem": "entrada do bloco B, balcão de informações ou sala 5A",
+  "exemploOrigem": "entrada principal, balcão de informações ou sala 5A",
   "duvidas": [
     "A escada entre os blocos foi considerada descendo no sentido do bloco B para o bloco A.",
     "A sala de estudos tem várias portas de vidro; o mapa usa só a primeira depois das Informações."
   ],
   "pontos": [
-    { "id": "entrada-b", "nome": "entrada do bloco B", "tipo": "acesso", "artigo": "a",
-      "aliases": ["entrada", "entrada do bloco b", "entrada principal", "porta de entrada", "portaria"] },
+    { "id": "entrada-principal", "nome": "entrada principal", "tipo": "acesso", "artigo": "a",
+      "aliases": ["entrada", "entrada principal", "porta de entrada", "portaria", "porta principal"] },
+    { "id": "q-entrada", "nome": "cruzamento da entrada principal", "tipo": "cruzamento" },
+    { "id": "corrimao", "nome": "corrimão", "tipo": "marco", "artigo": "o" },
+    { "id": "entrada-b", "nome": "entrada do bloco B", "tipo": "porta", "artigo": "a",
+      "aliases": ["entrada do bloco b", "porta do bloco b", "entrada b"] },
     { "id": "b02", "nome": "cruzamento do bloco B", "tipo": "cruzamento" },
     { "id": "b03", "nome": "cruzamento da sala 20B", "tipo": "cruzamento" },
     { "id": "b04", "nome": "cruzamento da sala 17B", "tipo": "cruzamento" },
@@ -113,8 +117,11 @@
         "banheiro de homem", "banheiro masculino do bloco a", "banheiro masculino a"] }
   ],
   "trechos": [
-    { "de": "entrada-b", "para": "b02", "rumo": 90 },
-    { "de": "b02", "para": "b03", "rumo": 90, "referencias": ["porta sempre aberta"] },
+    { "de": "entrada-principal", "para": "q-entrada", "rumo": 180 },
+    { "de": "q-entrada", "para": "corrimao", "rumo": 180, "referencias": ["em frente, o piso termina num corrimão"] },
+    { "de": "q-entrada", "para": "b02", "rumo": 90 },
+    { "de": "b02", "para": "entrada-b", "rumo": 90, "referencias": ["porta da entrada do bloco B, sempre aberta"] },
+    { "de": "entrada-b", "para": "b03", "rumo": 90 },
     { "de": "b03", "para": "b04", "rumo": 90 },
     { "de": "b04", "para": "b05", "rumo": 90 },
     { "de": "b05", "para": "b06", "rumo": 90 },

@@ -29,7 +29,7 @@ Os `rumo` seguem o desenho (0 = para cima na folha, 90 = direita, 180 = baixo, 2
 
 ## O que o mapa tem
 
-- **Entrada do bloco B** (`entrada-b`), no começo do corredor, seguida de uma porta que fica sempre aberta. O app cita a porta como referência.
+- **Entrada principal** (`entrada-principal`, o traço grande no começo do esboço). Dela a pessoa chega a um cruzamento (`q-entrada`): em frente o piso termina num corrimão; virando segue para o cruzamento dos "…" (`b02`, mais caminhos no futuro) e depois para a **entrada do bloco B** (`entrada-b`), uma porta sempre aberta que o app cita como referência e que não conta como cruzamento.
 - **Corredor do bloco B** (`b02` a `b21`): 20B e 18B à esquerda e 17B à direita de quem vem da entrada; banheiro feminino e audiovisual; banheiro masculino; 16B a 8B; 5B; Direito; multiatendimento.
 - **Escada entre os blocos**: começa no cruzamento do financeiro e da cobrança e **desce** do bloco B para o bloco A. Na volta, o app diz "Suba a escada".
 - **Chegada ao bloco A**: sala dos professores, balcão de informações e protocolo.
