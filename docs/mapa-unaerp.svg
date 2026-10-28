@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-140 -174.00000000000006 2354 650" width="100%" preserveAspectRatio="xMidYMin meet">
+<style>text{font-family:Segoe UI,Arial,sans-serif}.place{font-size:13px;font-weight:600;fill:#111}.id{font-size:9px;fill:#888}
+.esc{font-size:11px;fill:#c0392b}.ref{font-size:11px;fill:#1f5fbf;font-style:italic}.t{font-size:15px;font-weight:700}</style>
+<rect x="-140" y="-174.00000000000006" width="2354" height="650" fill="#fff"/>
+<text x="-120" y="-144.00000000000006" class="t">campus da UNAERP: piso tátil (azul), escadas (vermelho), cruzamentos (pretos), lugares (laranja). Sem escala.</text>
+<line x1="0" y1="0" x2="34" y2="-2.0818995585505003e-15" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="34" y1="-2.0818995585505003e-15" x2="94" y2="-5.75583995599256e-15" stroke="#1f5fbf" stroke-width="5"/><text x="64" y="-10.000000000000004" class="ref" text-anchor="middle">porta sempre aberta</text>
+<line x1="94" y1="-5.75583995599256e-15" x2="154" y2="-9.429780353434619e-15" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="154" y1="-9.429780353434619e-15" x2="214" y2="-1.310372075087668e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="214" y1="-1.310372075087668e-14" x2="274" y2="-1.677766114831874e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="274" y1="-1.677766114831874e-14" x2="334" y2="-2.04516015457608e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="334" y1="-2.04516015457608e-14" x2="394" y2="-2.4125541943202862e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="394" y1="-2.4125541943202862e-14" x2="454" y2="-2.7799482340644923e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="454" y1="-2.7799482340644923e-14" x2="514" y2="-3.1473422738086984e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="514" y1="-3.1473422738086984e-14" x2="574" y2="-3.5147363135529044e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="574" y1="-3.5147363135529044e-14" x2="634" y2="-3.8821303532971105e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="634" y1="-3.8821303532971105e-14" x2="694" y2="-4.2495243930413166e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="694" y1="-4.2495243930413166e-14" x2="754" y2="-4.6169184327855227e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="754" y1="-4.6169184327855227e-14" x2="814" y2="-4.984312472529729e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="814" y1="-4.984312472529729e-14" x2="874" y2="-5.351706512273935e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="874" y1="-5.351706512273935e-14" x2="934" y2="-5.71910055201814e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="934" y1="-5.71910055201814e-14" x2="994" y2="-6.086494591762346e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="994" y1="-6.086494591762346e-14" x2="1054" y2="-6.453888631506551e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1054" y1="-6.453888631506551e-14" x2="1114" y2="-6.821282671250757e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1114" y1="-6.821282671250757e-14" x2="1174" y2="-7.188676710994962e-14" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="94" y1="-5.75583995599256e-15" x2="94" y2="-34.00000000000001" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="154" y1="-9.429780353434619e-15" x2="154" y2="33.99999999999999" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="214" y1="-1.310372075087668e-14" x2="214" y2="-34.000000000000014" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="274" y1="-1.677766114831874e-14" x2="274" y2="-34.000000000000014" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="274" y1="-1.677766114831874e-14" x2="274" y2="33.999999999999986" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="394" y1="-2.4125541943202862e-14" x2="394" y2="-34.00000000000002" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="454" y1="-2.7799482340644923e-14" x2="454" y2="33.99999999999997" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="514" y1="-3.1473422738086984e-14" x2="514" y2="-34.00000000000003" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="574" y1="-3.5147363135529044e-14" x2="574" y2="33.999999999999964" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="634" y1="-3.8821303532971105e-14" x2="634" y2="-34.000000000000036" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="694" y1="-4.2495243930413166e-14" x2="694" y2="33.99999999999996" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="754" y1="-4.6169184327855227e-14" x2="754" y2="-34.00000000000004" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="814" y1="-4.984312472529729e-14" x2="814" y2="33.99999999999995" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="874" y1="-5.351706512273935e-14" x2="874" y2="-34.00000000000006" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="934" y1="-5.71910055201814e-14" x2="934" y2="33.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="994" y1="-6.086494591762346e-14" x2="994" y2="-34.000000000000064" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1054" y1="-6.453888631506551e-14" x2="1054" y2="33.999999999999936" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1114" y1="-6.821282671250757e-14" x2="1114" y2="-34.00000000000007" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1174" y1="-7.188676710994962e-14" x2="1174" y2="59.99999999999993" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1174" y1="59.99999999999993" x2="1140" y2="59.999999999999936" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1174" y1="59.99999999999993" x2="1208" y2="59.99999999999993" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1174" y1="59.99999999999993" x2="1174" y2="155.99999999999994" stroke="#c0392b" stroke-width="5" stroke-dasharray="6 4"/><text x="1184" y="107.99999999999994" class="esc">escada (desce de fin para pe-escada)</text>
+<line x1="1174" y1="155.99999999999994" x2="1174" y2="215.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1174" y1="215.99999999999994" x2="1140" y2="215.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1174" y1="215.99999999999994" x2="1174" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1174" y1="275.99999999999994" x2="1140" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1174" y1="275.99999999999994" x2="1174" y2="335.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1174" y1="335.99999999999994" x2="1208" y2="335.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1174" y1="275.99999999999994" x2="1234" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1234" y1="275.99999999999994" x2="1294" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1294" y1="275.99999999999994" x2="1354" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1354" y1="275.99999999999994" x2="1414" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1414" y1="275.99999999999994" x2="1474" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1474" y1="275.99999999999994" x2="1534" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1534" y1="275.99999999999994" x2="1594" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1594" y1="275.99999999999994" x2="1654" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1654" y1="275.99999999999994" x2="1714" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1714" y1="275.99999999999994" x2="1774" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1774" y1="275.99999999999994" x2="1834" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1834" y1="275.99999999999994" x2="1894" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1894" y1="275.99999999999994" x2="1954" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1954" y1="275.99999999999994" x2="2014" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="2014" y1="275.99999999999994" x2="2074" y2="275.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1234" y1="275.99999999999994" x2="1234" y2="309.99999999999994" stroke="#1f5fbf" stroke-width="5"/><text x="1234" y="282.99999999999994" class="ref" text-anchor="middle">portas de vidro</text>
+<line x1="1414" y1="275.99999999999994" x2="1414" y2="309.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1474" y1="275.99999999999994" x2="1474" y2="241.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1534" y1="275.99999999999994" x2="1534" y2="241.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1534" y1="275.99999999999994" x2="1534" y2="309.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1654" y1="275.99999999999994" x2="1654" y2="309.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1714" y1="275.99999999999994" x2="1714" y2="241.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1774" y1="275.99999999999994" x2="1774" y2="309.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1834" y1="275.99999999999994" x2="1834" y2="241.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1894" y1="275.99999999999994" x2="1894" y2="309.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="1954" y1="275.99999999999994" x2="1954" y2="241.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="2014" y1="275.99999999999994" x2="2014" y2="241.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<line x1="2074" y1="275.99999999999994" x2="2074" y2="241.99999999999994" stroke="#1f5fbf" stroke-width="5"/>
+<g><rect x="-4" y="-4" width="8" height="8" fill="#e67e22"/><text x="0" y="-10" class="place" text-anchor="middle">Entrada B</text></g>
+<circle cx="34" cy="-2.0818995585505003e-15" r="6" fill="#111"/><text x="42" y="15.999999999999998" class="id">b02</text>
+<circle cx="94" cy="-5.75583995599256e-15" r="6" fill="#111"/><text x="102" y="15.999999999999995" class="id">b03</text>
+<circle cx="154" cy="-9.429780353434619e-15" r="6" fill="#111"/><text x="162" y="15.999999999999991" class="id">b04</text>
+<g><rect x="90" y="-38.00000000000001" width="8" height="8" fill="#e67e22"/><text x="94" y="-44.00000000000001" class="place" text-anchor="middle">20B</text></g>
+<circle cx="214" cy="-1.310372075087668e-14" r="6" fill="#111"/><text x="222" y="15.999999999999988" class="id">b05</text>
+<g><rect x="150" y="29.999999999999993" width="8" height="8" fill="#e67e22"/><text x="154" y="53.99999999999999" class="place" text-anchor="middle">17B</text></g>
+<circle cx="274" cy="-1.677766114831874e-14" r="6" fill="#111"/><text x="282" y="15.999999999999984" class="id">b06</text>
+<g><rect x="210" y="-38.000000000000014" width="8" height="8" fill="#e67e22"/><text x="214" y="-44.000000000000014" class="place" text-anchor="middle">18B</text></g>
+<circle cx="334" cy="-2.04516015457608e-14" r="6" fill="#111"/><text x="342" y="15.999999999999979" class="id">b07</text>
+<g><rect x="270" y="-38.000000000000014" width="8" height="8" fill="#e67e22"/><text x="274" y="-44.000000000000014" class="place" text-anchor="middle">BF</text></g>
+<g><rect x="270" y="29.999999999999986" width="8" height="8" fill="#e67e22"/><text x="274" y="53.999999999999986" class="place" text-anchor="middle">AV</text></g>
+<circle cx="394" cy="-2.4125541943202862e-14" r="6" fill="#111"/><text x="402" y="15.999999999999975" class="id">b08</text>
+<circle cx="454" cy="-2.7799482340644923e-14" r="6" fill="#111"/><text x="462" y="15.999999999999972" class="id">b09</text>
+<g><rect x="390" y="-38.00000000000002" width="8" height="8" fill="#e67e22"/><text x="394" y="-44.00000000000002" class="place" text-anchor="middle">BM</text></g>
+<circle cx="514" cy="-3.1473422738086984e-14" r="6" fill="#111"/><text x="522" y="15.999999999999968" class="id">b10</text>
+<g><rect x="450" y="29.99999999999997" width="8" height="8" fill="#e67e22"/><text x="454" y="53.99999999999997" class="place" text-anchor="middle">15B</text></g>
+<circle cx="574" cy="-3.5147363135529044e-14" r="6" fill="#111"/><text x="582" y="15.999999999999964" class="id">b11</text>
+<g><rect x="510" y="-38.00000000000003" width="8" height="8" fill="#e67e22"/><text x="514" y="-44.00000000000003" class="place" text-anchor="middle">16B</text></g>
+<circle cx="634" cy="-3.8821303532971105e-14" r="6" fill="#111"/><text x="642" y="15.999999999999961" class="id">b12</text>
+<g><rect x="570" y="29.999999999999964" width="8" height="8" fill="#e67e22"/><text x="574" y="53.999999999999964" class="place" text-anchor="middle">13B</text></g>
+<circle cx="694" cy="-4.2495243930413166e-14" r="6" fill="#111"/><text x="702" y="15.999999999999957" class="id">b13</text>
+<g><rect x="630" y="-38.000000000000036" width="8" height="8" fill="#e67e22"/><text x="634" y="-44.000000000000036" class="place" text-anchor="middle">14B</text></g>
+<circle cx="754" cy="-4.6169184327855227e-14" r="6" fill="#111"/><text x="762" y="15.999999999999954" class="id">b14</text>
+<g><rect x="690" y="29.999999999999957" width="8" height="8" fill="#e67e22"/><text x="694" y="53.99999999999996" class="place" text-anchor="middle">11B</text></g>
+<circle cx="814" cy="-4.984312472529729e-14" r="6" fill="#111"/><text x="822" y="15.99999999999995" class="id">b15</text>
+<g><rect x="750" y="-38.00000000000004" width="8" height="8" fill="#e67e22"/><text x="754" y="-44.00000000000004" class="place" text-anchor="middle">12B</text></g>
+<circle cx="874" cy="-5.351706512273935e-14" r="6" fill="#111"/><text x="882" y="15.999999999999947" class="id">b16</text>
+<g><rect x="810" y="29.99999999999995" width="8" height="8" fill="#e67e22"/><text x="814" y="53.99999999999995" class="place" text-anchor="middle">9B</text></g>
+<circle cx="934" cy="-5.71910055201814e-14" r="6" fill="#111"/><text x="942" y="15.999999999999943" class="id">b17</text>
+<g><rect x="870" y="-38.00000000000006" width="8" height="8" fill="#e67e22"/><text x="874" y="-44.00000000000006" class="place" text-anchor="middle">10B</text></g>
+<circle cx="994" cy="-6.086494591762346e-14" r="6" fill="#111"/><text x="1002" y="15.99999999999994" class="id">b18</text>
+<g><rect x="930" y="29.999999999999943" width="8" height="8" fill="#e67e22"/><text x="934" y="53.99999999999994" class="place" text-anchor="middle">Direito</text></g>
+<circle cx="1054" cy="-6.453888631506551e-14" r="6" fill="#111"/><text x="1062" y="15.999999999999936" class="id">b19</text>
+<g><rect x="990" y="-38.000000000000064" width="8" height="8" fill="#e67e22"/><text x="994" y="-44.000000000000064" class="place" text-anchor="middle">8B</text></g>
+<circle cx="1114" cy="-6.821282671250757e-14" r="6" fill="#111"/><text x="1122" y="15.999999999999932" class="id">b20</text>
+<g><rect x="1050" y="29.999999999999936" width="8" height="8" fill="#e67e22"/><text x="1054" y="53.999999999999936" class="place" text-anchor="middle">5B</text></g>
+<circle cx="1174" cy="-7.188676710994962e-14" r="6" fill="#111"/><text x="1182" y="15.999999999999929" class="id">b21</text>
+<g><rect x="1110" y="-38.00000000000007" width="8" height="8" fill="#e67e22"/><text x="1114" y="-44.00000000000007" class="place" text-anchor="middle">MA</text></g>
+<circle cx="1174" cy="59.99999999999993" r="6" fill="#111"/><text x="1182" y="75.99999999999993" class="id">fin</text>
+<g><rect x="1136" y="55.999999999999936" width="8" height="8" fill="#e67e22"/><text x="1130" y="64.99999999999994" class="place" text-anchor="end">Financeiro</text></g>
+<g><rect x="1204" y="55.99999999999993" width="8" height="8" fill="#e67e22"/><text x="1218" y="64.99999999999993" class="place" text-anchor="start">Cobrança</text></g>
+<circle cx="1174" cy="155.99999999999994" r="6" fill="#111"/><text x="1182" y="171.99999999999994" class="id">pe-escada</text>
+<circle cx="1174" cy="215.99999999999994" r="6" fill="#111"/><text x="1182" y="231.99999999999994" class="id">prof-x</text>
+<g><rect x="1136" y="211.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1130" y="220.99999999999994" class="place" text-anchor="end">Prof</text></g>
+<circle cx="1174" cy="275.99999999999994" r="6" fill="#111"/><text x="1182" y="291.99999999999994" class="id">info-x</text>
+<g><rect x="1136" y="271.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1130" y="280.99999999999994" class="place" text-anchor="end">Info</text></g>
+<circle cx="1174" cy="335.99999999999994" r="6" fill="#111"/><text x="1182" y="351.99999999999994" class="id">proto-x</text>
+<circle cx="1234" cy="275.99999999999994" r="6" fill="#111"/><text x="1242" y="291.99999999999994" class="id">a01</text>
+<g><rect x="1204" y="331.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1218" y="340.99999999999994" class="place" text-anchor="start">Protocolo</text></g>
+<circle cx="1294" cy="275.99999999999994" r="6" fill="#111"/><text x="1302" y="291.99999999999994" class="id">a02</text>
+<g><rect x="1230" y="305.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1234" y="329.99999999999994" class="place" text-anchor="middle">Sala de estudos</text></g>
+<circle cx="1354" cy="275.99999999999994" r="6" fill="#111"/><text x="1362" y="291.99999999999994" class="id">a03</text>
+<circle cx="1414" cy="275.99999999999994" r="6" fill="#111"/><text x="1422" y="291.99999999999994" class="id">a04</text>
+<circle cx="1474" cy="275.99999999999994" r="6" fill="#111"/><text x="1482" y="291.99999999999994" class="id">a05</text>
+<g><rect x="1410" y="305.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1414" y="329.99999999999994" class="place" text-anchor="middle">9A</text></g>
+<circle cx="1534" cy="275.99999999999994" r="6" fill="#111"/><text x="1542" y="291.99999999999994" class="id">a06</text>
+<g><rect x="1470" y="237.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1474" y="231.99999999999994" class="place" text-anchor="middle">6A</text></g>
+<circle cx="1594" cy="275.99999999999994" r="6" fill="#111"/><text x="1602" y="291.99999999999994" class="id">a07</text>
+<g><rect x="1530" y="237.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1534" y="231.99999999999994" class="place" text-anchor="middle">sem nº</text></g>
+<g><rect x="1530" y="305.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1534" y="329.99999999999994" class="place" text-anchor="middle">7A</text></g>
+<circle cx="1654" cy="275.99999999999994" r="6" fill="#111"/><text x="1662" y="291.99999999999994" class="id">a08</text>
+<circle cx="1714" cy="275.99999999999994" r="6" fill="#111"/><text x="1722" y="291.99999999999994" class="id">a09</text>
+<g><rect x="1650" y="305.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1654" y="329.99999999999994" class="place" text-anchor="middle">5A</text></g>
+<circle cx="1774" cy="275.99999999999994" r="6" fill="#111"/><text x="1782" y="291.99999999999994" class="id">a10</text>
+<g><rect x="1710" y="237.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1714" y="231.99999999999994" class="place" text-anchor="middle">BM</text></g>
+<circle cx="1834" cy="275.99999999999994" r="6" fill="#111"/><text x="1842" y="291.99999999999994" class="id">a11</text>
+<g><rect x="1770" y="305.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1774" y="329.99999999999994" class="place" text-anchor="middle">3A</text></g>
+<circle cx="1894" cy="275.99999999999994" r="6" fill="#111"/><text x="1902" y="291.99999999999994" class="id">a12</text>
+<g><rect x="1830" y="237.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1834" y="231.99999999999994" class="place" text-anchor="middle">BF</text></g>
+<circle cx="1954" cy="275.99999999999994" r="6" fill="#111"/><text x="1962" y="291.99999999999994" class="id">a13</text>
+<g><rect x="1890" y="305.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1894" y="329.99999999999994" class="place" text-anchor="middle">1A</text></g>
+<circle cx="2014" cy="275.99999999999994" r="6" fill="#111"/><text x="2022" y="291.99999999999994" class="id">a14</text>
+<g><rect x="1950" y="237.99999999999994" width="8" height="8" fill="#e67e22"/><text x="1954" y="231.99999999999994" class="place" text-anchor="middle">4A</text></g>
+<circle cx="2074" cy="275.99999999999994" r="6" fill="#111"/><text x="2082" y="291.99999999999994" class="id">a15</text>
+<g><rect x="2010" y="237.99999999999994" width="8" height="8" fill="#e67e22"/><text x="2014" y="231.99999999999994" class="place" text-anchor="middle">2A</text></g>
+<g><rect x="2070" y="237.99999999999994" width="8" height="8" fill="#e67e22"/><text x="2074" y="231.99999999999994" class="place" text-anchor="middle">LIAPE</text></g>
+</svg>
