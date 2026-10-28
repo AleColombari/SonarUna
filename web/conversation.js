@@ -24,6 +24,7 @@ export function createSession(map, getContacts = () => []) {
   let silences = 0;
   let returnPhase = null;
   let pendingContact = null;
+  let suggested = null;
 
   const reply = (say, listen = true) => ({ say, listen, phase });
   const entranceNames = () => map.entrances.map((e) => e.nome).join(' ou ');
@@ -37,16 +38,30 @@ export function createSession(map, getContacts = () => []) {
   const contactNames = (contacts) => contacts.map((c) => c.nome).join(' ou ');
   const stepLine = (i) => `Etapa ${i + 1} de ${steps.length}. ${steps[i].texto}`;
 
-  function start() {
+  const suggestionQuestion = () => `Pela sua localização, parece que você está ${emLugar(suggested)}. Está certo? Diga sim ou não.`;
+
+  /**
+   * `gps` e o resultado de suggestOrigin (localizacao.js), quando o app tem uma leitura de GPS. Uma sugestao vira
+   * pergunta de confirmacao; o GPS nunca decide sozinho onde a pessoa esta.
+   */
+  function start(gps = null) {
     phase = 'entrance';
-    entrance = destination = candidate = null;
+    entrance = destination = candidate = suggested = null;
     steps = [];
     index = 0;
     silences = 0;
+    let question = [originQuestion()];
+    if (byPlace && gps?.kind === 'sugestao') {
+      suggested = gps.place;
+      phase = 'confirm-origin';
+      question = [suggestionQuestion()];
+    } else if (byPlace && gps?.kind === 'fora-do-campus') {
+      question = [`Pela sua localização, você não parece estar ${map.nome ? `no ${map.nome}` : 'no mapa'}.`, originQuestion()];
+    }
     return reply([
       map.nome ? `Olá. Eu sou o SonarUna, no ${map.nome}.` : 'Olá. Eu sou o SonarUna.',
       ...(getContacts().length > 0 ? ['Se precisar falar com alguém, diga preciso de ajuda a qualquer momento.'] : []),
-      originQuestion(),
+      ...question,
     ]);
   }
 
@@ -60,6 +75,7 @@ export function createSession(map, getContacts = () => []) {
       + (getContacts().length > 0 ? ' Para falar com alguém, diga preciso de ajuda.' : '');
     switch (phase) {
       case 'entrance': return reply([originQuestion(), common]);
+      case 'confirm-origin': return reply(['Diga sim se você está nesse lugar, ou diga onde você está.', common]);
       case 'destination': return reply([destinationQuestion(), common]);
       case 'confirm': return reply(['Diga sim para confirmar o destino ou não para escolher outro.', common]);
       case 'navigating': return reply(['Diga pronto quando terminar a etapa e quiser a próxima.', common]);
@@ -70,6 +86,7 @@ export function createSession(map, getContacts = () => []) {
   function announceCurrentQuestion() {
     switch (phase) {
       case 'entrance': return reply([originQuestion()]);
+      case 'confirm-origin': return reply([suggestionQuestion()]);
       case 'destination': return reply([destinationQuestion()]);
       case 'confirm': return reply([`Você quer ir ${paraLugar(candidate)}. Está certo? Diga sim ou não.`]);
       case 'navigating': return reply([stepLine(index)]);
@@ -146,12 +163,7 @@ export function createSession(map, getContacts = () => []) {
     let several = null;
     for (const text of alternatives) {
       const result = findPlace(map, text);
-      if (result.kind === 'found') {
-        const place = result.place;
-        entrance = { id: place.id, nome: place.nome, artigo: place.artigo, ponto: place.id, rumo: exitHeading(map, place.id) };
-        phase = 'destination';
-        return reply([`Você está ${emLugar(place)}. ${destinationQuestion()}`]);
-      }
+      if (result.kind === 'found') return setOrigin(result.place);
       several ??= ['several', 'ambiguous'].includes(result.kind) ? result : null;
     }
     if (several) {
@@ -159,6 +171,32 @@ export function createSession(map, getContacts = () => []) {
       return reply([`Encontrei mais de um lugar: ${names}. Diga o nome completo.`]);
     }
     return reply([`Não reconheci esse lugar. ${originQuestion()}`]);
+  }
+
+  function setOrigin(place) {
+    entrance = { id: place.id, nome: place.nome, artigo: place.artigo, ponto: place.id, rumo: exitHeading(map, place.id) };
+    suggested = null;
+    phase = 'destination';
+    return reply([`Você está ${emLugar(place)}. ${destinationQuestion()}`]);
+  }
+
+  /** Resposta a "parece que voce esta em X": sim confirma; nao pergunta; citar outro lugar ja corrige. */
+  function hearOriginConfirmation(alternatives) {
+    for (const text of alternatives) {
+      const result = findPlace(map, text);
+      const same = result.kind === 'found' && result.place.id === suggested.id;
+      if (result.kind !== 'none' && !same) return hearOrigin(alternatives);
+    }
+    for (const text of alternatives) {
+      const answer = classifyYesNo(text);
+      if (answer === 'yes') return setOrigin(suggested);
+      if (answer === 'no') {
+        suggested = null;
+        phase = 'entrance';
+        return reply([`Tudo bem. ${originQuestion()}`]);
+      }
+    }
+    return reply(['Não entendi. Diga sim ou não, ou diga onde você está.']);
   }
 
   function hearEntrance(alternatives) {
@@ -294,6 +332,7 @@ export function createSession(map, getContacts = () => []) {
 
     switch (phase) {
       case 'entrance': return hearEntrance(heard);
+      case 'confirm-origin': return hearOriginConfirmation(heard);
       case 'destination': return hearDestination(heard);
       case 'confirm': return hearConfirmation(heard);
       case 'navigating': return hearNavigation(heard);

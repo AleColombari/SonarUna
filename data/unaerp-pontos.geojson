@@ -1,0 +1,66 @@
+{
+  "type": "FeatureCollection",
+  "nome": "Pontos de GPS da UNAERP (Ribeirão Preto)",
+  "atribuicao": "Campus, blocos e portões: © colaboradores do OpenStreetMap, dados sob a licença ODbL (https://www.openstreetmap.org/copyright).",
+  "instrucoes": "Coordenadas em [longitude, latitude] (RFC 7946). 'ponto' liga a feição a um ponto de data/unaerp.json; o app só sugere feições com 'ponto' e coordenadas. 'raio' é a distância em metros dentro da qual o app pergunta se a pessoa está ali. Para medir um ponto, abra /web/?teste no celular, no lugar, e use 'Medir minha posição'. Veja docs/LOCALIZACAO.md.",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "entrada-principal",
+      "geometry": null,
+      "properties": {
+        "ponto": "entrada-principal",
+        "nome": "entrada principal",
+        "raio": 25,
+        "situacao": "medir no campus: ficar no traço grande da entrada e usar 'Medir minha posição'"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "campus",
+      "geometry": { "type": "Point", "coordinates": [-47.7789379, -21.2011222] },
+      "properties": {
+        "tipo": "campus",
+        "nome": "Universidade de Ribeirão Preto (UNAERP)",
+        "raio": 400,
+        "fonte": "OpenStreetMap, way 445326019 (centro do contorno do campus)"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-bloco-a",
+      "geometry": { "type": "Point", "coordinates": [-47.7798639, -21.2020609] },
+      "properties": { "tipo": "referencia", "nome": "Bloco A (centro do prédio)", "fonte": "OpenStreetMap, way 445326026" }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-bloco-b",
+      "geometry": { "type": "Point", "coordinates": [-47.7800283, -21.2024655] },
+      "properties": { "tipo": "referencia", "nome": "Bloco B (centro do prédio)", "fonte": "OpenStreetMap, way 445326024" }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-portao-4427751582",
+      "geometry": { "type": "Point", "coordinates": [-47.7781436, -21.2016936] },
+      "properties": { "tipo": "referencia", "nome": "portão (sem nome no OpenStreetMap)", "fonte": "OpenStreetMap, node 4427751582" }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-portao-8790894040",
+      "geometry": { "type": "Point", "coordinates": [-47.7794685, -21.2030643] },
+      "properties": { "tipo": "referencia", "nome": "portão de pedestres (acessível a cadeira de rodas)", "fonte": "OpenStreetMap, node 8790894040" }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-portao-8790894041",
+      "geometry": { "type": "Point", "coordinates": [-47.778262, -21.1988932] },
+      "properties": { "tipo": "referencia", "nome": "portão (acessível a cadeira de rodas)", "fonte": "OpenStreetMap, node 8790894041" }
+    },
+    {
+      "type": "Feature",
+      "id": "osm-portao-9010512441",
+      "geometry": { "type": "Point", "coordinates": [-47.7804155, -21.2012033] },
+      "properties": { "tipo": "referencia", "nome": "portão (sem nome no OpenStreetMap)", "fonte": "OpenStreetMap, node 9010512441" }
+    }
+  ]
+}

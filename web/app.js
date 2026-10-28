@@ -2,6 +2,7 @@
 
 import { loadMap, normalize } from './engine.js';
 import { createSession } from './conversation.js';
+import { loadGpsPoints, suggestOrigin } from './localizacao.js';
 import { ROLES, callMode, loadStoredPhones, maskPhone, readContacts, savePhones } from './contacts.js';
 
 const SPEECH_START_DELAY_MS = 150;
@@ -10,9 +11,13 @@ const SPEECH_RATE = 1.2;
 // Fracao de palavras ouvidas que, se tambem estao na fala do app, indica que o microfone pegou o alto-falante.
 const ECHO_RATIO = 0.6;
 const DEBUG = new URLSearchParams(window.location.search).has('teste');
+// Tempo maximo esperando o GPS antes de perguntar onde a pessoa esta.
+const GPS_TIMEOUT_MS = 8000;
 
 const els = {
   mic: document.getElementById('mic'),
+  measure: document.getElementById('measure'),
+  measureOut: document.getElementById('measure-out'),
   transcript: document.getElementById('transcript'),
   debug: document.getElementById('debug'),
   status: document.getElementById('status'),
@@ -38,6 +43,7 @@ let generation = 0;
 let state = 'loading';
 let micBlocked = false;
 let envPhones = {};
+let gpsPoints = null;
 // Fala atual do app: permite interromper e reconhecer o eco do alto-falante.
 let speech = { interrupted: false, words: new Set(), active: false };
 
@@ -300,14 +306,53 @@ function cancelEverything() {
   stopRecognition();
 }
 
-function begin() {
+/** Uma leitura precisa do GPS: { lat, lon, precisao } ou null (sem permissao, sem sinal ou demorou demais). */
+function readPosition(maximumAge = 10000) {
+  if (!navigator.geolocation) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude, precisao: p.coords.accuracy }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: GPS_TIMEOUT_MS, maximumAge },
+    );
+  });
+}
+
+async function begin() {
   micBlocked = false;
   cancelEverything();
   const gen = generation;
   els.call.hidden = true;
   // Depois de uma ligacao a conversa continua de onde parou; so recomeca se tinha acabado.
-  deliver(session.phase === 'idle' ? session.start() : session.resume(), gen);
+  if (session.phase !== 'idle') return void deliver(session.resume(), gen);
+  let gps = null;
+  if (gpsPoints) {
+    setState('loading', 'Buscando sua localização…');
+    const posicao = await readPosition();
+    if (gen !== generation) return;
+    gps = posicao ? suggestOrigin(gpsPoints, posicao) : null;
+    if (DEBUG) addLog('app', `GPS: ${posicao ? `${posicao.lat.toFixed(6)}, ${posicao.lon.toFixed(6)} (±${Math.round(posicao.precisao)} m)` : 'sem leitura'} → ${gps?.kind ?? 'sem sugestão'}`);
+  }
+  deliver(session.start(gps), gen);
 }
+
+// Modo de teste: mede a posicao no lugar e mostra o trecho de GeoJSON para colar em data/unaerp-pontos.geojson.
+els.measure?.addEventListener('click', async () => {
+  els.measureOut.textContent = 'Medindo… fique parado no lugar.';
+  const readings = [];
+  for (let i = 0; i < 5; i++) {
+    const posicao = await readPosition(0);
+    if (posicao) readings.push(posicao);
+  }
+  if (readings.length === 0) {
+    els.measureOut.textContent = 'Sem leitura. Libere a localização precisa para este site e tente ao ar livre.';
+    return;
+  }
+  const best = readings.reduce((a, b) => (b.precisao < a.precisao ? b : a));
+  els.measureOut.textContent = `Melhor leitura de ${readings.length}: precisão de ±${Math.round(best.precisao)} m.
+`
+    + `"geometry": { "type": "Point", "coordinates": [${best.lon.toFixed(7)}, ${best.lat.toFixed(7)}] }`;
+});
 
 function end() {
   cancelEverything();
@@ -354,6 +399,13 @@ async function init() {
     const response = await fetch(`../data/${mapName}.json`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const map = loadMap(await response.json());
+    // Pontos de GPS sao opcionais: sem o arquivo (ou com erro nele) a conversa so pergunta onde a pessoa esta.
+    try {
+      const pontos = await fetch(`../data/${mapName}-pontos.geojson`);
+      if (pontos.ok) gpsPoints = loadGpsPoints(await pontos.json(), map);
+    } catch (error) {
+      console.warn('SonarUna: pontos de GPS ignorados.', error);
+    }
     await loadEnvPhones();
     session = createSession(map, getContacts);
     fillContactsForm();

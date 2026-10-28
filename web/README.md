@@ -29,7 +29,7 @@ Se o microfone não funcionar, aparece um campo de texto que passa pela mesma co
 ## Testes automáticos
 
 ```bash
-node --test web/test/engine.test.mjs web/test/conversation.test.mjs web/test/contacts.test.mjs web/test/piso.test.mjs web/test/unaerp.test.mjs
+node --test web/test/engine.test.mjs web/test/conversation.test.mjs web/test/contacts.test.mjs web/test/piso.test.mjs web/test/unaerp.test.mjs web/test/localizacao.test.mjs
 ```
 
 ## Arquivos
@@ -38,6 +38,8 @@ node --test web/test/engine.test.mjs web/test/conversation.test.mjs web/test/con
 | --- | --- |
 | `../data/unaerp.json` | Mapa da UNAERP feito do esboço, guiado pelo piso tátil. Dúvidas em [docs/MAPA-UNAERP.md](../docs/MAPA-UNAERP.md). |
 | `../data/bloco-a.json` | Mapa fictício do bloco A, com metros e entradas. Usado nos testes e em `?mapa=bloco-a`. |
+| `../data/unaerp-pontos.geojson` | Pontos de GPS (entrada principal, campus) para sugerir onde a pessoa está. Veja [docs/LOCALIZACAO.md](../docs/LOCALIZACAO.md). |
+| `localizacao.js` | Lê o GeoJSON e escolhe o ponto mais perto da leitura do GPS. |
 | `engine.js` | Reconhece sala e entrada ("a quinze" → A15, "trinta a" → A30), calcula a rota e escreve as instruções. |
 | `conversation.js` | A conversa: onde você está (ou entrada) → destino → confirmação → etapas. Não depende do navegador. |
 | `app.js`, `index.html`, `style.css` | Interface, microfone e voz. |

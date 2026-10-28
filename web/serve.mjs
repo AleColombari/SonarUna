@@ -13,6 +13,7 @@ const types = {
   '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.geojson': 'application/geo+json; charset=utf-8',
 };
 
 /** Le o .env da raiz (CHAVE=valor, # comentario). Sem arquivo, devolve {}. */
