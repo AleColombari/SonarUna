@@ -30,12 +30,13 @@ Os `rumo` seguem o desenho (0 = para cima na folha, 90 = direita, 180 = baixo, 2
 ## O que o mapa tem
 
 - **Entrada principal** (`entrada-principal`, o traço grande no começo do esboço). Dela a pessoa chega a um cruzamento (`q-entrada`): em frente o piso termina num corrimão; virando segue para o cruzamento dos "…" (`b02`, mais caminhos no futuro) e depois para a **entrada do bloco B** (`entrada-b`), uma porta sempre aberta que o app cita como referência e que não conta como cruzamento.
-- **Corredor do bloco B** (`b02` a `b21`): 20B e 18B à esquerda e 17B à direita de quem vem da entrada; banheiro feminino e audiovisual; banheiro masculino; 16B a 8B; 5B; Direito; multiatendimento.
+- **Corredor do bloco B** (`b02` a `b20`): 20B e 18B à esquerda e 17B à direita de quem vem da entrada; banheiro feminino e audiovisual; banheiro masculino; 16B a 8B; 5B; Direito; multiatendimento.
+- **Cruzamento do multiatendimento** (`b20`), o último do corredor B no mapa: à esquerda o multiatendimento, em frente a continuação do bloco B (futuro) e, à direita, alguns passos até a escada para o bloco A.
 - **Escada entre os blocos**: começa no cruzamento do financeiro e da cobrança e **desce** do bloco B para o bloco A. Na volta, o app diz "Suba a escada".
 - **Chegada ao bloco A**: sala dos professores, balcão de informações, protocolo e, em frente, a **entrada do bloco A** (`saida-a`), que também é lugar de partida.
 - **Corredor do bloco A** (`a01` a `a15`): sala de estudos (computadores, portas de vidro), 9A, 6A, 7A e sala sem número, 5A, banheiro masculino, 3A, banheiro feminino, 1A, 4A, 2A e LIAPE.
 - **Escadas dos quadrados** `b07` (bloco B) e `a07` (bloco A): sobem para o pavimento superior, ainda não mapeado. Estão anotadas no campo `nota` desses pontos.
-- **Caminhos futuros** anotados em `nota`: à direita do primeiro cruzamento, o bloco H; depois do cruzamento do fim do bloco B (`b21`), a continuação do bloco B, com uma segunda escada para o pavimento superior.
+- **Caminhos futuros** anotados em `nota`: à direita do primeiro cruzamento, o bloco H; em frente no cruzamento do multiatendimento (`b20`), a continuação do bloco B, com uma segunda escada para o pavimento superior.
 
 Os pontos marcados no Google My Maps ("Mapa-guia SonarUna", 04/11/2026) confirmaram a virada à esquerda para o bloco B e a escada descendo do B para o A, e trouxeram a entrada do bloco A. Eles estão em [data/unaerp-pontos.geojson](../data/unaerp-pontos.geojson); veja [docs/LOCALIZACAO.md](LOCALIZACAO.md).
 
@@ -45,8 +46,7 @@ A conversa começa perguntando **onde a pessoa está** (`"origem": "lugar"`), e 
 
 Também estão no campo `duvidas` do JSON.
 
-1. **Multiatendimento e escada no mesmo cruzamento?** No My Maps, a interseção "esquerda multiatendimento, direita escada para o bloco A, frente continuação do bloco B" é um ponto só. No esboço são dois cruzamentos seguidos (`b20` com o multiatendimento e `b21` com a virada). Se for um só, `b20` e `b21` viram um ponto e a contagem do corredor B diminui em um.
-2. **Portas da sala de estudos.** A sala tem várias portas de vidro, ligadas aos três cruzamentos logo depois das Informações. O mapa usa só a primeira. Os outros dois cruzamentos (`a02`, `a03`) continuam contando.
+1. **Portas da sala de estudos.** A sala tem várias portas de vidro, ligadas aos três cruzamentos logo depois das Informações. O mapa usa só a primeira. Os outros dois cruzamentos (`a02`, `a03`) continuam contando.
 
 ## Limites
 

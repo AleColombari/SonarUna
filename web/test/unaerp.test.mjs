@@ -55,10 +55,10 @@ test('das informacoes ate a 15B: sobe a escada e divide o corredor B em etapas d
     'Siga em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.',
     'Vire à esquerda e siga o piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto.',
     'Suba a escada. Quando terminar, diga pronto.',
-    'Siga em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.',
-    'Vire à esquerda e siga o piso tátil até o quinto cruzamento, na altura da sala 10B. Quando terminar, diga pronto.',
-    'Continue em frente pelo piso tátil até o quinto cruzamento, na altura da sala 13B. Quando terminar, diga pronto.',
-    'Continue em frente pelo piso tátil até o segundo cruzamento. Quando terminar, diga pronto.',
+    'Siga em frente pelo piso tátil até o primeiro cruzamento. Referência: trecho curto, de poucos passos. Quando terminar, diga pronto.',
+    'Vire à esquerda e siga o piso tátil até o quinto cruzamento, na altura da sala 9B. Quando terminar, diga pronto.',
+    'Continue em frente pelo piso tátil até o quinto cruzamento, na altura da sala 16B. Quando terminar, diga pronto.',
+    'Continue em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.',
     'Vire à esquerda e siga o piso tátil até o fim. Você chegará na sala 15B. Quando chegar, diga pronto.',
   ]);
   assert.ok(route('15B', 'protocolo').includes('Desça a escada. Quando terminar, diga pronto.'));

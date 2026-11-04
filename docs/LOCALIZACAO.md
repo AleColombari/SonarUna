@@ -79,7 +79,7 @@ Para cada marcador, a ligação diz:
 | saída/entrada Bloco A | `saida-a` | sim |
 | Bifurcação Bloco B-H | `q-entrada` | não |
 | Escada 1 Bloco B sup | `b07` | não |
-| Interseção multi-cont B-Escada A | `b21` | não |
+| Interseção multi-cont B-Escada A | `b20` | não |
 | começo (B) escada B-A | `fin` | não |
 | Fim escada (B) entre B-A | `pe-escada` | não |
 | interseção (Salas, saida, informações) | `info-x` | não |

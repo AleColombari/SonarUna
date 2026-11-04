@@ -6,7 +6,6 @@
   "exemplo": "sala 15B, financeiro ou banheiro",
   "exemploOrigem": "entrada principal, balcão de informações ou sala 5A",
   "duvidas": [
-    "No My Maps, o multiatendimento e a virada para a escada do bloco A aparecem no mesmo cruzamento; no esboço são dois seguidos (b20 e b21).",
     "A sala de estudos tem várias portas de vidro; o mapa usa só a primeira depois das Informações."
   ],
   "pontos": [
@@ -34,8 +33,7 @@
     { "id": "b17", "nome": "cruzamento do Direito", "tipo": "cruzamento" },
     { "id": "b18", "nome": "cruzamento da sala 8B", "tipo": "cruzamento" },
     { "id": "b19", "nome": "cruzamento da sala 5B", "tipo": "cruzamento" },
-    { "id": "b20", "nome": "cruzamento do multiatendimento", "tipo": "cruzamento" },
-    { "id": "b21", "nome": "cruzamento do fim do bloco B", "tipo": "cruzamento", "nota": "em frente continua o bloco B, com a escada 2 para o pavimento superior (caminho ainda não mapeado)" },
+    { "id": "b20", "nome": "cruzamento do multiatendimento e do caminho para a escada do bloco A", "tipo": "cruzamento", "nota": "à esquerda o multiatendimento; à direita, alguns passos até a escada que desce para o bloco A; em frente continua o bloco B, com a escada 2 para o pavimento superior (caminho ainda não mapeado)" },
     { "id": "fin", "nome": "cruzamento do financeiro e da cobrança", "tipo": "cruzamento" },
     { "id": "pe-escada", "nome": "pé da escada entre os blocos", "tipo": "patamar" },
     { "id": "prof-x", "nome": "cruzamento dos professores", "tipo": "cruzamento" },
@@ -141,7 +139,6 @@
     { "de": "b17", "para": "b18", "rumo": 90 },
     { "de": "b18", "para": "b19", "rumo": 90 },
     { "de": "b19", "para": "b20", "rumo": 90 },
-    { "de": "b20", "para": "b21", "rumo": 90 },
 
     { "de": "b03", "para": "20B", "rumo": 0 },
     { "de": "b04", "para": "17B", "rumo": 180 },
@@ -162,7 +159,7 @@
     { "de": "b19", "para": "5B", "rumo": 180 },
     { "de": "b20", "para": "multiatendimento", "rumo": 0 },
 
-    { "de": "b21", "para": "fin", "rumo": 180 },
+    { "de": "b20", "para": "fin", "rumo": 180, "referencias": ["trecho curto, de poucos passos"] },
     { "de": "fin", "para": "financeiro", "rumo": 270 },
     { "de": "fin", "para": "cobranca", "rumo": 90 },
     { "de": "fin", "para": "pe-escada", "rumo": 180, "escada": "desce" },
