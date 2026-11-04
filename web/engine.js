@@ -301,8 +301,13 @@ export function routeWeight(map, fromId, toId) {
   return total;
 }
 
-/** Direcao de quem sai de um lugar pelo seu unico trecho (porta de sala ou ponta do piso), ou null. */
+/**
+ * Direcao de quem sai de um lugar pelo seu unico trecho (porta de sala ou ponta do piso), ou null. Um ponto no
+ * meio do piso (uma porta de bloco) diz para onde a pessoa costuma seguir com "rumoPartida".
+ */
 export function exitHeading(map, pointId) {
+  const point = map.points.get(pointId);
+  if (typeof point?.rumoPartida === 'number') return mod360(point.rumoPartida);
   const edges = map.adjacency.get(pointId) ?? [];
   return edges.length === 1 ? edges[0].rumo : null;
 }

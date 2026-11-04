@@ -38,7 +38,7 @@ Dentro dos prédios o GPS piora muito. Ele serve para sugerir o ponto de partida
 
 ## Como o app usa
 
-1. Ao tocar no botão, a versão web pede a localização precisa ao navegador e espera até 8 segundos.
+1. Ao tocar no botão, a versão web pede a localização precisa ao navegador e espera até 8 segundos. Os lugares de partida com coordenadas são a entrada principal, a entrada do bloco B e a entrada do bloco A.
 2. `suggestOrigin` ([web/localizacao.js](../web/localizacao.js)) decide:
    - **leitura pior que ±60 m** ou sem leitura: não sugere nada e pergunta "Onde você está agora?";
    - **fora do raio do campus**: avisa "você não parece estar no campus da UNAERP" e pergunta;
@@ -52,14 +52,52 @@ O GPS nunca decide sozinho.
 
 No celular, o navegador só libera a localização em páginas HTTPS (ou `localhost`). O app Android ainda não usa este arquivo: ele pede só a localização aproximada e não tem o mapa.
 
+## Pontos marcados no Google My Maps
+
+O mapa "Mapa-guia SonarUna" (04/11/2026) foi exportado como `.kmz` e importado com:
+
+```bash
+node docs/importar-mymaps.mjs "Mapa-guia SonarUna.kmz"
+```
+
+O script lê o `.kmz` ou `.kml` e grava em [data/unaerp-pontos.geojson](../data/unaerp-pontos.geojson):
+
+- Cada marcador vira uma feição identificada pelo nome que tem no My Maps (`nomeMyMaps`), com a descrição escrita lá.
+- Numa nova importação, as feições de mesmo nome só têm coordenadas e descrição atualizadas. A ligação com o mapa do piso continua: `ponto`, `sugerir` e `raio`.
+- Marcadores novos entram sem ligação, e o script os lista. Renomear um marcador no My Maps conta como um marcador novo.
+
+Para cada marcador, a ligação diz:
+
+- `ponto`: o id do lugar em [data/unaerp.json](../data/unaerp.json).
+- `sugerir: true`: o app pode perguntar "parece que você está aqui?". Use só em **lugares de partida** (entradas, portas de sala). No meio de um cruzamento não dá para saber para que lado a pessoa está virada.
+- `raio`: em metros. Hoje é 15 m nas três entradas: a entrada principal e a do bloco B ficam a uns 26 m uma da outra.
+
+| Marcador no My Maps | Ponto do mapa | Sugere? |
+| --- | --- | --- |
+| entrada principal (Costábile Romano) | `entrada-principal` | sim |
+| Entrada Bloco B | `entrada-b` | sim |
+| saída/entrada Bloco A | `saida-a` | sim |
+| Bifurcação Bloco B-H | `q-entrada` | não |
+| Escada 1 Bloco B sup | `b07` | não |
+| Interseção multi-cont B-Escada A | `b21` | não |
+| começo (B) escada B-A | `fin` | não |
+| Fim escada (B) entre B-A | `pe-escada` | não |
+| interseção (Salas, saida, informações) | `info-x` | não |
+| Escada bloco A parte superior | `a07` | não |
+| escada 2 bloco B | nenhum (caminho futuro) | não |
+
+Pontos tirados das imagens do Google servem para o app, mas **não podem ser enviados ao OpenStreetMap**.
+
 ## Medir um ponto no campus
+
+Alternativa ao My Maps, com a leitura do próprio celular:
 
 1. Abra a versão web com `?teste` no celular, em HTTPS ou por um túnel, e permita a localização **precisa**.
 2. Fique no lugar exato, ao ar livre. Para a entrada principal, é o traço grande do começo do esboço.
 3. Abra **Medir pontos de GPS** e toque em **Medir minha posição**. O app faz 5 leituras e mostra a melhor, com a precisão.
 4. Copie a linha `"geometry": { "type": "Point", "coordinates": [...] }` para a feição certa em [data/unaerp-pontos.geojson](../data/unaerp-pontos.geojson), no lugar de `"geometry": null`.
 5. Ajuste o `raio`: 25 m é um bom começo para uma entrada; diminua se dois pontos ficarem perto um do outro.
-6. Rode os testes da versão web. O teste que confere que a entrada está pendente vai falhar; atualize-o para a coordenada medida.
+6. Rode os testes da versão web.
 
 Para marcar outro ponto, copie a feição da entrada principal, troque `id`, `ponto` (um id de [data/unaerp.json](../data/unaerp.json)) e `nome`, e meça.
 

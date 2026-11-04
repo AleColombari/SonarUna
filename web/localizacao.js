@@ -17,7 +17,9 @@ export function distanciaMetros(a, b) {
 
 /**
  * Valida o GeoJSON (RFC 7946: coordenadas em [longitude, latitude]) e liga cada feicao ao ponto do mapa.
- * Feicoes sem coordenadas (ainda nao medidas) ou so de referencia ficam de fora das sugestoes.
+ * So entram nas sugestoes as feicoes com "ponto", coordenadas e "sugerir": true (lugares de partida, como as
+ * entradas). As outras ligadas ("sugerir": false, como cruzamentos) so tem o ponto conferido; sem coordenadas
+ * (ainda nao medidas) ficam pendentes.
  * Devolve { campus, pontos: [{ id, lat, lon, raio, place }], pendentes: [ids sem coordenadas] }.
  */
 export function loadGpsPoints(geojson, map) {
@@ -44,6 +46,7 @@ export function loadGpsPoints(geojson, map) {
     if (!props.ponto) continue;
     const place = map.points.get(props.ponto);
     if (!place) throw new Error(`Feição ${name} aponta para um ponto que não existe no mapa: ${props.ponto}`);
+    if (props.sugerir !== true) continue;
     if (!(props.raio > 0)) throw new Error(`Feição ${name} precisa de raio maior que zero`);
     pontos.push({ id: props.ponto, lat, lon, raio: props.raio, place });
   }

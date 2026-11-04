@@ -1,24 +1,19 @@
 {
   "type": "FeatureCollection",
   "nome": "Pontos de GPS da UNAERP (Ribeirão Preto)",
-  "atribuicao": "Campus, blocos e portões: © colaboradores do OpenStreetMap, dados sob a licença ODbL (https://www.openstreetmap.org/copyright).",
-  "instrucoes": "Coordenadas em [longitude, latitude] (RFC 7946). 'ponto' liga a feição a um ponto de data/unaerp.json; o app só sugere feições com 'ponto' e coordenadas. 'raio' é a distância em metros dentro da qual o app pergunta se a pessoa está ali. Para medir um ponto, abra /web/?teste no celular, no lugar, e use 'Medir minha posição'. Veja docs/LOCALIZACAO.md.",
+  "atribuicao": "Feições com fonte OpenStreetMap: © colaboradores do OpenStreetMap, ODbL (https://www.openstreetmap.org/copyright). Feições com fonte Google My Maps: marcadas pela equipe no mapa \"Mapa-guia SonarUna\"; não podem ser enviadas ao OpenStreetMap.",
+  "instrucoes": "Coordenadas em [longitude, latitude] (RFC 7946). Os pontos do Google My Maps entram com: node docs/importar-mymaps.mjs \"Mapa-guia SonarUna.kmz\" (mantém as ligações já feitas). \"ponto\" liga a feição a um ponto de data/unaerp.json; o app só sugere como lugar de partida as feições com \"sugerir\": true, dentro de \"raio\" metros. Veja docs/LOCALIZACAO.md.",
   "features": [
     {
       "type": "Feature",
-      "id": "entrada-principal",
-      "geometry": null,
-      "properties": {
-        "ponto": "entrada-principal",
-        "nome": "entrada principal",
-        "raio": 25,
-        "situacao": "medir no campus: ficar no traço grande da entrada e usar 'Medir minha posição'"
-      }
-    },
-    {
-      "type": "Feature",
       "id": "campus",
-      "geometry": { "type": "Point", "coordinates": [-47.7789379, -21.2011222] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7789379,
+          -21.2011222
+        ]
+      },
       "properties": {
         "tipo": "campus",
         "nome": "Universidade de Ribeirão Preto (UNAERP)",
@@ -29,38 +24,294 @@
     {
       "type": "Feature",
       "id": "osm-bloco-a",
-      "geometry": { "type": "Point", "coordinates": [-47.7798639, -21.2020609] },
-      "properties": { "tipo": "referencia", "nome": "Bloco A (centro do prédio)", "fonte": "OpenStreetMap, way 445326026" }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7798639,
+          -21.2020609
+        ]
+      },
+      "properties": {
+        "tipo": "referencia",
+        "nome": "Bloco A (centro do prédio)",
+        "fonte": "OpenStreetMap, way 445326026"
+      }
     },
     {
       "type": "Feature",
       "id": "osm-bloco-b",
-      "geometry": { "type": "Point", "coordinates": [-47.7800283, -21.2024655] },
-      "properties": { "tipo": "referencia", "nome": "Bloco B (centro do prédio)", "fonte": "OpenStreetMap, way 445326024" }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7800283,
+          -21.2024655
+        ]
+      },
+      "properties": {
+        "tipo": "referencia",
+        "nome": "Bloco B (centro do prédio)",
+        "fonte": "OpenStreetMap, way 445326024"
+      }
     },
     {
       "type": "Feature",
       "id": "osm-portao-4427751582",
-      "geometry": { "type": "Point", "coordinates": [-47.7781436, -21.2016936] },
-      "properties": { "tipo": "referencia", "nome": "portão (sem nome no OpenStreetMap)", "fonte": "OpenStreetMap, node 4427751582" }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7781436,
+          -21.2016936
+        ]
+      },
+      "properties": {
+        "tipo": "referencia",
+        "nome": "portão (sem nome no OpenStreetMap)",
+        "fonte": "OpenStreetMap, node 4427751582"
+      }
     },
     {
       "type": "Feature",
       "id": "osm-portao-8790894040",
-      "geometry": { "type": "Point", "coordinates": [-47.7794685, -21.2030643] },
-      "properties": { "tipo": "referencia", "nome": "portão de pedestres (acessível a cadeira de rodas)", "fonte": "OpenStreetMap, node 8790894040" }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7794685,
+          -21.2030643
+        ]
+      },
+      "properties": {
+        "tipo": "referencia",
+        "nome": "portão de pedestres (acessível a cadeira de rodas)",
+        "fonte": "OpenStreetMap, node 8790894040"
+      }
     },
     {
       "type": "Feature",
       "id": "osm-portao-8790894041",
-      "geometry": { "type": "Point", "coordinates": [-47.778262, -21.1988932] },
-      "properties": { "tipo": "referencia", "nome": "portão (acessível a cadeira de rodas)", "fonte": "OpenStreetMap, node 8790894041" }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.778262,
+          -21.1988932
+        ]
+      },
+      "properties": {
+        "tipo": "referencia",
+        "nome": "portão (acessível a cadeira de rodas)",
+        "fonte": "OpenStreetMap, node 8790894041"
+      }
     },
     {
       "type": "Feature",
       "id": "osm-portao-9010512441",
-      "geometry": { "type": "Point", "coordinates": [-47.7804155, -21.2012033] },
-      "properties": { "tipo": "referencia", "nome": "portão (sem nome no OpenStreetMap)", "fonte": "OpenStreetMap, node 9010512441" }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7804155,
+          -21.2012033
+        ]
+      },
+      "properties": {
+        "tipo": "referencia",
+        "nome": "portão (sem nome no OpenStreetMap)",
+        "fonte": "OpenStreetMap, node 9010512441"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "entrada-principal",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.779547,
+          -21.2030256
+        ]
+      },
+      "properties": {
+        "nomeMyMaps": "entrada principal (Costábile Romano)",
+        "fonte": "Google My Maps",
+        "ponto": "entrada-principal",
+        "sugerir": true,
+        "raio": 15
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mymaps-bifurcacao-bloco-b-h",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7795001,
+          -21.2029151
+        ]
+      },
+      "properties": {
+        "nomeMyMaps": "Bifurcação Bloco B-H",
+        "descricao": "bloco B a esquerda e H a direita",
+        "fonte": "Google My Maps",
+        "ponto": "q-entrada",
+        "sugerir": false
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "entrada-b",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7796162,
+          -21.202826
+        ]
+      },
+      "properties": {
+        "nomeMyMaps": "Entrada Bloco B",
+        "fonte": "Google My Maps",
+        "ponto": "entrada-b",
+        "sugerir": true,
+        "raio": 15
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mymaps-escada-1-bloco-b-sup",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7797717,
+          -21.2026716
+        ]
+      },
+      "properties": {
+        "nomeMyMaps": "Escada 1 Bloco B sup",
+        "descricao": "escada a direita para ir ao pavimento superior do bloco B",
+        "fonte": "Google My Maps",
+        "ponto": "b07",
+        "sugerir": false
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mymaps-intersecao-multi-cont-b-escada-a",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7801494,
+          -21.2023304
+        ]
+      },
+      "properties": {
+        "nomeMyMaps": "Interseção multi-cont B-Escada A",
+        "descricao": "esquerda multiatendimento direita escada descendente para o bloco A e para frente continuação do bloco B",
+        "fonte": "Google My Maps",
+        "ponto": "b21",
+        "sugerir": false
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mymaps-escada-2-bloco-b",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7802397,
+          -21.2022176
+        ]
+      },
+      "properties": {
+        "nomeMyMaps": "escada 2 bloco B",
+        "descricao": "escada a direita para o pavimento superior do bloco B",
+        "fonte": "Google My Maps",
+        "ponto": null,
+        "sugerir": false
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mymaps-comeco-b-escada-b-a",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7800254,
+          -21.202238
+        ]
+      },
+      "properties": {
+        "nomeMyMaps": "começo (B) escada B-A",
+        "fonte": "Google My Maps",
+        "ponto": "fin",
+        "sugerir": false
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mymaps-fim-escada-b-entre-b-a",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7799522,
+          -21.2021553
+        ]
+      },
+      "properties": {
+        "nomeMyMaps": "Fim escada (B) entre B-A",
+        "fonte": "Google My Maps",
+        "ponto": "pe-escada",
+        "sugerir": false
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mymaps-intersecao-salas-saida-informacoes",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7798414,
+          -21.2020426
+        ]
+      },
+      "properties": {
+        "nomeMyMaps": "interseção (Salas, saida, informações)",
+        "descricao": "Esquerda Salas do bloco A, frente Saida, direita informações",
+        "fonte": "Google My Maps",
+        "ponto": "info-x",
+        "sugerir": false
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mymaps-escada-bloco-a-paete-superior",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.7799795,
+          -21.2018866
+        ]
+      },
+      "properties": {
+        "nomeMyMaps": "Escada bloco A paete superior",
+        "descricao": "Escada a Esquerda para o pavimento superior do bloco A",
+        "fonte": "Google My Maps",
+        "ponto": "a07",
+        "sugerir": false
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "saida-a",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -47.779752,
+          -21.2019726
+        ]
+      },
+      "properties": {
+        "nomeMyMaps": "saída/entrada Bloco A",
+        "fonte": "Google My Maps",
+        "ponto": "saida-a",
+        "sugerir": true,
+        "raio": 15
+      }
     }
   ]
 }

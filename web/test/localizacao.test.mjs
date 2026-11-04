@@ -9,20 +9,32 @@ const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), '
 const map = loadMap(read('../../data/unaerp.json'));
 const geojson = read('../../data/unaerp-pontos.geojson');
 
-// Entrada principal "medida" num ponto de teste perto do bloco B, como ficara depois da medicao no campus.
-const ENTRADA = { lat: -21.20245, lon: -47.78035 };
-const measured = structuredClone(geojson);
-measured.features.find((f) => f.id === 'entrada-principal').geometry = { type: 'Point', coordinates: [ENTRADA.lon, ENTRADA.lat] };
-const gps = loadGpsPoints(measured, map);
+const gps = loadGpsPoints(geojson, map);
+// Coordenadas marcadas no Google My Maps ("Mapa-guia SonarUna").
+const at = (id) => {
+  const [lon, lat] = geojson.features.find((f) => f.id === id).geometry.coordinates;
+  return { lat, lon };
+};
+const ENTRADA = at('entrada-principal');
 
 /** Desloca uma posicao para o norte, em metros. */
 const north = (p, metros) => ({ ...p, lat: p.lat + metros / 111320 });
 
-test('o GeoJSON do repositorio e valido e a entrada principal esta pendente de medicao', () => {
-  const real = loadGpsPoints(geojson, map);
-  assert.ok(real.campus);
-  assert.deepEqual(real.pontos, []);
-  assert.deepEqual(real.pendentes, ['entrada-principal']);
+test('o GeoJSON do repositorio: tres lugares de partida, todos dentro do campus', () => {
+  assert.deepEqual(gps.pontos.map((p) => p.id).sort(), ['entrada-b', 'entrada-principal', 'saida-a']);
+  assert.deepEqual(gps.pendentes, []);
+  for (const ponto of gps.pontos) assert.ok(distanciaMetros(gps.campus, ponto) < gps.campus.raio, ponto.id);
+  // Cruzamentos e escadas do My Maps ficam ligados ao mapa do piso, mas nao viram sugestao.
+  const linked = geojson.features.filter((f) => f.properties.nomeMyMaps && f.properties.ponto).map((f) => f.properties.ponto);
+  assert.ok(linked.includes('info-x') && linked.includes('q-entrada'));
+});
+
+test('cada entrada marcada no My Maps sugere ela mesma', () => {
+  for (const id of ['entrada-principal', 'entrada-b', 'saida-a']) {
+    assert.equal(suggestOrigin(gps, { ...at(id), precisao: 5 }).place?.id, id, id);
+  }
+  // Na bifurcacao (entre a entrada principal e a do bloco B) vence a mais perto.
+  assert.equal(suggestOrigin(gps, { ...at('mymaps-bifurcacao-bloco-b-h'), precisao: 5 }).place.id, 'entrada-principal');
 });
 
 test('distancia de haversine em metros', () => {
@@ -38,7 +50,7 @@ test('sugere a entrada perto dela, com leitura precisa', () => {
 test('leitura imprecisa, longe de tudo ou fora do campus nao sugere lugar', () => {
   assert.equal(suggestOrigin(gps, { ...ENTRADA, precisao: PRECISAO_MAXIMA + 1 }).kind, 'imprecisa');
   assert.equal(suggestOrigin(gps, null).kind, 'imprecisa');
-  assert.equal(suggestOrigin(gps, { ...north(ENTRADA, 120), precisao: 10 }).kind, 'nenhuma');
+  assert.equal(suggestOrigin(gps, { ...north(ENTRADA, -120), precisao: 10 }).kind, 'nenhuma');
   assert.equal(suggestOrigin(gps, { lat: -21.1700, lon: -47.8100, precisao: 10 }).kind, 'fora-do-campus');
 });
 
@@ -78,4 +90,35 @@ test('conversa: fora do campus avisa e pergunta; sem GPS pergunta direto', () =>
   assert.match(outside.say.join(' '), /você não parece estar no campus da UNAERP\. Onde você está agora\?/);
   assert.equal(outside.phase, 'entrance');
   assert.match(createSession(map).start().say.at(-1), /^Onde você está agora\?/);
+});
+
+test('importar-mymaps: le o KML, cria feicoes novas e preserva a ligacao numa reimportacao', async () => {
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { execFileSync } = await import('node:child_process');
+  const dir = mkdtempSync(join(tmpdir(), 'sonaruna-'));
+  const kml = (lon) => `<?xml version="1.0"?><kml><Document><Placemark><name>Portão &amp; rampa</name>
+    <description><![CDATA[rampa à <b>direita</b>]]></description><Point><coordinates>${lon},-21.2,0</coordinates></Point></Placemark></Document></kml>`;
+  const kmlPath = join(dir, 'mapa.kml');
+  const out = join(dir, 'pontos.geojson');
+  writeFileSync(out, JSON.stringify({ type: 'FeatureCollection', features: [] }));
+  const script = new URL('../../docs/importar-mymaps.mjs', import.meta.url);
+  writeFileSync(kmlPath, kml(-47.1));
+  execFileSync(process.execPath, [script.pathname.replace(/^\/([A-Za-z]:)/, '$1'), kmlPath, out]);
+  const first = JSON.parse(readFileSync(out, 'utf8')).features[0];
+  assert.equal(first.id, 'mymaps-portao-rampa');
+  assert.equal(first.properties.descricao, 'rampa à direita');
+  assert.deepEqual(first.geometry.coordinates, [-47.1, -21.2]);
+
+  const linked = JSON.parse(readFileSync(out, 'utf8'));
+  Object.assign(linked.features[0].properties, { ponto: 'entrada-principal', sugerir: true, raio: 15 });
+  writeFileSync(out, JSON.stringify(linked));
+  writeFileSync(kmlPath, kml(-47.2));
+  execFileSync(process.execPath, [script.pathname.replace(/^\/([A-Za-z]:)/, '$1'), kmlPath, out]);
+  const again = JSON.parse(readFileSync(out, 'utf8')).features;
+  assert.equal(again.length, 1);
+  assert.deepEqual(again[0].geometry.coordinates, [-47.2, -21.2]);
+  assert.equal(again[0].properties.ponto, 'entrada-principal');
+  assert.equal(again[0].properties.raio, 15);
 });
