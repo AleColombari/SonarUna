@@ -29,14 +29,15 @@ class SpeechRecognitionManager(context: Context) {
 
     private class Session(
         val id: Long,
-        val onResult: (String) -> Unit,
+        val onResult: (List<String>) -> Unit,
         val onError: (SpeechFailure) -> Unit,
         var attempt: Int = 0,
         var recognizer: SpeechRecognizer? = null,
         var timeout: Runnable? = null,
     )
 
-    fun start(onResult: (String) -> Unit, onError: (SpeechFailure) -> Unit) = onMain {
+    /** [onResult] receives the recognizer's hypotheses, best first, never empty. */
+    fun start(onResult: (List<String>) -> Unit, onError: (SpeechFailure) -> Unit) = onMain {
         cancelActive()
         if (closed) {
             onError(SpeechFailure.UNAVAILABLE)
@@ -103,15 +104,16 @@ class SpeechRecognitionManager(context: Context) {
 
                 override fun onResults(results: Bundle?) = onMain {
                     if (!isCurrent(session, attempt)) return@onMain
-                    val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        ?.firstOrNull { it.isNotBlank() }
-                        ?.trim()?.replace(Regex("\\s+"), " ")
-                    if (text.isNullOrEmpty()) {
+                    val hypotheses = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        .orEmpty()
+                        .map { it.trim().replace(Regex("\\s+"), " ") }
+                        .filter { it.isNotEmpty() }
+                    if (hypotheses.isEmpty()) {
                         finishError(session, SpeechFailure.NO_SPEECH)
                     } else {
                         active = null
                         disposeRecognizer(session)
-                        session.onResult(text)
+                        session.onResult(hypotheses)
                     }
                 }
             })

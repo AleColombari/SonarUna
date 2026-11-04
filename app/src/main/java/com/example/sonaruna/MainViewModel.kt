@@ -4,33 +4,29 @@ import android.app.Application
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.sonaruna.conversation.ConversationEngine
-import com.example.sonaruna.conversation.ConversationPhase
-import com.example.sonaruna.conversation.ConversationState
-import com.example.sonaruna.conversation.Prompt
-import com.example.sonaruna.conversation.PromptKey
-import com.example.sonaruna.conversation.Transition
+import com.example.sonaruna.guia.Conversation
+import com.example.sonaruna.guia.FloorMap
+import com.example.sonaruna.guia.GpsPoints
+import com.example.sonaruna.guia.Phase
+import com.example.sonaruna.guia.Reply
 import com.example.sonaruna.platform.HapticFeedback
-import com.example.sonaruna.platform.LocationException
-import com.example.sonaruna.platform.LocationFailure
 import com.example.sonaruna.platform.LocationRepository
 import com.example.sonaruna.platform.SpeechFailure
 import com.example.sonaruna.platform.SpeechRecognitionManager
 import com.example.sonaruna.platform.TextToSpeechManager
-import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-data class PermissionStatus(val location: Boolean, val microphone: Boolean, val permanentlyDenied: Boolean) {
-    val granted: Boolean get() = location && microphone
-}
+/** Location is optional: without it the conversation asks where the person is. The microphone is required. */
+data class PermissionStatus(val location: Boolean, val microphone: Boolean, val microphoneBlocked: Boolean)
 
 data class MainUiState(
-    val conversation: ConversationState = ConversationState(),
     val actionDescription: String = "",
     val listening: Boolean = false,
     val speaking: Boolean = false,
@@ -43,11 +39,17 @@ sealed interface PlatformAction {
     data class AnnounceVoiceFailure(val message: String) : PlatformAction
 }
 
-private enum class Recovery { PERMISSIONS, SETTINGS, LOCATION, SPEECH, TTS }
+private enum class Recovery { PERMISSIONS, SETTINGS, SPEECH, TTS, MAP }
 
-/** Owns the session in memory. No saved state, coordinates on disk, or background microphone. */
+/** The guide loaded from the assets (data/ in the repository): map, GPS points and the conversation over them. */
+private class Guide(val gps: GpsPoints, val conversation: Conversation)
+
+/**
+ * Runs the guidance conversation (guia/Conversation.kt) with the platform's voice, microphone and location.
+ * After each question the microphone opens by itself; tapping while the app speaks interrupts it and listens, so
+ * the person's answer has priority. The session lives only in memory: no saved state or coordinates on disk.
+ */
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-    private val engine = ConversationEngine()
     private val location = LocationRepository(application)
     private val recognition = SpeechRecognitionManager(application)
     private val voice = TextToSpeechManager(application)
@@ -57,18 +59,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val actionsChannel = Channel<PlatformAction>(Channel.BUFFERED)
     val actions = actionsChannel.receiveAsFlow()
 
-    private var permissions = PermissionStatus(false, false, false)
+    private var guide: Guide? = null
+    private var permissions = PermissionStatus(location = false, microphone = false, microphoneBlocked = false)
     private var foreground = false
     private var voiceReady = false
-    private var permissionsRequestedThisSession = false
+    private var welcomed = false
     private var awaitingPermissions = false
     private var recovery: Recovery? = null
     private var listening = false
     private var speaking = false
     private var working = false
-    private var lastMessage: String? = null
     private var operation: Job? = null
     private var generation = 0L
+
+    private val phase: Phase get() = guide?.conversation?.phase ?: Phase.IDLE
 
     fun onForeground(status: PermissionStatus) {
         foreground = true
@@ -76,7 +80,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (awaitingPermissions) return
         runOperation {
             if (!ensureVoice()) return@runOperation
-            continueSession()
+            if (!ensureGuide()) return@runOperation
+            if (!welcomed) {
+                welcomed = true
+                say(R.string.welcome)
+            }
         }
     }
 
@@ -98,11 +106,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (!foreground) return
         runOperation {
             if (!ensureVoice()) return@runOperation
-            if (status.granted) {
+            if (status.microphone) {
                 recovery = null
-                continueSession()
+                begin()
             } else {
-                explainDeniedPermissions()
+                explainMissingMicrophone()
             }
         }
     }
@@ -117,14 +125,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         permissions = status
         if (!foreground || state.value.busy) return
         if (listening) {
+            // A tap while listening pauses: the microphone closes until the next tap.
             recognition.cancel()
             listening = false
-            runOperation { say(R.string.recognition_cancelled) }
+            runOperation { say(R.string.listening_paused) }
             return
         }
-        if (!status.granted && recovery != Recovery.TTS) {
-            runOperation {
-                if (status.permanentlyDenied) {
+        if (speaking && phase != Phase.IDLE && recovery == null && status.microphone) {
+            interruptAndListen()
+            return
+        }
+        when {
+            recovery == Recovery.TTS -> runOperation {
+                if (ensureVoice()) {
+                    recovery = null
+                    say(R.string.welcome)
+                }
+            }
+            recovery == Recovery.MAP -> runOperation { ensureGuide() }
+            !status.microphone -> runOperation {
+                if (status.microphoneBlocked) {
                     recovery = Recovery.SETTINGS
                     voice.stop()
                     actionsChannel.send(PlatformAction.OpenAppSettings)
@@ -132,132 +152,124 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     requestPermissions()
                 }
             }
-            return
-        }
-        when (recovery) {
-            Recovery.TTS -> runOperation {
-                if (ensureVoice()) {
-                    recovery = null
-                    continueSession()
-                }
-            }
-            Recovery.LOCATION -> runOperation { obtainLocation() }
-            Recovery.SETTINGS, Recovery.PERMISSIONS -> runOperation { continueSession() }
-            Recovery.SPEECH -> startListening()
-            null -> when (engine.state.phase) {
-                ConversationPhase.COMPLETE -> runOperation {
-                    val transition = engine.restart(System.currentTimeMillis())
-                    if (transition.state.phase == ConversationPhase.LOCATING) obtainLocation()
-                    else present(transition)
-                }
-                ConversationPhase.ORIGIN, ConversationPhase.CONFIRM_ORIGIN,
-                ConversationPhase.DESTINATION, ConversationPhase.CONFIRM_DESTINATION -> startListening()
-                ConversationPhase.INITIALIZING, ConversationPhase.PERMISSIONS -> runOperation { continueSession() }
-                ConversationPhase.LOCATING, ConversationPhase.ERROR -> runOperation { obtainLocation() }
+            phase == Phase.IDLE -> runOperation { begin() }
+            else -> runOperation {
+                recovery = null
+                deliver(guide!!.conversation.resume())
             }
         }
     }
 
-    private suspend fun continueSession() {
-        if (!permissions.granted) {
-            engine.awaitPermissions()
-            if (!permissionsRequestedThisSession && !permissions.permanentlyDenied) requestPermissions()
-            else explainDeniedPermissions()
-            return
+    /** A new orientation: one GPS reading (if allowed) becomes, at most, a question about where the person is. */
+    private suspend fun begin() {
+        val current = guide ?: return
+        recovery = null
+        val guess = if (permissions.location) {
+            // Up to 9 seconds of silence would be confusing without sight: say what is happening first.
+            if (!say(R.string.locating)) return
+            working = true
+            refresh()
+            current.gps.suggestOrigin(location.currentPosition()).also { working = false }
+        } else {
+            null
         }
-        if (recovery == Recovery.PERMISSIONS || recovery == Recovery.SETTINGS) recovery = null
-        when (engine.state.phase) {
-            ConversationPhase.INITIALIZING, ConversationPhase.PERMISSIONS, ConversationPhase.LOCATING -> obtainLocation()
-            else -> {
-                // A background interruption never starts the microphone again.
-                // Replay the pending instruction so resuming remains understandable without sight.
-                val message = lastMessage
-                if (message != null && recovery != Recovery.TTS) speakMessage(message)
-                else repeatCurrentStep()
-            }
+        deliver(current.conversation.start(guess))
+    }
+
+    /** Speaks the reply in order; then listens if the conversation expects an answer. */
+    private suspend fun deliver(reply: Reply) {
+        for (line in reply.say) {
+            if (!speakMessage(line)) return
         }
+        if (reply.listen && foreground) startRecognition() else refresh()
     }
 
     private suspend fun requestPermissions() {
         recovery = null
-        engine.awaitPermissions()
         if (!say(R.string.permissions_explanation)) return
-        permissionsRequestedThisSession = true
         awaitingPermissions = true
         refresh()
         actionsChannel.send(PlatformAction.RequestPermissions)
     }
 
-    private suspend fun explainDeniedPermissions() {
-        recovery = if (permissions.permanentlyDenied) Recovery.SETTINGS else Recovery.PERMISSIONS
+    private suspend fun explainMissingMicrophone() {
+        recovery = if (permissions.microphoneBlocked) Recovery.SETTINGS else Recovery.PERMISSIONS
         haptics.error()
-        say(if (permissions.permanentlyDenied) R.string.permissions_settings else R.string.permissions_denied)
+        say(if (permissions.microphoneBlocked) R.string.permissions_settings else R.string.permissions_denied)
     }
 
-    private suspend fun obtainLocation() {
-        recovery = null
+    private suspend fun ensureGuide(): Boolean {
+        if (guide != null) return true
         working = true
-        engine.locating()
         refresh()
-        if (!say(R.string.locating)) return
-        try {
-            val result = location.currentLocation()
-            working = false
-            present(engine.locationObtained(result))
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: LocationException) {
-            working = false
-            if (error.reason == LocationFailure.PERMISSION_DENIED) {
-                recovery = Recovery.PERMISSIONS
-                haptics.error()
-                say(R.string.permissions_denied)
-            } else {
-                recovery = Recovery.LOCATION
-                haptics.error()
-                say(when (error.reason) {
-                    LocationFailure.LOCATION_DISABLED -> R.string.location_disabled
-                    LocationFailure.SERVICES_UNAVAILABLE -> R.string.location_services_unavailable
-                    else -> R.string.location_error
-                })
+        val loaded = runCatching {
+            withContext(Dispatchers.IO) {
+                val assets = getApplication<Application>().assets
+                val map = FloorMap.parse(assets.open(MAP_ASSET).bufferedReader().use { it.readText() })
+                val gps = GpsPoints.parse(assets.open(GPS_ASSET).bufferedReader().use { it.readText() }, map)
+                Guide(gps, Conversation(map))
             }
+        }.getOrNull()
+        working = false
+        guide = loaded
+        if (loaded == null) {
+            recovery = Recovery.MAP
+            haptics.error()
+            say(R.string.map_error)
+            return false
         }
+        if (recovery == Recovery.MAP) recovery = null
+        refresh()
+        return true
     }
 
-    private fun startListening() {
-        // Stop synthesis before acquiring the microphone, including pending utterance callbacks.
-        operation?.cancel()
+    /** The person's answer has priority: stop speaking and open the microphone now. */
+    private fun interruptAndListen() {
         generation++
+        operation?.cancel()
         voice.stop()
         speaking = false
+        startRecognition()
+    }
+
+    private fun startRecognition() {
+        recognition.cancel()
         recovery = null
         listening = true
         refresh()
         haptics.start()
         recognition.start(
-            onResult = { text ->
+            onResult = { hypotheses ->
                 if (foreground && listening) {
                     listening = false
-                    if (text.isBlank()) haptics.error() else haptics.success()
-                    runOperation { present(engine.recognize(text)) }
+                    haptics.success()
+                    runOperation { deliver(guide!!.conversation.hear(hypotheses)) }
                 }
             },
             onError = { error ->
                 if (foreground && listening) {
                     listening = false
-                    runOperation {
-                        recovery = if (error == SpeechFailure.PERMISSION_DENIED) Recovery.PERMISSIONS else Recovery.SPEECH
-                        haptics.error()
-                        say(when (error) {
-                            SpeechFailure.PERMISSION_DENIED -> R.string.permissions_denied
-                            SpeechFailure.UNAVAILABLE -> R.string.speech_unavailable
-                            SpeechFailure.MICROPHONE_UNAVAILABLE -> R.string.microphone_unavailable
-                            SpeechFailure.NETWORK -> R.string.speech_network
-                            SpeechFailure.LANGUAGE_UNAVAILABLE -> R.string.speech_language
-                            SpeechFailure.NO_SPEECH, SpeechFailure.UNKNOWN -> R.string.recognition_empty
-                        })
-                    }
+                    runOperation { recognitionFailed(error) }
                 }
+            },
+        )
+    }
+
+    private suspend fun recognitionFailed(error: SpeechFailure) {
+        if (error == SpeechFailure.NO_SPEECH || error == SpeechFailure.UNKNOWN) {
+            // Silence is the conversation's business: it asks again, and stops after a few tries.
+            deliver(guide!!.conversation.silence())
+            return
+        }
+        recovery = if (error == SpeechFailure.PERMISSION_DENIED) Recovery.PERMISSIONS else Recovery.SPEECH
+        haptics.error()
+        say(
+            when (error) {
+                SpeechFailure.PERMISSION_DENIED -> R.string.permissions_denied
+                SpeechFailure.UNAVAILABLE -> R.string.speech_unavailable
+                SpeechFailure.MICROPHONE_UNAVAILABLE -> R.string.microphone_unavailable
+                SpeechFailure.NETWORK -> R.string.speech_network
+                else -> R.string.speech_language
             },
         )
     }
@@ -284,29 +296,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         actionsChannel.send(PlatformAction.AnnounceVoiceFailure(string(R.string.tts_unavailable)))
     }
 
-    private suspend fun present(transition: Transition) {
-        refresh()
-        transition.prompt?.let { speakMessage(resolve(it)) }
-    }
-
-    private suspend fun repeatCurrentStep() {
-        when (engine.state.phase) {
-            ConversationPhase.ORIGIN -> say(R.string.origin_request)
-            ConversationPhase.CONFIRM_ORIGIN -> say(R.string.origin_confirmation, engine.state.origin.orEmpty())
-            ConversationPhase.DESTINATION -> say(R.string.destination_request)
-            ConversationPhase.CONFIRM_DESTINATION -> say(R.string.destination_confirmation, engine.state.destination.orEmpty())
-            ConversationPhase.COMPLETE -> say(R.string.complete, engine.state.origin.orEmpty(), engine.state.destination.orEmpty())
-            else -> Unit
-        }
-    }
-
-    private suspend fun say(@StringRes resource: Int, vararg arguments: String): Boolean =
-        speakMessage(string(resource, *arguments))
+    private suspend fun say(@StringRes resource: Int): Boolean = speakMessage(string(resource))
 
     private suspend fun speakMessage(message: String): Boolean {
         recognition.cancel()
         listening = false
-        lastMessage = message
         speaking = true
         refresh()
         val completed = voice.speak(message)
@@ -342,55 +336,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             working && !voiceReady -> R.string.action_initializing
             working -> R.string.action_locating
             recovery == Recovery.TTS -> R.string.tts_unavailable
+            recovery == Recovery.MAP -> R.string.action_map_retry
             recovery == Recovery.SETTINGS -> R.string.action_settings
             recovery == Recovery.PERMISSIONS -> R.string.action_permissions
-            recovery == Recovery.LOCATION -> R.string.action_location_retry
             recovery == Recovery.SPEECH -> R.string.action_speech_retry
-            else -> when (engine.state.phase) {
-                ConversationPhase.INITIALIZING -> R.string.action_initializing
-                ConversationPhase.PERMISSIONS -> R.string.action_permissions
-                ConversationPhase.LOCATING -> R.string.action_locating
-                ConversationPhase.ORIGIN -> R.string.action_origin
-                ConversationPhase.CONFIRM_ORIGIN -> R.string.action_confirm_origin
-                ConversationPhase.DESTINATION -> R.string.action_destination
-                ConversationPhase.CONFIRM_DESTINATION -> R.string.action_confirm_destination
-                ConversationPhase.COMPLETE -> R.string.action_restart
-                ConversationPhase.ERROR -> R.string.action_location_retry
-            }
+            phase == Phase.IDLE -> R.string.action_start
+            else -> R.string.action_continue
         }
         mutableState.value = MainUiState(
-            conversation = if (recovery != null) engine.state.copy(phase = ConversationPhase.ERROR) else engine.state,
             actionDescription = string(action),
             listening = listening,
             speaking = speaking,
-            busy = working || speaking || awaitingPermissions,
+            busy = working || awaitingPermissions,
         )
     }
 
-    private fun resolve(prompt: Prompt): String = string(
-        when (prompt.key) {
-            PromptKey.PERMISSIONS_EXPLANATION -> R.string.permissions_explanation
-            PromptKey.LOCATING -> R.string.locating
-            PromptKey.ORIGIN_REQUEST -> R.string.origin_request
-            PromptKey.ORIGIN_CONFIRMATION -> R.string.origin_confirmation
-            PromptKey.ORIGIN_RETRY -> R.string.origin_retry
-            PromptKey.DESTINATION_REQUEST -> R.string.destination_request
-            PromptKey.DESTINATION_CONFIRMATION -> R.string.destination_confirmation
-            PromptKey.DESTINATION_RETRY -> R.string.destination_retry
-            PromptKey.CONFIRMATION_UNCLEAR -> R.string.confirmation_unclear
-            PromptKey.RECOGNITION_EMPTY -> R.string.recognition_empty
-            PromptKey.COMPLETE -> R.string.complete
-        },
-        *prompt.arguments.toTypedArray(),
-    )
-
-    private fun string(@StringRes resource: Int, vararg arguments: String): String =
-        getApplication<Application>().getString(resource, *arguments)
+    private fun string(@StringRes resource: Int): String = getApplication<Application>().getString(resource)
 
     override fun onCleared() {
         recognition.close()
         voice.close()
         actionsChannel.close()
         super.onCleared()
+    }
+
+    private companion object {
+        const val MAP_ASSET = "unaerp.json"
+        const val GPS_ASSET = "unaerp-pontos.geojson"
     }
 }

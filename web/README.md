@@ -1,6 +1,6 @@
 # Bancada web do SonarUna (localhost)
 
-Versão web de teste do SonarUna. Ela ouve pelo microfone, fala com a voz do navegador e guia por um mapa do bloco A. Serve para testar a conversa e as rotas rapidamente no computador, antes de levar a mesma lógica para o app Android.
+Versão web de teste do SonarUna. Ela ouve pelo microfone, fala com a voz do navegador e guia pelo mapa da UNAERP. Serve para testar a conversa e as rotas rapidamente no computador. O app Android tem a mesma lógica, portada para Kotlin em `app/src/main/java/com/example/sonaruna/guia/`, e lê os mesmos arquivos de `data/`: uma mudança na conversa precisa ser feita nos dois.
 
 ## Como rodar
 

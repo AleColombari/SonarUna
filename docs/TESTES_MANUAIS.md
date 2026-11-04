@@ -2,7 +2,50 @@
 
 **Situação inicial: a executar.** Este documento é um roteiro, não uma declaração de aprovação. Registre evidências após cada execução. Build, testes unitários e testes Compose não comprovam, sozinhos, a experiência com TalkBack e os serviços de voz de um celular real.
 
-O SonarUna é um protótipo acadêmico da UNAERP de Ribeirão Preto. Os testes não devem depender de deslocamento guiado pelo aplicativo: esta versão não fornece rotas e não substitui bengala, cão-guia, orientação humana ou outras ferramentas de mobilidade.
+O SonarUna é um protótipo acadêmico da UNAERP de Ribeirão Preto. Ele não substitui bengala, cão-guia, orientação humana ou outras ferramentas de mobilidade. Nos testes de rota no campus, a pessoa que testa deve estar acompanhada e não depender só do aplicativo.
+
+**Versão 0.2.0.** A seção 0 cobre o que mudou: mapa, rotas, GPS e microfone que abre sozinho depois de cada pergunta. As seções 1 a 7 foram escritas para a 0.1.0. Onde elas dizem que o microfone nunca abre sozinho, que é preciso tocar antes de cada resposta ou que não há rota, vale a seção 0.
+
+## 0. Versão 0.2.0: orientação pelo mapa
+
+Abertura e permissões
+
+- [ ] Ao abrir, o app fala "Toque no botão, no centro da tela, para começar a orientação" e o microfone continua desligado.
+- [ ] No primeiro toque de uma instalação limpa, o app explica os acessos e mostra os pedidos do microfone e da localização.
+- [ ] Negar só a localização não impede a orientação: o app pergunta "Onde você está agora?".
+- [ ] Negar o microfone explica que ele é necessário. Repetir as negativas até o bloqueio faz o botão abrir as configurações.
+
+GPS (ao ar livre, no campus, com localização **precisa**)
+
+- [ ] Na entrada principal, o app fala "Buscando sua localização" e depois pergunta "parece que você está na entrada principal. Está certo?".
+- [ ] Repetir na entrada do bloco B e na entrada do bloco A.
+- [ ] "Sim" confirma. "Não" pergunta onde a pessoa está. "Não, estou no balcão de informações" corrige direto.
+- [ ] Com a localização só aproximada, ou dentro de um prédio, o app não sugere lugar e só pergunta onde a pessoa está.
+- [ ] Fora do campus, o app avisa que a pessoa não parece estar na UNAERP.
+
+Microfone e interrupção
+
+- [ ] Depois de cada pergunta, o microfone abre sozinho: vibração curta e descrição "Ouvindo. Toque para pausar".
+- [ ] Tocar enquanto o app fala interrompe a fala e já escuta.
+- [ ] Tocar enquanto o app escuta pausa a orientação ("Escuta pausada"). Um novo toque retoma onde parou.
+- [ ] Ficar em silêncio três vezes seguidas fecha o microfone ("Não ouvi nenhuma resposta").
+- [ ] Nenhuma fala do próprio app, nem do TalkBack, é reconhecida como resposta. Registrar se isso acontecer.
+
+Destino e rota
+
+- [ ] Destinos falados de vários jeitos: "sala 15B", "quinze b", "bê quinze", "financeiro", "LIAPE", "sala dos computadores".
+- [ ] "Banheiro" leva ao mais perto. "Não, feminino" na confirmação troca para o feminino mais perto.
+- [ ] "Sala 9" pede o nome completo (há 9A e 9B). "Trinta a" responde que a sala A30 não existe no mapa.
+- [ ] A rota fala quantas etapas tem e a primeira etapa.
+  - "Pronto" passa à próxima, "voltar" repete a anterior e "repetir" repete a atual.
+  - Na última etapa, "pronto" diz "Você chegou".
+- [ ] **No campus, acompanhado:** seguir a rota da entrada principal até a sala 20B e das Informações até a sala 15B. Registrar:
+  - se cada "cruzamento" contado bate com o piso real;
+  - se o lado das curvas está certo;
+  - se a escada desce do bloco B para o A;
+  - se as referências ajudam.
+- [ ] "Preciso de ajuda" informa que a ligação ainda não está no app e repete a pergunta atual.
+- [ ] "Parar" encerra; "recomeçar" volta ao início.
 
 ## Registro da execução
 
@@ -121,6 +164,7 @@ Para cada falha, registrar: etapa, ação realizada, resultado esperado, resulta
 
 | Caso | Resultado / evidência | Responsável / data |
 | --- | --- | --- |
+| 0.2.0: GPS, microfone, destino e rota | A executar | — |
 | Interface e TalkBack | A executar | — |
 | Permissões e configurações | A executar | — |
 | Localização | A executar | — |

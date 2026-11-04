@@ -50,7 +50,7 @@ Dentro dos prédios o GPS piora muito. Ele serve para sugerir o ponto de partida
 
 O GPS nunca decide sozinho.
 
-No celular, o navegador só libera a localização em páginas HTTPS (ou `localhost`). O app Android ainda não usa este arquivo: ele pede só a localização aproximada e não tem o mapa.
+No celular, o navegador só libera a localização em páginas HTTPS (ou `localhost`). O app Android usa o mesmo arquivo, empacotado como *asset*, com a mesma lógica ([GpsPoints.kt](../app/src/main/java/com/example/sonaruna/guia/GpsPoints.kt)), e pede a localização precisa uma vez, junto com o microfone.
 
 ## Pontos marcados no Google My Maps
 

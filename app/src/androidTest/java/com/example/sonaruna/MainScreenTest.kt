@@ -20,27 +20,37 @@ class MainScreenTest {
     @Test fun onlyOneButtonHasActionAndAccessibleName() {
         var clicks = 0
         compose.setContent {
-            MainScreen(MainUiState(actionDescription = "Ativar microfone para informar o local atual", busy = false)) { clicks++ }
+            MainScreen(MainUiState(actionDescription = "Começar orientação", busy = false)) { clicks++ }
         }
         compose.onAllNodes(hasClickAction()).assertCountEquals(1)
         compose.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)).assertCountEquals(1)
-        compose.onNodeWithContentDescription("Ativar microfone para informar o local atual").assertIsEnabled().performClick()
+        compose.onNodeWithContentDescription("Começar orientação").assertIsEnabled().performClick()
         assertEquals(1, clicks)
     }
 
-    @Test fun listeningButtonCanCancel() {
+    @Test fun listeningButtonCanPause() {
         var clicks = 0
         compose.setContent {
-            MainScreen(MainUiState(actionDescription = "Ouvindo. Toque para cancelar", listening = true, busy = false)) { clicks++ }
+            MainScreen(MainUiState(actionDescription = "Ouvindo. Toque para pausar", listening = true, busy = false)) { clicks++ }
         }
-        compose.onNodeWithContentDescription("Ouvindo. Toque para cancelar").assertIsEnabled().performClick()
+        compose.onNodeWithContentDescription("Ouvindo. Toque para pausar").assertIsEnabled().performClick()
         assertEquals(1, clicks)
     }
 
-    @Test fun importantSpeechCompletesBeforeButtonBecomesAvailable() {
+    /** A tap while the app speaks interrupts it and listens: the person's answer has priority. */
+    @Test fun speakingButtonCanInterrupt() {
+        var clicks = 0
         compose.setContent {
-            MainScreen(MainUiState(actionDescription = "Reproduzindo instrução por voz. Aguarde", speaking = true, busy = true)) {}
+            MainScreen(MainUiState(actionDescription = "Falando. Toque para responder agora", speaking = true, busy = false)) { clicks++ }
         }
-        compose.onNodeWithContentDescription("Reproduzindo instrução por voz. Aguarde").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Falando. Toque para responder agora").assertIsEnabled().performClick()
+        assertEquals(1, clicks)
+    }
+
+    @Test fun buttonWaitsWhileLocating() {
+        compose.setContent {
+            MainScreen(MainUiState(actionDescription = "Buscando sua localização. Aguarde", busy = true)) {}
+        }
+        compose.onNodeWithContentDescription("Buscando sua localização. Aguarde").assertIsNotEnabled()
     }
 }

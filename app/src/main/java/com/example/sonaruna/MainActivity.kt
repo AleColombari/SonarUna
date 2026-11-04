@@ -77,18 +77,17 @@ class MainActivity : ComponentActivity() {
     private fun permissionStatus(): PermissionStatus {
         val location = granted(Manifest.permission.ACCESS_COARSE_LOCATION) || granted(Manifest.permission.ACCESS_FINE_LOCATION)
         val microphone = granted(Manifest.permission.RECORD_AUDIO)
-        val locationBlocked = !location && permissionHistory.getBoolean("location_requested", false) &&
-            !ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION) &&
-            !ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)
         val microphoneBlocked = !microphone && permissionHistory.getBoolean("microphone_requested", false) &&
             !ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)
-        return PermissionStatus(location, microphone, locationBlocked || microphoneBlocked)
+        return PermissionStatus(location, microphone, microphoneBlocked)
     }
 
+    /** Location is asked once, together with the microphone; refusing it only turns off the GPS suggestion. */
     private fun requestMissingPermissions() {
         val status = permissionStatus()
+        val askLocation = !status.location && !permissionHistory.getBoolean("location_requested", false)
         val missing = buildList {
-            if (!status.location) {
+            if (askLocation) {
                 add(Manifest.permission.ACCESS_FINE_LOCATION)
                 add(Manifest.permission.ACCESS_COARSE_LOCATION)
             }
@@ -99,7 +98,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         permissionHistory.edit {
-            if (!status.location) putBoolean("location_requested", true)
+            if (askLocation) putBoolean("location_requested", true)
             if (!status.microphone) putBoolean("microphone_requested", true)
         }
         permissionLauncher.launch(missing.toTypedArray())
