@@ -16,11 +16,37 @@ class ConversationTest {
     fun `without GPS it asks where the person is`() {
         val hello = Conversation(map).start()
         assertEquals(Phase.ORIGIN, hello.phase)
-        assertEquals(
-            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A.",
-            hello.say.last(),
-        )
+        assertEquals(listOf("Onde você está agora?"), hello.say)
         assertTrue(hello.listen)
+    }
+
+    @Test
+    fun `while the GPS searches, what the person says wins and the late reading is ignored`() {
+        val said = Conversation(map)
+        assertEquals(listOf("Procurando sua localização."), said.startLocating().say)
+        assertEquals(Phase.DESTINATION, said.hear(listOf("estou na sala 5A")).phase)
+        assertEquals(null, said.locationFound(atEntrance))
+
+        val waited = Conversation(map)
+        waited.startLocating()
+        assertEquals(emptyList<String>(), waited.silence().say)
+        assertEquals(Phase.CONFIRM_ORIGIN, waited.locationFound(atEntrance)!!.phase)
+        assertEquals(null, waited.locationFound(null))
+    }
+
+    @Test
+    fun `origin and destination in one phrase go straight to the route`() {
+        val session = Conversation(map)
+        session.startLocating()
+        val route = session.hear(listOf("estou na 3A e quero ir para a 10B"))
+        assertEquals(Phase.NAVIGATING, route.phase)
+        assertEquals("Você está na sala 3A.", route.say[0])
+        assertEquals("Rota até a sala 10B, em 8 etapas.", route.say[1])
+
+        val first = Conversation(map)
+        first.start()
+        assertEquals(listOf("Onde você está agora?"), first.hear(listOf("quero ir para a 10B")).say)
+        assertEquals(Phase.NAVIGATING, first.hear(listOf("estou na 3A")).phase)
     }
 
     @Test
@@ -28,7 +54,7 @@ class ConversationTest {
         val session = Conversation(map)
         val hello = session.start(atEntrance)
         assertEquals(Phase.CONFIRM_ORIGIN, hello.phase)
-        assertEquals("Pela sua localização, parece que você está na entrada principal. Está certo? Diga sim ou não.", hello.say.last())
+        assertEquals(listOf("Parece que você está na entrada principal. Está certo?"), hello.say)
         val ok = session.hear(listOf("sim, estou"))
         assertEquals(Phase.DESTINATION, ok.phase)
         assertTrue(ok.say[0].startsWith("Você está na entrada principal."))
@@ -54,7 +80,7 @@ class ConversationTest {
     fun `outside the campus it warns and asks`() {
         val outside = Conversation(map).start(OriginGuess.OutsideCampus)
         assertEquals(Phase.ORIGIN, outside.phase)
-        assertTrue(outside.say.joinToString(" ").contains("você não parece estar no campus da UNAERP. Onde você está agora?"))
+        assertEquals(listOf("Você não parece estar no campus da UNAERP.", "Onde você está agora?"), outside.say)
     }
 
     @Test
@@ -66,16 +92,21 @@ class ConversationTest {
         assertTrue(session.hear(listOf("não, feminino")).say[0].contains("banheiro feminino do bloco A"))
         val go = session.hear(listOf("isso"))
         assertEquals(Phase.NAVIGATING, go.phase)
-        assertEquals("Rota até o banheiro feminino do bloco A, em 3 etapas, seguindo o piso tátil.", go.say[0])
+        assertEquals("Rota até o banheiro feminino do bloco A, em 3 etapas.", go.say[0])
         assertTrue(go.say[1].startsWith("Etapa 1 de 3. "))
         assertTrue(session.hear(listOf("pronto")).say[0].startsWith("Etapa 2 de 3. "))
         assertTrue(session.hear(listOf("voltar")).say[0].startsWith("Etapa 1 de 3. "))
         session.hear(listOf("pronto"))
         session.hear(listOf("pronto"))
         val arrived = session.hear(listOf("cheguei"))
-        assertEquals(Phase.IDLE, arrived.phase)
-        assertFalse(arrived.listen)
-        assertEquals("Você chegou no banheiro feminino do bloco A. Toque no botão para uma nova orientação.", arrived.say[0])
+        assertEquals(Phase.DESTINATION, arrived.phase)
+        assertTrue(arrived.listen)
+        assertEquals(
+            "Você chegou no banheiro feminino do bloco A. Se quiser ir para outro lugar, diga o destino. Para encerrar, diga parar.",
+            arrived.say[0],
+        )
+        // The arrival is the new origin: asking for the same place says so.
+        assertEquals("Você já está aí. Diga outro destino.", session.hear(listOf("banheiro feminino do bloco a")).say[0])
     }
 
     @Test

@@ -140,17 +140,18 @@ export function parseRoomCode(text) {
   const roomNumber = numberAfter(terms, 'sala');
   if (blockLetter && roomNumber !== null) return make(blockLetter.toUpperCase(), roomNumber);
 
+  // Letra depois do numero so quando fecha a frase: em "sala 20 a esquerda", o "a" e a crase. Vem antes da letra
+  // anterior ao numero, porque em "quero ir para a 10B" o "a" e o artigo e o bloco e o B.
+  const last = terms.length - 1;
+  if (last >= 1 && blockOf(terms[last]) && terms[last - 1].num !== undefined) {
+    return make(blockOf(terms[last]).toUpperCase(), terms[last - 1].num);
+  }
   for (let i = 0; i < terms.length - 1; i++) {
     const block = blockOf(terms[i]);
     if (!block || terms[i + 1].num === undefined) continue;
     const previous = terms[i - 1]?.word;
     if (AMBIGUOUS_LETTERS.has(terms[i].word) && i > 0 && previous !== 'sala' && previous !== 'bloco') continue;
     return make(block.toUpperCase(), terms[i + 1].num);
-  }
-  // Letra depois do numero so quando fecha a frase: em "sala 20 a esquerda", o "a" e a crase.
-  const last = terms.length - 1;
-  if (last >= 1 && blockOf(terms[last]) && terms[last - 1].num !== undefined) {
-    return make(blockOf(terms[last]).toUpperCase(), terms[last - 1].num);
   }
   if (roomNumber !== null) return make(null, roomNumber);
   return null;
@@ -286,6 +287,50 @@ export function findPlace(map, text) {
   if (best.length === 1) return { kind: 'found', place: best[0] };
   if (best.length > 1) return { kind: 'several', places: best };
   return { kind: 'none' };
+}
+
+// Frase com origem e destino: "estou na 3A e quero ir para a 10B", "quero ir pra 10B, estou na 3A".
+const DESTINATION_MARKERS = [
+  'quero ir para', 'quero ir pra', 'quero ir pro', 'quero ir ate', 'quero ir na', 'quero ir no', 'quero ir',
+  'preciso ir para', 'preciso ir pra', 'preciso ir pro', 'preciso ir ate', 'preciso ir',
+  'vou para', 'vou pra', 'vou pro', 'vou ate', 'ir para', 'ir pra', 'ir pro', 'ir ate',
+  'me leva para', 'me leva pra', 'me leve para', 'me leve pra', 'me levar para',
+];
+const ORIGIN_MARKERS = ['estou', 'to', 'tou', 'estamos', 'aqui'];
+// Sobras no fim de um pedaco ("estou na 3A e ..."), que atrapalham ler o codigo da sala.
+const LINKING_WORDS = new Set(['e', 'eu', 'ai', 'entao', 'mas', 'agora']);
+
+const trimLinking = (text) => {
+  const words = text.split(' ').filter(Boolean);
+  while (words.length > 0 && LINKING_WORDS.has(words[words.length - 1])) words.pop();
+  while (words.length > 0 && LINKING_WORDS.has(words[0])) words.shift();
+  return words.join(' ');
+};
+
+const firstMarker = (padded, markers) => {
+  let best = null;
+  for (const marker of markers) {
+    const at = padded.indexOf(` ${marker} `);
+    if (at >= 0 && (!best || at < best.at || (at === best.at && marker.length > best.marker.length))) best = { at, marker };
+  }
+  return best;
+};
+
+/**
+ * Separa a parte que diz onde a pessoa esta da parte que diz aonde ela quer ir. Devolve { origem, destino }, cada um
+ * texto normalizado ou null; sem marca de destino ("quero ir para"...), tudo e origem.
+ */
+export function splitTrip(text) {
+  const padded = ` ${normalize(text)} `;
+  const destination = firstMarker(padded, DESTINATION_MARKERS);
+  if (!destination) return { origem: trimLinking(padded.trim()) || null, destino: null };
+  const before = trimLinking(padded.slice(0, destination.at));
+  const after = ` ${padded.slice(destination.at + destination.marker.length + 1).trim()} `;
+  const origin = firstMarker(after, ORIGIN_MARKERS);
+  if (origin) {
+    return { origem: trimLinking(after.slice(origin.at)) || null, destino: trimLinking(after.slice(0, origin.at)) || null };
+  }
+  return { origem: before || null, destino: trimLinking(after) || null };
 }
 
 /** Peso total da rota (Infinity sem caminho): serve para escolher o lugar mais perto entre varios. */

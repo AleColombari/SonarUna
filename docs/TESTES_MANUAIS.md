@@ -17,7 +17,11 @@ Abertura e permissões
 
 GPS (ao ar livre, no campus, com localização **precisa**)
 
-- [ ] Na entrada principal, o app fala "Buscando sua localização" e depois pergunta "parece que você está na entrada principal. Está certo?".
+- [ ] Na entrada principal, o app fala só "Procurando sua localização." e, ficando em silêncio, depois pergunta "Parece que você está na entrada principal. Está certo?".
+- [ ] Logo depois de "Procurando sua localização.", dizer "estou na sala 5A": o app aceita na hora e não faz a pergunta do GPS depois.
+- [ ] Ao abrir, dizer "estou na 3A e quero ir para a 10B": o app diz "Você está na sala 3A." e já fala a rota até a 10B, sem confirmar.
+- [ ] Ao abrir, dizer só "quero ir para a 10B": o app pergunta onde a pessoa está e, com "estou na 3A", já fala a rota.
+- [ ] Começar uma frase longa bem quando o GPS deve responder: o app não corta a frase no meio.
 - [ ] Repetir na entrada do bloco B e na entrada do bloco A.
 - [ ] "Sim" confirma. "Não" pergunta onde a pessoa está. "Não, estou no balcão de informações" corrige direto.
 - [ ] Com a localização só aproximada, ou dentro de um prédio, o app não sugere lugar e só pergunta onde a pessoa está.
@@ -25,7 +29,7 @@ GPS (ao ar livre, no campus, com localização **precisa**)
 
 Microfone e interrupção
 
-- [ ] Depois de cada pergunta, o microfone abre sozinho: vibração curta e descrição "Ouvindo. Toque para pausar".
+- [ ] Depois de cada pergunta, o microfone abre sozinho: vibração curta e descrição "Ouvindo. Pode falar".
 - [ ] Tocar enquanto o app fala interrompe a fala e já escuta.
 - [ ] **Falar por cima:** começar a responder enquanto o app ainda faz a pergunta. A voz do app para e a resposta vale. Testar com o alto-falante e com fone de ouvido, e registrar se o app interrompe a si mesmo (eco) ou se o reconhecedor faz um bipe a cada tentativa.
 - [ ] Tocar enquanto o app escuta pausa a orientação ("Escuta pausada"). Um novo toque retoma onde parou.

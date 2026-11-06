@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  ateLugar, buildInstructions, classifyCommand, emLugar, findContact, paraLugar, roundSteps, stepsPhrase, classifyYesNo, findEntrance, findPlace, loadMap, normalize, parseRoomCode, planRoute,
+  ateLugar, buildInstructions, classifyCommand, emLugar, findContact, paraLugar, roundSteps, stepsPhrase, classifyYesNo, findEntrance, findPlace, loadMap, normalize, parseRoomCode, planRoute, splitTrip,
 } from '../engine.js';
 
 const map = loadMap(JSON.parse(readFileSync(new URL('../../data/bloco-a.json', import.meta.url), 'utf8')));
@@ -281,4 +281,13 @@ test('findContact acha o contato pelo apelido, sem acento', () => {
   assert.equal(findContact(contacts, 'Atendimento').id, 'a');
   assert.equal(findContact(contacts, 'banana'), null);
   assert.equal(findContact([], 'segurança'), null);
+});
+
+test('splitTrip separa onde a pessoa esta e para onde quer ir, em qualquer ordem', () => {
+  assert.deepEqual(splitTrip('Estou na 3A e quero ir para a 10B'), { origem: 'estou na 3 a', destino: 'a 10 b' });
+  assert.deepEqual(splitTrip('quero ir pra 10B, estou na 3A'), { origem: 'estou na 3 a', destino: '10 b' });
+  assert.deepEqual(splitTrip('eu tô na entrada principal, me leva pra sala 15B'), { origem: 'to na entrada principal', destino: 'sala 15 b' });
+  assert.deepEqual(splitTrip('sim, quero ir para o financeiro'), { origem: 'sim', destino: 'o financeiro' });
+  assert.deepEqual(splitTrip('quero ir para a 10B'), { origem: null, destino: 'a 10 b' });
+  assert.equal(splitTrip('estou na sala 5A').destino, null);
 });

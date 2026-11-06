@@ -38,12 +38,12 @@ Dentro dos prédios o GPS piora muito. Ele serve para sugerir o ponto de partida
 
 ## Como o app usa
 
-1. Ao tocar no botão, a versão web pede a localização precisa ao navegador e espera até 8 segundos. Os lugares de partida com coordenadas são a entrada principal, a entrada do bloco B e a entrada do bloco A.
+1. Ao começar, o app diz só "Procurando sua localização." e já escuta enquanto pede a localização precisa (até 8 segundos). Se a pessoa disser onde está antes, vale o que ela disse e a leitura é ignorada. Os lugares de partida com coordenadas são a entrada principal, a entrada do bloco B e a entrada do bloco A.
 2. `suggestOrigin` ([web/localizacao.js](../web/localizacao.js)) decide:
    - **leitura pior que ±10 m** ou sem leitura: não sugere nada e pergunta "Onde você está agora?";
    - **fora do raio do campus**: avisa "você não parece estar no campus da UNAERP" e pergunta;
    - **dentro do raio de um ponto** (raio do ponto + margem de erro da leitura): sugere o mais perto.
-3. A sugestão é sempre uma pergunta: "Pela sua localização, parece que você está na entrada principal. Está certo?"
+3. A sugestão é sempre uma pergunta: "Parece que você está na entrada principal. Está certo?"
    - **"sim"**: confirma o ponto de partida.
    - **"não"**: o app pergunta onde a pessoa está.
    - **"não, estou no balcão de informações"**: corrige direto.

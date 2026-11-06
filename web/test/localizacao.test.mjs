@@ -64,7 +64,7 @@ test('conversa: o GPS sugere, a pessoa confirma com sim', () => {
   const session = createSession(map);
   const hello = session.start(suggestOrigin(gps, { ...ENTRADA, precisao: 5 }));
   assert.equal(hello.phase, 'confirm-origin');
-  assert.match(hello.say.at(-1), /^Pela sua localização, parece que você está na entrada principal\. Está certo\? Diga sim ou não\.$/);
+  assert.deepEqual(hello.say, ['Parece que você está na entrada principal. Está certo?']);
   const ok = session.hear(['sim, estou']);
   assert.equal(ok.phase, 'destination');
   assert.match(ok.say[0], /^Você está na entrada principal\./);
@@ -87,9 +87,26 @@ test('conversa: nao pergunta onde esta; ja dizer outro lugar corrige direto', ()
 
 test('conversa: fora do campus avisa e pergunta; sem GPS pergunta direto', () => {
   const outside = createSession(map).start(suggestOrigin(gps, { lat: -21.17, lon: -47.81, precisao: 10 }));
-  assert.match(outside.say.join(' '), /você não parece estar no campus da UNAERP\. Onde você está agora\?/);
+  assert.deepEqual(outside.say, ['Você não parece estar no campus da UNAERP.', 'Onde você está agora?']);
   assert.equal(outside.phase, 'entrance');
-  assert.match(createSession(map).start().say.at(-1), /^Onde você está agora\?/);
+  assert.deepEqual(createSession(map).start().say, ['Onde você está agora?']);
+});
+
+test('conversa: enquanto o GPS procura, o que a pessoa diz vale e o GPS que chega depois e ignorado', () => {
+  const said = createSession(map);
+  assert.deepEqual(said.startLocating().say, ['Procurando sua localização.']);
+  assert.equal(said.hear(['estou na sala 5A']).phase, 'destination');
+  assert.equal(said.locationFound(suggestOrigin(gps, { ...ENTRADA, precisao: 5 })), null);
+
+  const waited = createSession(map);
+  waited.startLocating();
+  const found = waited.locationFound(suggestOrigin(gps, { ...ENTRADA, precisao: 5 }));
+  assert.equal(found.phase, 'confirm-origin');
+  assert.equal(waited.locationFound(null), null);
+
+  const nothing = createSession(map);
+  nothing.startLocating();
+  assert.deepEqual(nothing.locationFound(null).say, ['Onde você está agora?']);
 });
 
 test('importar-mymaps: le o KML, cria feicoes novas e preserva a ligacao numa reimportacao', async () => {

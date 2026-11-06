@@ -13,6 +13,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognitionService
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.util.Log
 
 enum class SpeechFailure {
     PERMISSION_DENIED, UNAVAILABLE, MICROPHONE_UNAVAILABLE, NETWORK,
@@ -39,6 +40,15 @@ class SpeechRecognitionManager(context: Context) {
     private val engines: List<Engine> by lazy(::findEngines)
     private var workingEngine = 0
 
+    /** Offline is preferred until a recognizer says pt-BR is not available offline (model not downloaded). */
+    private var preferOffline = true
+
+    /**
+     * One recognizer per engine, reused: creating and destroying one per answer made Google's service report
+     * "disconnected" (error 11) when the next one started right away.
+     */
+    private val recognizers = mutableMapOf<Engine, SpeechRecognizer>()
+
     @Volatile
     private var closed = false
 
@@ -48,6 +58,7 @@ class SpeechRecognitionManager(context: Context) {
         val onError: (SpeechFailure) -> Unit,
         val onPartial: ((List<String>) -> Unit)?,
         var attempt: Int = 0,
+        var reconnected: Boolean = false,
         var recognizer: SpeechRecognizer? = null,
         var timeout: Runnable? = null,
     )
@@ -86,7 +97,26 @@ class SpeechRecognitionManager(context: Context) {
 
     fun close() {
         closed = true
-        onMain { cancelActive() }
+        onMain {
+            cancelActive()
+            recognizers.values.forEach { runCatching { it.destroy() } }
+            recognizers.clear()
+        }
+    }
+
+    private fun create(engine: Engine): SpeechRecognizer = when (engine) {
+        is Engine.Service -> SpeechRecognizer.createSpeechRecognizer(context, engine.component)
+        Engine.OnDevice -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+        } else {
+            SpeechRecognizer.createSpeechRecognizer(context)
+        }
+        Engine.Default -> SpeechRecognizer.createSpeechRecognizer(context)
+    }
+
+    /** A recognizer whose service disconnected is thrown away; the next attempt creates a fresh one. */
+    private fun discard(engine: Engine) {
+        recognizers.remove(engine)?.let { runCatching { it.destroy() } }
     }
 
     private fun findEngines(): List<Engine> = buildList {
@@ -121,17 +151,10 @@ class SpeechRecognitionManager(context: Context) {
         disposeRecognizer(session)
         val engine = engines[engineIndex]
         val hasNext = engineIndex + 1 < engines.size
+        val offline = preferOffline
 
         try {
-            val recognizer = when (engine) {
-                is Engine.Service -> SpeechRecognizer.createSpeechRecognizer(context, engine.component)
-                Engine.OnDevice -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
-                } else {
-                    SpeechRecognizer.createSpeechRecognizer(context)
-                }
-                Engine.Default -> SpeechRecognizer.createSpeechRecognizer(context)
-            }
+            val recognizer = recognizers.getOrPut(engine) { create(engine) }
             session.recognizer = recognizer
             recognizer.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) = Unit
@@ -150,7 +173,19 @@ class SpeechRecognitionManager(context: Context) {
 
                 override fun onError(error: Int) = onMain {
                     if (!isCurrent(session, attempt)) return@onMain
-                    if (hasNext && canTryNextEngine(error)) {
+                    // Only codes are logged, never what was said: enough to tell why recognition failed on a phone.
+                    Log.i(TAG, "Reconhecimento falhou: motor=$engine offline=$offline erro=$error")
+                    if (offline && isLanguageError(error)) {
+                        // pt-BR not downloaded for offline use: the same engine, now online (as the web version).
+                        preferOffline = false
+                        beginAttempt(session, engineIndex)
+                    } else if (isDisconnection(error) && !session.reconnected) {
+                        // The service dropped this recognizer: reconnect to the same engine once, after a pause so the
+                        // service can finish closing the old one, before moving on.
+                        session.reconnected = true
+                        discard(engine)
+                        handler.postDelayed({ beginAttempt(session, engineIndex) }, RECONNECT_DELAY_MILLIS)
+                    } else if (hasNext && canTryNextEngine(error)) {
                         beginAttempt(session, engineIndex + 1)
                     } else {
                         finishError(session, classify(error))
@@ -166,6 +201,9 @@ class SpeechRecognitionManager(context: Context) {
                     if (hypotheses.isEmpty()) {
                         finishError(session, SpeechFailure.NO_SPEECH)
                     } else {
+                        if (workingEngine != engineIndex || session.attempt > 1) {
+                            Log.i(TAG, "Reconhecimento funcionou: motor=$engine offline=$offline")
+                        }
                         workingEngine = engineIndex
                         active = null
                         disposeRecognizer(session)
@@ -185,7 +223,7 @@ class SpeechRecognitionManager(context: Context) {
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, session.onPartial != null)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
                 // The system recognizer may ignore this preference; offline use is not guaranteed.
-                putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+                putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, offline)
             })
         } catch (_: SecurityException) {
             finishError(session, SpeechFailure.PERMISSION_DENIED)
@@ -219,8 +257,8 @@ class SpeechRecognitionManager(context: Context) {
         session.timeout = null
         val recognizer = session.recognizer
         session.recognizer = null
+        // Cancel only: the recognizer is reused by the next answer.
         runCatching { recognizer?.cancel() }
-        runCatching { recognizer?.destroy() }
     }
 
     private fun onMain(action: () -> Unit) {
@@ -239,6 +277,12 @@ class SpeechRecognitionManager(context: Context) {
         else -> SpeechFailure.UNKNOWN
     }
 
+    private fun isDisconnection(error: Int): Boolean = error == SpeechRecognizer.ERROR_CLIENT ||
+        (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && error == SpeechRecognizer.ERROR_SERVER_DISCONNECTED)
+
+    private fun isLanguageError(error: Int): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+        (error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED || error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE)
+
     /** Errors that mean "this engine cannot do it" (language, service), not "the person said nothing". */
     private fun canTryNextEngine(error: Int): Boolean = when (error) {
         SpeechRecognizer.ERROR_SERVER, SpeechRecognizer.ERROR_CLIENT -> true
@@ -253,5 +297,8 @@ class SpeechRecognitionManager(context: Context) {
     private companion object {
         /** Google's recognition services, preferred in this order (Google app, then Speech Services by Google). */
         val GOOGLE_PACKAGES = listOf("com.google.android.googlequicksearchbox", "com.google.android.tts")
+        const val TAG = "SonarUna"
+        const val RECONNECT_DELAY_MILLIS = 400L
+
     }
 }

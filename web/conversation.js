@@ -3,7 +3,7 @@
 
 import {
   ateLugar, buildInstructions, classifyCommand, classifyYesNo, deLugar, emLugar, exitHeading, findContact, findEntrance, findPlace,
-  paraLugar, planRoute, routeWeight, stepsPhrase,
+  paraLugar, planRoute, routeWeight, splitTrip, stepsPhrase,
 } from './engine.js';
 
 export const MAX_SILENCE_RETRIES = 3;
@@ -25,43 +25,67 @@ export function createSession(map, getContacts = () => []) {
   let returnPhase = null;
   let pendingContact = null;
   let suggested = null;
+  let locating = false;
+  // Destino dito antes da origem ("quero ir para a 10B" sem dizer onde esta): vale assim que a origem for conhecida.
+  let pendingDestination = null;
 
   const reply = (say, listen = true) => ({ say, listen, phase });
   const entranceNames = () => map.entrances.map((e) => e.nome).join(' ou ');
   // Com "origem": "lugar" a conversa comeca perguntando onde a pessoa esta, e nao por qual entrada entrou.
   const byPlace = map.origem === 'lugar';
-  const originQuestion = () => (byPlace
-    ? `Onde você está agora? Diga a sala ou o lugar, por exemplo, ${map.exemploOrigem ?? 'balcão de informações'}.`
-    : `Por qual entrada você entrou? Diga ${entranceNames()}.`);
-  const destinationQuestion = () => `Para onde você quer ir? Diga, por exemplo, ${map.exemplo}.`;
+  // Perguntas curtas; os exemplos ficam na ajuda.
+  const originQuestion = () => (byPlace ? 'Onde você está agora?' : `Por qual entrada você entrou? Diga ${entranceNames()}.`);
+  const destinationQuestion = () => 'Para onde você quer ir?';
   const contactNames = (contacts) => contacts.map((c) => c.nome).join(' ou ');
   const stepLine = (i) => `Etapa ${i + 1} de ${steps.length}. ${steps[i].texto}`;
 
-  const suggestionQuestion = () => `Pela sua localização, parece que você está ${emLugar(suggested)}. Está certo? Diga sim ou não.`;
+  const suggestionQuestion = () => `Parece que você está ${emLugar(suggested)}. Está certo?`;
+  const confirmQuestion = () => `Você quer ir ${paraLugar(candidate)}?`;
 
-  /**
-   * `gps` e o resultado de suggestOrigin (localizacao.js), quando o app tem uma leitura de GPS. Uma sugestao vira
-   * pergunta de confirmacao; o GPS nunca decide sozinho onde a pessoa esta.
-   */
-  function start(gps = null) {
+  function reset() {
     phase = 'entrance';
     entrance = destination = candidate = suggested = null;
     steps = [];
     index = 0;
     silences = 0;
-    let question = [originQuestion()];
+    locating = false;
+    pendingDestination = null;
+  }
+
+  /** O que o GPS sugere vira pergunta; o GPS nunca decide sozinho onde a pessoa esta. */
+  function originFromGps(gps) {
     if (byPlace && gps?.kind === 'sugestao') {
       suggested = gps.place;
       phase = 'confirm-origin';
-      question = [suggestionQuestion()];
-    } else if (byPlace && gps?.kind === 'fora-do-campus') {
-      question = [`Pela sua localização, você não parece estar ${map.nome ? `no ${map.nome}` : 'no mapa'}.`, originQuestion()];
+      return [suggestionQuestion()];
     }
-    return reply([
-      map.nome ? `Olá. Eu sou o SonarUna, no ${map.nome}.` : 'Olá. Eu sou o SonarUna.',
-      ...(getContacts().length > 0 ? ['Se precisar falar com alguém, diga preciso de ajuda a qualquer momento.'] : []),
-      ...question,
-    ]);
+    if (byPlace && gps?.kind === 'fora-do-campus') {
+      return [`Você não parece estar ${map.nome ? `no ${map.nome}` : 'no mapa'}.`, originQuestion()];
+    }
+    return [originQuestion()];
+  }
+
+  /** Comeco com o GPS ja lido (ou sem GPS): so a pergunta, sem apresentacao. */
+  function start(gps = null) {
+    reset();
+    return reply(originFromGps(gps));
+  }
+
+  /**
+   * Comeco enquanto o GPS ainda procura: o app ja escuta. Se a pessoa disser onde esta antes do GPS responder,
+   * vale o que ela disse; senao, locationFound faz a pergunta com o que o GPS achou.
+   */
+  function startLocating() {
+    reset();
+    locating = true;
+    return reply(['Procurando sua localização.']);
+  }
+
+  /** Resultado do GPS depois de startLocating. Devolve null se a pessoa ja respondeu antes. */
+  function locationFound(gps) {
+    if (!locating || phase !== 'entrance' || entrance) return null;
+    locating = false;
+    return reply(originFromGps(gps));
   }
 
   function stop() {
@@ -73,9 +97,9 @@ export function createSession(map, getContacts = () => []) {
     const common = 'Você pode dizer a qualquer momento: repetir, voltar, recomeçar ou parar.'
       + (getContacts().length > 0 ? ' Para falar com alguém, diga preciso de ajuda.' : '');
     switch (phase) {
-      case 'entrance': return reply([originQuestion(), common]);
+      case 'entrance': return reply([byPlace ? `Diga onde você está, por exemplo, ${map.exemploOrigem ?? 'balcão de informações'}. Pode dizer também para onde quer ir.` : originQuestion(), common]);
       case 'confirm-origin': return reply(['Diga sim se você está nesse lugar, ou diga onde você está.', common]);
-      case 'destination': return reply([destinationQuestion(), common]);
+      case 'destination': return reply([`Diga para onde quer ir, por exemplo, ${map.exemplo}.`, common]);
       case 'confirm': return reply(['Diga sim para confirmar o destino ou não para escolher outro.', common]);
       case 'navigating': return reply(['Diga pronto quando terminar a etapa e quiser a próxima.', common]);
       default: return reply(['Toque no botão para começar.'], false);
@@ -87,7 +111,7 @@ export function createSession(map, getContacts = () => []) {
       case 'entrance': return reply([originQuestion()]);
       case 'confirm-origin': return reply([suggestionQuestion()]);
       case 'destination': return reply([destinationQuestion()]);
-      case 'confirm': return reply([`Você quer ir ${paraLugar(candidate)}. Está certo? Diga sim ou não.`]);
+      case 'confirm': return reply([confirmQuestion()]);
       case 'navigating': return reply([stepLine(index)]);
       case 'assist-choose': return reply([`Com quem você quer falar? Diga ${contactNames(getContacts())}, ou diga cancelar.`]);
       case 'assist-confirm': return reply([`Você quer falar com ${pendingContact.rotulo}? Diga sim ou não.`]);
@@ -227,7 +251,26 @@ export function createSession(map, getContacts = () => []) {
     entrance = { id: place.id, nome: place.nome, artigo: place.artigo, tipo: place.tipo, ponto: place.id, rumo: exitHeading(map, place.id) };
     suggested = null;
     phase = 'destination';
+    if (pendingDestination) {
+      const text = pendingDestination;
+      pendingDestination = null;
+      const route = routeTo(text, `Você está ${emLugar(place)}.`);
+      if (route) return route;
+    }
     return reply([`Você está ${emLugar(place)}. ${destinationQuestion()}`]);
+  }
+
+  /** Sai direto para o destino dito (sem confirmar), a partir da origem ja definida. Null se nao achar o lugar. */
+  function routeTo(text, prefix) {
+    let to = findPlace(map, text);
+    if (to.kind === 'several') {
+      const nearest = [...to.places].sort((a, b) => routeWeight(map, entrance.ponto, a.id) - routeWeight(map, entrance.ponto, b.id))[0];
+      to = { kind: 'found', place: nearest };
+    }
+    if (to.kind !== 'found' || to.place.id === entrance.ponto) return null;
+    candidate = to.place;
+    const route = beginRoute();
+    return { ...route, say: [prefix, ...route.say] };
   }
 
   /** Resposta a "parece que voce esta em X": sim confirma; nao pergunta; citar outro lugar ja corrige. */
@@ -278,7 +321,7 @@ export function createSession(map, getContacts = () => []) {
         }
         candidate = result.place;
         phase = 'confirm';
-        return reply([`Você quer ir ${paraLugar(candidate)}. Está certo? Diga sim ou não.`]);
+        return reply([confirmQuestion()]);
       }
       unknown ??= result.kind === 'unknown-room' ? result : null;
       ambiguous ??= result.kind === 'ambiguous' ? result : null;
@@ -325,7 +368,7 @@ export function createSession(map, getContacts = () => []) {
     const etapas = `${steps.length} ${steps.length === 1 ? 'etapa' : 'etapas'}`;
     // No modo piso nao ha medida: a rota so diz quantas etapas tem.
     const summary = map.guia === 'piso'
-      ? `Rota ${ateLugar(destination)}, em ${etapas}, seguindo o piso tátil.`
+      ? `Rota ${ateLugar(destination)}, em ${etapas}.`
       : `Rota ${ateLugar(destination)}: ${stepsPhrase(steps.reduce((sum, step) => sum + step.bruto, 0))}, em ${etapas}.`;
     return reply([summary, stepLine(0)]);
   }
@@ -335,8 +378,13 @@ export function createSession(map, getContacts = () => []) {
       switch (classifyCommand(text)) {
         case 'next':
           if (index + 1 >= steps.length) {
-            phase = 'idle';
-            return reply([`Você chegou ${emLugar(destination)}. Toque no botão para uma nova orientação.`], false);
+            // Chegou: o destino vira o novo ponto de partida e o app ja escuta o proximo, sem precisar tocar.
+            const arrived = destination;
+            setOrigin(arrived);
+            candidate = destination = null;
+            steps = [];
+            index = 0;
+            return reply([`Você chegou ${emLugar(arrived)}. Se quiser ir para outro lugar, diga o destino. Para encerrar, diga parar.`]);
           }
           index++;
           return reply([stepLine(index)]);
@@ -357,12 +405,44 @@ export function createSession(map, getContacts = () => []) {
     return reply(['Não entendi. Diga pronto para a próxima etapa, repetir, voltar ou parar.']);
   }
 
+  /**
+   * "Estou na 3A e quero ir para a 10B": com origem e destino na mesma frase, o app ja faz o caminho, sem perguntar.
+   * So o destino, antes de saber a origem ("quero ir para a 10B"): o app guarda o destino e pergunta onde a pessoa
+   * esta. Devolve null quando a frase nao fala de destino.
+   */
+  function hearTrip(alternatives) {
+    if (!byPlace) return null;
+    const originKnown = !['entrance', 'confirm-origin'].includes(phase);
+    for (const text of alternatives) {
+      const trip = splitTrip(text);
+      if (!trip.destino) continue;
+      let from = trip.origem ? findPlace(map, trip.origem) : { kind: 'none' };
+      const answer = trip.origem ? classifyYesNo(trip.origem) : null;
+      // "Sim, quero ir para a 15B" depois de "parece que voce esta em X": confirma X e ja vai.
+      if (from.kind !== 'found' && phase === 'confirm-origin' && answer === 'yes') from = { kind: 'found', place: suggested };
+      if (from.kind === 'found') {
+        // setOrigin ja sai para o destino; se o destino nao for reconhecido, pergunta de novo.
+        pendingDestination = trip.destino;
+        return setOrigin(from.place);
+      }
+      if (originKnown || from.kind !== 'none' || findPlace(map, trip.destino).kind === 'none') continue;
+      pendingDestination = trip.destino;
+      if (phase === 'confirm-origin' && answer !== 'no') return reply([suggestionQuestion()]);
+      suggested = null;
+      phase = 'entrance';
+      return reply([originQuestion()]);
+    }
+    return null;
+  }
+
   /** `alternatives`: o que o reconhecimento de voz entendeu, da melhor para a pior hipotese. */
   function hear(alternatives) {
     if (phase === 'idle') return reply([], false);
     const heard = alternatives.map((text) => String(text ?? '').trim()).filter(Boolean);
     if (heard.length === 0) return silence();
     silences = 0;
+    // A pessoa falou: o que o GPS achar depois nao muda mais a conversa.
+    locating = false;
 
     if (phase === 'assist-choose' || phase === 'assist-confirm') return hearAssist(heard);
     if (heard.some((text) => classifyCommand(text) === 'assist')) return beginAssist(heard);
@@ -389,6 +469,11 @@ export function createSession(map, getContacts = () => []) {
       }
     }
 
+    if (['entrance', 'confirm-origin', 'destination', 'confirm'].includes(phase)) {
+      const trip = hearTrip(heard);
+      if (trip) return trip;
+    }
+
     switch (phase) {
       case 'entrance': return hearEntrance(heard);
       case 'confirm-origin': return hearOriginConfirmation(heard);
@@ -407,7 +492,8 @@ export function createSession(map, getContacts = () => []) {
   function silence() {
     if (phase === 'idle') return reply([], false);
     // Na rota, silencio e a pessoa andando: o microfone continua ouvindo, calado, ate ela dizer pronto.
-    if (phase === 'navigating') return reply([]);
+    // Enquanto o GPS procura, silencio e so esperar: quem fala depois e o GPS (locationFound).
+    if (phase === 'navigating' || locating) return reply([]);
     silences++;
     if (silences >= MAX_SILENCE_RETRIES) {
       if (phase === 'assist-choose' || phase === 'assist-confirm') {
@@ -422,6 +508,8 @@ export function createSession(map, getContacts = () => []) {
 
   return {
     start,
+    startLocating,
+    locationFound,
     resume,
     stop,
     hear,

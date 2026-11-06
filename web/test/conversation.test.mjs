@@ -20,7 +20,7 @@ test('fluxo completo: entrada principal, sala A12, confirmacao e tres passos', (
 
   const destination = session.hear(['quero ir para a sala A12']);
   assert.equal(destination.phase, 'confirm');
-  assert.match(said(destination), /a sala A12\. Está certo/);
+  assert.match(said(destination), /^Você quer ir para a sala A12\?$/);
 
   const route = session.hear(['sim']);
   assert.equal(route.phase, 'navigating');
@@ -33,10 +33,12 @@ test('fluxo completo: entrada principal, sala A12, confirmacao e tres passos', (
   session.hear(['próximo']);
   assert.match(said(session.hear(['pronto'])), /Etapa 3 de 3/);
 
+  // Chegou: o app ja escuta o proximo destino, partindo de onde a pessoa esta.
   const arrived = session.hear(['pronto']);
-  assert.equal(arrived.phase, 'idle');
-  assert.equal(arrived.listen, false);
-  assert.match(said(arrived), /Você chegou na sala A12/);
+  assert.equal(arrived.phase, 'destination');
+  assert.equal(arrived.listen, true);
+  assert.match(said(arrived), /^Você chegou na sala A12\. Se quiser ir para outro lugar, diga o destino\./);
+  assert.equal(session.hear(['secretaria']).phase, 'confirm');
 });
 
 test('usa as outras hipoteses do reconhecimento quando a primeira nao serve', () => {
@@ -256,11 +258,11 @@ test('"ajuda" sozinho so explica o app; "socorro" chama alguem', () => {
   assert.equal(session.hear(['socorro']).phase, 'assist-confirm');
 });
 
-test('a saudacao so oferece ajuda quando ha contatos', () => {
-  const withContacts = sessionWith([atendente]).start();
-  const without = sessionWith([]).start();
-  assert.match(said(withContacts), /diga preciso de ajuda a qualquer momento/);
-  assert.doesNotMatch(said(without), /preciso de ajuda/);
+test('o comeco nao tem apresentacao; o pedido de ajuda fica na ajuda', () => {
+  const withContacts = sessionWith([atendente]);
+  assert.doesNotMatch(said(withContacts.start()), /Olá|SonarUna|preciso de ajuda/);
+  assert.match(said(withContacts.hear(['ajuda'])), /Para falar com alguém, diga preciso de ajuda/);
+  assert.doesNotMatch(said(sessionWith([]).hear(['ajuda'])), /preciso de ajuda/);
 });
 
 test('silencio demais durante o pedido de ajuda encerra sem ligar', () => {

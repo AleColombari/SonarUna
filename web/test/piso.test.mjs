@@ -75,7 +75,7 @@ test('conversa no modo piso fala etapas, sem passos', () => {
   session.hear(['sala A1']);
   const route = session.hear(['sim']);
   assert.equal(route.phase, 'navigating');
-  assert.match(route.say[0], /^Rota até a sala A1, em 2 etapas, seguindo o piso tátil\.$/);
+  assert.match(route.say[0], /^Rota até a sala A1, em 2 etapas\.$/);
   assert.match(route.say[1], /^Etapa 1 de 2\. Daqui a 2 cruzamentos, vire à direita/);
   assert.doesNotMatch(route.say.join(' '), /passo/);
 });

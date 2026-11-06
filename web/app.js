@@ -325,20 +325,18 @@ async function begin() {
   els.call.hidden = true;
   // Depois de uma ligacao a conversa continua de onde parou; so recomeca se tinha acabado.
   if (session.phase !== 'idle') return void deliver(session.resume(), gen);
-  let gps = null;
-  if (gpsPoints) {
-    // Ate 8 segundos de silencio confundem quem nao enxerga: diz antes o que esta acontecendo.
-    setState('speaking');
-    speech = { interrupted: false, words: new Set(), active: false };
-    await speak('Buscando sua localização.', gen);
-    if (gen !== generation) return;
-    setState('loading', 'Buscando sua localização…');
-    const posicao = await readPosition();
-    if (gen !== generation) return;
-    gps = posicao ? suggestOrigin(gpsPoints, posicao) : null;
-    if (DEBUG) addLog('app', `GPS: ${posicao ? `${posicao.lat.toFixed(6)}, ${posicao.lon.toFixed(6)} (±${Math.round(posicao.precisao)} m)` : 'sem leitura'} → ${gps?.kind ?? 'sem sugestão'}`);
-  }
-  deliver(session.start(gps), gen);
+  if (!gpsPoints) return void deliver(session.start(null), gen);
+  // So "Procurando sua localizacao." e o microfone ja escuta: se a pessoa disser onde esta (ou para onde vai)
+  // antes do GPS responder, vale o que ela disse e a leitura do GPS e ignorada.
+  deliver(session.startLocating(), gen);
+  const posicao = await readPosition();
+  if (gen !== generation) return;
+  const gps = posicao ? suggestOrigin(gpsPoints, posicao) : null;
+  if (DEBUG) addLog('app', `GPS: ${posicao ? `${posicao.lat.toFixed(6)}, ${posicao.lon.toFixed(6)} (±${Math.round(posicao.precisao)} m)` : 'sem leitura'} → ${gps?.kind ?? 'sem sugestão'}`);
+  const found = session.locationFound(gps);
+  if (!found) return;
+  cancelEverything();
+  deliver(found, generation);
 }
 
 // Modo de teste: mede a posicao no lugar e mostra o trecho de GeoJSON para colar em data/unaerp-pontos.geojson.

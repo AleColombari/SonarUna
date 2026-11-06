@@ -1,6 +1,7 @@
 package com.example.sonaruna
 
 import android.app.Application
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -54,6 +55,9 @@ private class SpokenTurn {
     val words = mutableSetOf<String>()
     var active = true
     var interrupted = false
+
+    /** The recognition opened during the speech is still running (it then simply keeps listening afterwards). */
+    var recognizing = false
 }
 
 /**
@@ -75,7 +79,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var permissions = PermissionStatus(location = false, microphone = false, microphoneBlocked = false)
     private var foreground = false
     private var voiceReady = false
-    private var welcomed = false
     private var awaitingPermissions = false
     private var recovery: Recovery? = null
     private var listening = false
@@ -84,8 +87,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var operation: Job? = null
     private var generation = 0L
 
+    /** The GPS reading that runs while the app already listens (see [begin]). */
+    private var locating: Job? = null
+
+    /** The person has started a phrase on the plain microphone (partial results arrived), not yet finished. */
+    private var hearingPhrase = false
+
     private val phase: Phase get() = guide?.conversation?.phase ?: Phase.IDLE
 
+    /**
+     * Opening (or coming back to) the app starts by itself, with no tap: it asks for the microphone if needed,
+     * then reads the GPS and starts the conversation, or resumes where it was.
+     */
     fun onForeground(status: PermissionStatus) {
         foreground = true
         permissions = status
@@ -93,9 +106,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         runOperation {
             if (!ensureVoice()) return@runOperation
             if (!ensureGuide()) return@runOperation
-            if (!welcomed) {
-                welcomed = true
-                say(R.string.welcome)
+            startOrResume()
+        }
+    }
+
+    private suspend fun startOrResume() {
+        when {
+            !permissions.microphone && permissions.microphoneBlocked -> explainMissingMicrophone()
+            !permissions.microphone -> requestPermissions()
+            phase == Phase.IDLE -> begin()
+            else -> {
+                recovery = null
+                deliver(guide!!.conversation.resume())
             }
         }
     }
@@ -149,10 +171,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             recovery == Recovery.TTS -> runOperation {
                 if (ensureVoice()) {
                     recovery = null
-                    say(R.string.welcome)
+                    startOrResume()
                 }
             }
-            recovery == Recovery.MAP -> runOperation { ensureGuide() }
+            recovery == Recovery.MAP -> runOperation { if (ensureGuide()) startOrResume() }
             !status.microphone -> runOperation {
                 if (status.microphoneBlocked) {
                     recovery = Recovery.SETTINGS
@@ -170,20 +192,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** A new orientation: one GPS reading (if allowed) becomes, at most, a question about where the person is. */
+    /**
+     * A new orientation. Without location it just asks where the person is. With location it says only "Procurando
+     * sua localização." and already listens while the GPS reads: if the person says where they are (or where they
+     * are going) first, that wins and the reading is ignored; otherwise the reading becomes, at most, a question.
+     */
     private suspend fun begin() {
         val current = guide ?: return
         recovery = null
-        val guess = if (permissions.location) {
-            // Up to 9 seconds of silence would be confusing without sight: say what is happening first.
-            if (!say(R.string.locating)) return
-            working = true
-            refresh()
-            current.gps.suggestOrigin(location.currentPosition()).also { working = false }
-        } else {
-            null
+        locating?.cancel()
+        if (!permissions.location) return deliver(current.conversation.start())
+        val conversation = current.conversation
+        // Outside the operation: the person's answers start new operations, and they must not cancel the reading.
+        locating = viewModelScope.launch {
+            val guess = current.gps.suggestOrigin(location.currentPosition())
+            // Do not cut a phrase in the middle: if the person is speaking, their answer decides first.
+            while (hearingPhrase && conversation.locating) delay(PHRASE_WAIT_MILLIS)
+            val found = conversation.locationFound(guess) ?: return@launch
+            Log.i(TAG, "GPS respondeu antes da pessoa")
+            // In the background the state is already updated; coming back, resume() asks the GPS question.
+            if (foreground) runOperation { deliver(found) }
         }
-        deliver(current.conversation.start(guess))
+        deliver(conversation.startLocating())
     }
 
     /**
@@ -205,7 +235,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         turn?.active = false
         // Interrupted: the recognition that started during the speech has the floor and delivers the answer.
         if (turn?.interrupted == true) return
-        if (reply.listen && foreground) startRecognition() else refresh()
+        when {
+            !reply.listen || !foreground -> refresh()
+            // Still listening since the middle of the speech: keep it. Restarting right away made Google's service
+            // refuse the new recognizer (errors 5 and 11) while the old one was closing.
+            turn?.recognizing == true -> {
+                listening = true
+                refresh()
+                haptics.start()
+            }
+            else -> startRecognition()
+        }
     }
 
     private suspend fun requestPermissions() {
@@ -263,23 +303,45 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun startRecognition(duringSpeech: SpokenTurn? = null) {
         recognition.cancel()
         recovery = null
+        hearingPhrase = false
         var personSpoke = duringSpeech == null
         if (duringSpeech == null) {
             listening = true
             refresh()
             haptics.start()
         }
-        fun takeOver(hypotheses: List<String>): Boolean {
+        fun takeOver(hypotheses: List<String>, final: Boolean): Boolean {
             if (personSpoke) return true
-            if (duringSpeech == null || isEcho(hypotheses.first(), duringSpeech)) return false
+            if (duringSpeech == null) return false
+            // The speech is over: whatever is heard now is the person's answer.
+            if (!duringSpeech.active) {
+                personSpoke = true
+                return true
+            }
+            // Only counts are logged, never what was said: enough to check the interruption on a real phone.
+            val words = normalize(hypotheses.first()).split(' ').count(String::isNotEmpty)
+            if (isEcho(hypotheses.first(), duringSpeech)) {
+                Log.i(TAG, "Ouviu durante a fala: $words palavras, tratado como eco")
+                return false
+            }
+            // A single word halfway may be noise; it only interrupts once the recognizer closes the phrase.
+            if (!final && words < MIN_PARTIAL_WORDS) return false
+            Log.i(TAG, "Ouviu durante a fala: $words palavras, a pessoa falou por cima; voz interrompida")
             personSpoke = true
             interruptSpeech(duringSpeech)
             return true
         }
+        duringSpeech?.recognizing = true
         recognition.start(
-            onPartial = duringSpeech?.let { { hypotheses -> if (foreground) takeOver(hypotheses) } },
+            onPartial = { hypotheses ->
+                // Speech over (or never there): this is the person's phrase in progress.
+                if (duringSpeech == null || !duringSpeech.active) hearingPhrase = true
+                if (duringSpeech != null && foreground) takeOver(hypotheses, final = false)
+            },
             onResult = { hypotheses ->
-                if (foreground && takeOver(hypotheses) && listening) {
+                duringSpeech?.recognizing = false
+                hearingPhrase = false
+                if (foreground && takeOver(hypotheses, final = true) && listening) {
                     listening = false
                     haptics.success()
                     runOperation { deliver(guide!!.conversation.hear(hypotheses)) }
@@ -288,12 +350,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             },
             onError = { error ->
+                duringSpeech?.recognizing = false
+                hearingPhrase = false
                 if (!foreground) return@start
-                if (personSpoke && listening) {
+                if ((personSpoke || duringSpeech?.active == false) && listening) {
                     listening = false
                     runOperation { recognitionFailed(error) }
                 } else if (duringSpeech != null && !personSpoke) {
                     // Silence or echo while the app speaks: listen again; real errors surface after the speech.
+                    Log.i(TAG, "Escuta durante a fala terminou ($error); reabrindo")
                     reopenDuringSpeech(duringSpeech)
                 }
             },
@@ -442,6 +507,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         /** Share of heard words that the app already said above which it is the loudspeaker's echo (as on the web). */
         const val ECHO_RATIO = 0.6
-        const val REOPEN_DELAY_MILLIS = 150L
+        const val REOPEN_DELAY_MILLIS = 300L
+
+        /** How often the GPS answer checks whether the person finished the phrase they started. */
+        const val PHRASE_WAIT_MILLIS = 200L
+
+        /** Words a partial hypothesis needs, beyond echo, to interrupt the voice before the phrase ends. */
+        const val MIN_PARTIAL_WORDS = 2
+        const val TAG = "SonarUna"
     }
 }

@@ -49,8 +49,8 @@ class MainScreenTest {
 
     @Test fun buttonWaitsWhileLocating() {
         compose.setContent {
-            MainScreen(MainUiState(actionDescription = "Buscando sua localização. Aguarde", busy = true)) {}
+            MainScreen(MainUiState(actionDescription = "Procurando sua localização. Aguarde", busy = true)) {}
         }
-        compose.onNodeWithContentDescription("Buscando sua localização. Aguarde").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Procurando sua localização. Aguarde").assertIsNotEnabled()
     }
 }

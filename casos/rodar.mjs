@@ -11,13 +11,21 @@ const gps = loadGpsPoints(read('unaerp-pontos.geojson'), map);
 
 const answer = (reply) => ({ fase: reply.phase, ouvir: reply.listen, dizer: reply.say });
 
+const guess = (position) => (position ? suggestOrigin(gps, position) : null);
+
+// "procurando": true comeca como o app: "Procurando sua localizacao." e escuta enquanto o GPS procura.
+// O passo { "gps": posicao ou null } e a resposta do GPS chegando; fica null se a pessoa ja respondeu antes.
 export function runCase(caso) {
   const session = createSession(map);
-  const result = [answer(session.start(caso.gps ? suggestOrigin(gps, caso.gps) : null))];
+  const result = [answer(caso.procurando ? session.startLocating() : session.start(guess(caso.gps)))];
   for (const passo of caso.passos) {
     if (passo === 'silencio') result.push(answer(session.silence()));
     else if (passo === 'retomar') result.push(answer(session.resume()));
-    else result.push(answer(session.hear(passo)));
+    else if (Array.isArray(passo)) result.push(answer(session.hear(passo)));
+    else {
+      const found = session.locationFound(guess(passo.gps));
+      result.push(found ? answer(found) : null);
+    }
   }
   return result;
 }

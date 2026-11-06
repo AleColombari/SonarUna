@@ -14,10 +14,10 @@ Abra <http://localhost:8080/> e permita o microfone. O Chrome envia o áudio ao 
 
 ## Roteiro de teste
 
-1. Toque no botão. O app pergunta onde você está.
+1. Toque no botão (o navegador exige um toque para liberar voz e microfone). O app diz "Procurando sua localização." e já escuta: diga onde você está, ou tudo de uma vez, como "estou na 3A e quero ir para a 10B"
 2. Diga um lugar do mapa: "balcão de informações", "sala 5A", "financeiro".
 3. Diga o destino: "sala 15B", "quinze b", "sala dos professores", "banheiro" (vai para o mais perto).
-4. Confirme com "sim" (ou "não" para trocar; "não, feminino" troca o banheiro).
+4. Confirme com "sim" (ou "não" para trocar; "não, feminino" troca o banheiro). Origem e destino na mesma frase pulam esta confirmação.
 5. A cada etapa, diga "pronto" para a próxima. Você também pode dizer "repetir", "voltar", "recomeçar", "ajuda" ou "parar".
 
 O mapa usado é o da UNAERP ([docs/MAPA-UNAERP.md](../docs/MAPA-UNAERP.md)), que guia pelo piso tátil sem medidas. O mapa fictício antigo, com entradas e passos, abre em <http://localhost:8080/web/?mapa=bloco-a>.

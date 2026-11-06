@@ -13,9 +13,11 @@ O repositório tem duas versões com o mesmo comportamento e os mesmos dados:
 
 - **Tela:** branca, com um único botão circular preto, grande e centralizado, com ícone de microfone. Funciona com TalkBack e vibra ao começar a ouvir, ao entender e em erro.
 - **Conversa:**
-  1. Toque no botão. Se a pessoa estiver perto de uma entrada, o GPS sugere: "Pela sua localização, parece que você está na entrada principal. Está certo?". Sem sugestão, o app pergunta "Onde você está agora?".
-  2. A pessoa diz o destino: "sala 15B", "quinze b", "financeiro", "banheiro" (o mais perto), "LIAPE".
-  3. O app confirma o destino e fala a rota em etapas. A pessoa diz "pronto" para ouvir a próxima.
+  1. Ao abrir, sem toque e sem apresentação, o app diz só "Procurando sua localização." e já escuta enquanto o GPS lê.
+     - Se a pessoa disser onde está antes do GPS responder ("estou na 3A"), vale o que ela disse e a leitura é ignorada.
+     - Se o GPS responder primeiro e a pessoa estiver perto de uma entrada, o app pergunta "Parece que você está na entrada principal. Está certo?". Sem sugestão, pergunta "Onde você está agora?".
+  2. A pessoa diz o destino: "sala 15B", "quinze b", "financeiro", "banheiro" (o mais perto), "LIAPE". O app confirma ("Você quer ir para a sala 15B?") e fala a rota em etapas. A pessoa diz "pronto" para ouvir a próxima.
+  3. **Tudo numa frase:** "estou na 3A e quero ir para a 10B" (ou "quero ir pra 10B, estou na 3A", "sim, quero ir para o financeiro" depois da pergunta do GPS) já faz o caminho, sem confirmar. Se a pessoa disser só o destino antes de dizer onde está, o app guarda o destino, pergunta onde ela está e então sai direto para a rota.
 - **Mapa:** o da UNAERP, guiado pelo piso tátil e sem medidas: [docs/MAPA-UNAERP.md](docs/MAPA-UNAERP.md). Cada etapa conta os cruzamentos até a próxima virada ("No próximo cruzamento, vire à direita"). As salas não servem de referência no caminho, só aparecem como destino. Uma reta longa vira etapas de até 5 cruzamentos, e escadas, portas e referências físicas ("porta sempre aberta") também são faladas.
 - **Respostas:** sim e não são entendidos dentro de frases ("acho que sim", "não, me enganei"). Na confirmação, dizer outro lugar já troca o destino.
 - **Comandos a qualquer momento:** repetir, voltar, recomeçar, ajuda e parar. Na rota, também: "quanto falta?", "repasse o caminho" (as etapas que faltam) e "onde estou?".
@@ -23,8 +25,8 @@ O repositório tem duas versões com o mesmo comportamento e os mesmos dados:
 - **Saída:** "saída" ou "quero sair" leva à saída mais perto (entrada principal, porta do bloco B ou porta do bloco A).
 - **Microfone:** quando o app espera resposta, o microfone já escuta enquanto ele fala.
   - A pessoa pode **responder por cima**, falando: a voz do app para e a resposta vale. Palavras que o próprio app já disse são tratadas como eco do alto-falante, e por isso funciona melhor com fone de ouvido.
-  - Tocar no botão enquanto o app fala também interrompe e já escuta.
-  - Tocar enquanto ele escuta pausa a orientação. Numa pergunta, depois de três silêncios seguidos, o microfone fecha. Durante a rota, o primeiro silêncio já fecha o microfone ("Microfone pausado"), porque a pessoa está andando. A rota fica guardada, e o toque seguinte retoma na mesma etapa.
+  - Tocar no botão enquanto o app fala também interrompe e já escuta. Tocar enquanto ele escuta não corta o microfone.
+  - O microfone não fecha sozinho: numa pergunta, o app pede para repetir até duas vezes e depois só escuta; na rota, o silêncio é a pessoa andando e o app escuta calado até ela dizer "pronto". Para encerrar, a pessoa diz "parar".
 
 **Ainda não estão no app Android:** o pedido de ajuda por ligação (existe só na versão web) e os caminhos marcados como futuros no mapa (bloco H, pavimentos superiores).
 
@@ -125,14 +127,13 @@ O workflow [Android](.github/workflows/android.yml) repete o build, os testes un
 
 ## Fluxo da conversa
 
-1. **Abertura:** configura a voz pt-BR, carrega o mapa e diz "Toque no botão, no centro da tela, para começar". O microfone permanece desligado.
-2. **Primeiro toque:** se faltar o microfone, explica por voz e mostra os pedidos de acesso do Android (microfone e localização juntos). A localização é pedida uma vez só e é opcional.
-3. **Onde você está:** com a localização permitida, o app diz "Buscando sua localização" e faz uma leitura de até 8 segundos.
+1. **Abertura:** configura a voz pt-BR, carrega o mapa e começa sozinho, sem toque. Se faltar o microfone, explica por voz e mostra os pedidos de acesso do Android (microfone e localização juntos). A localização é pedida uma vez só e é opcional.
+2. **Onde você está:** com a localização permitida, o app diz só "Procurando sua localização." e já escuta enquanto faz uma leitura de até 8 segundos. O que a pessoa disser antes vale mais que o GPS; se ela estiver no meio de uma frase quando o GPS responder, o app espera a frase acabar.
    - Perto de uma entrada marcada no mapa, ele pergunta se a pessoa está ali.
    - Fora do campus, ele avisa antes de perguntar.
    - Sem leitura boa (erro maior que 10 m), ele só pergunta onde a pessoa está.
-4. **Destino e confirmação:** a pessoa diz o destino; "sim" confirma, "não" pergunta de novo, e dizer outro lugar já troca o destino.
-5. **Rota:** o app fala o resumo e a primeira etapa. "Pronto" passa para a próxima, "voltar" repete a anterior, "repetir" repete a atual. Na última etapa, "Você chegou" encerra a orientação.
+3. **Destino e confirmação:** a pessoa diz o destino; "sim" confirma, "não" pergunta de novo, e dizer outro lugar já troca o destino. Origem e destino na mesma frase ("estou na 3A e quero ir para a 10B") pulam a confirmação.
+4. **Rota:** o app fala o resumo e a primeira etapa. "Pronto" passa para a próxima, "voltar" repete a anterior, "repetir" repete a atual. Ao chegar, o destino vira o novo ponto de partida e o app já escuta o próximo destino; "parar" encerra.
 
 As falas da conversa ficam em [guia/Conversation.kt](app/src/main/java/com/example/sonaruna/guia/Conversation.kt), com o mesmo texto da versão web. As mensagens do sistema (permissões, erros, descrições do botão) ficam em `app/src/main/res/values/strings.xml`.
 

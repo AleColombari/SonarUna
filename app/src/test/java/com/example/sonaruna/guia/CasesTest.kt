@@ -22,6 +22,10 @@ class CasesTest {
         "navigating" to Phase.NAVIGATING,
     )
 
+    private fun guess(position: JSONObject?) = position?.let {
+        gps.suggestOrigin(Position(it.getDouble("lat"), it.getDouble("lon"), it.getDouble("precisao")))
+    }
+
     @Test
     fun `the app answers every shared case exactly like the web version`() {
         val cases = JSONObject(TestData.repoFile("casos/conversas.json")).getJSONArray("casos").objects()
@@ -29,23 +33,28 @@ class CasesTest {
         for (case in cases) {
             val name = case.getString("nome")
             val session = Conversation(map)
-            val guess = case.optJSONObject("gps")?.let {
-                gps.suggestOrigin(Position(it.getDouble("lat"), it.getDouble("lon"), it.getDouble("precisao")))
-            }
-            val replies = mutableListOf(session.start(guess))
+            val start = if (case.optBoolean("procurando")) session.startLocating() else session.start(guess(case.optJSONObject("gps")))
+            val replies = mutableListOf<Reply?>(start)
             val steps = case.getJSONArray("passos")
             for (i in 0 until steps.length()) {
                 replies += when (val step = steps.get(i)) {
                     "silencio" -> session.silence()
                     "retomar" -> session.resume()
                     is JSONArray -> session.hear(step.strings())
+                    // The GPS answer arriving; null when the person already answered first.
+                    is JSONObject -> session.locationFound(guess(step.optJSONObject("gps")))
                     else -> error("$name: passo desconhecido $step")
                 }
             }
-            val expected = case.getJSONArray("esperado").objects()
+            val expected = case.getJSONArray("esperado").let { list -> (0 until list.length()).map { list.optJSONObject(it) } }
             assertEquals("$name: número de respostas", expected.size, replies.size)
             expected.zip(replies).forEachIndexed { i, (want, got) ->
                 val where = "$name, resposta $i"
+                if (want == null) {
+                    assertEquals(where, null, got)
+                    return@forEachIndexed
+                }
+                got!!
                 assertEquals(where, phases.getValue(want.getString("fase")), got.phase)
                 assertEquals(where, want.getBoolean("ouvir"), got.listen)
                 assertEquals(where, want.getJSONArray("dizer").strings(), got.say)

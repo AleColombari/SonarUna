@@ -24,17 +24,24 @@ class Conversation(private val map: FloorMap) {
     private var index = 0
     private var silences = 0
 
+    /** The GPS is still searching (after [startLocating]); whatever the person says first wins. */
+    var locating = false
+        private set
+
+    /** A destination said before the origin ("quero ir para a 10B"): it applies as soon as the origin is known. */
+    private var pendingDestination: String? = null
+
     private fun reply(say: List<String>, listen: Boolean = true) = Reply(say, listen, phase)
     private fun reply(vararg say: String) = reply(say.toList())
 
-    private fun originQuestion() = "Onde você está agora? Diga a sala ou o lugar, por exemplo, ${map.exemploOrigem}."
-    private fun destinationQuestion() = "Para onde você quer ir? Diga, por exemplo, ${map.exemplo}."
-    private fun suggestionQuestion() = "Pela sua localização, parece que você está ${suggested!!.emLugar}. Está certo? Diga sim ou não."
-    private fun confirmQuestion() = "Você quer ir ${candidate!!.paraLugar}. Está certo? Diga sim ou não."
+    // Short questions; the examples are in the help.
+    private fun originQuestion() = "Onde você está agora?"
+    private fun destinationQuestion() = "Para onde você quer ir?"
+    private fun suggestionQuestion() = "Parece que você está ${suggested!!.emLugar}. Está certo?"
+    private fun confirmQuestion() = "Você quer ir ${candidate!!.paraLugar}?"
     private fun stepLine(i: Int) = "Etapa ${i + 1} de ${steps.size}. ${steps[i].texto}"
 
-    /** [guess] comes from the GPS, when there is a reading. A suggestion becomes a question; the GPS never decides. */
-    fun start(guess: OriginGuess? = null): Reply {
+    private fun reset() {
         phase = Phase.ORIGIN
         origin = null
         originHeading = null
@@ -44,20 +51,45 @@ class Conversation(private val map: FloorMap) {
         steps = emptyList()
         index = 0
         silences = 0
-        val question = when (guess) {
-            is OriginGuess.Suggestion -> {
-                suggested = guess.place
-                phase = Phase.CONFIRM_ORIGIN
-                listOf(suggestionQuestion())
-            }
-            OriginGuess.OutsideCampus -> listOf(
-                "Pela sua localização, você não parece estar ${map.nome?.let { "no $it" } ?: "no mapa"}.",
-                originQuestion(),
-            )
-            else -> listOf(originQuestion())
+        locating = false
+        pendingDestination = null
+    }
+
+    /** What the GPS suggests becomes a question; the GPS never decides on its own where the person is. */
+    private fun originFromGps(guess: OriginGuess?): List<String> = when (guess) {
+        is OriginGuess.Suggestion -> {
+            suggested = guess.place
+            phase = Phase.CONFIRM_ORIGIN
+            listOf(suggestionQuestion())
         }
-        val hello = if (map.nome != null) "Olá. Eu sou o SonarUna, no ${map.nome}." else "Olá. Eu sou o SonarUna."
-        return reply(listOf(hello) + question)
+        OriginGuess.OutsideCampus -> listOf(
+            "Você não parece estar ${map.nome?.let { "no $it" } ?: "no mapa"}.",
+            originQuestion(),
+        )
+        else -> listOf(originQuestion())
+    }
+
+    /** Start with the GPS already read (or without GPS): just the question, no introduction. */
+    fun start(guess: OriginGuess? = null): Reply {
+        reset()
+        return reply(originFromGps(guess))
+    }
+
+    /**
+     * Start while the GPS is still searching: the app already listens. If the person says where they are before the
+     * GPS answers, that wins; otherwise [locationFound] asks with what the GPS found.
+     */
+    fun startLocating(): Reply {
+        reset()
+        locating = true
+        return reply("Procurando sua localização.")
+    }
+
+    /** The GPS answer after [startLocating]. Null when the person already answered first. */
+    fun locationFound(guess: OriginGuess?): Reply? {
+        if (!locating || phase != Phase.ORIGIN || origin != null) return null
+        locating = false
+        return reply(originFromGps(guess))
     }
 
     fun stop(): Reply {
@@ -81,6 +113,8 @@ class Conversation(private val map: FloorMap) {
         val heard = alternatives.map(String::trim).filter(String::isNotEmpty)
         if (heard.isEmpty()) return silence()
         silences = 0
+        // The person spoke: whatever the GPS finds later no longer changes the conversation.
+        locating = false
 
         if (heard.any { classifyCommand(it) == Command.ASSIST }) {
             return reply(listOf("O pedido de ajuda por ligação ainda não está neste aplicativo. Se precisar, peça ajuda a alguém por perto.") + currentQuestion().say)
@@ -108,6 +142,9 @@ class Conversation(private val map: FloorMap) {
                 }
             }
         }
+        if (phase in setOf(Phase.ORIGIN, Phase.CONFIRM_ORIGIN, Phase.DESTINATION, Phase.CONFIRM)) {
+            hearTrip(heard)?.let { return it }
+        }
         return when (phase) {
             Phase.ORIGIN -> hearOrigin(heard)
             Phase.CONFIRM_ORIGIN -> hearOriginConfirmation(heard)
@@ -126,7 +163,8 @@ class Conversation(private val map: FloorMap) {
     fun silence(): Reply {
         if (phase == Phase.IDLE) return reply(emptyList(), listen = false)
         // On a route, silence is the person walking: the microphone keeps listening, quietly, until "pronto".
-        if (phase == Phase.NAVIGATING) return reply(emptyList())
+        // While the GPS searches, silence is just waiting: the GPS speaks next (locationFound).
+        if (phase == Phase.NAVIGATING || locating) return reply(emptyList())
         silences++
         // After asking again a few times, it just listens, so the app does not talk on and on.
         if (silences >= MAX_SILENCE_RETRIES) return reply(emptyList())
@@ -184,9 +222,9 @@ class Conversation(private val map: FloorMap) {
     private fun help(): Reply {
         val common = "Você pode dizer a qualquer momento: repetir, voltar, recomeçar ou parar."
         return when (phase) {
-            Phase.ORIGIN -> reply(originQuestion(), common)
+            Phase.ORIGIN -> reply("Diga onde você está, por exemplo, ${map.exemploOrigem}. Pode dizer também para onde quer ir.", common)
             Phase.CONFIRM_ORIGIN -> reply("Diga sim se você está nesse lugar, ou diga onde você está.", common)
-            Phase.DESTINATION -> reply(destinationQuestion(), common)
+            Phase.DESTINATION -> reply("Diga para onde quer ir, por exemplo, ${map.exemplo}.", common)
             Phase.CONFIRM -> reply("Diga sim para confirmar o destino ou não para escolher outro.", common)
             Phase.NAVIGATING -> reply("Diga pronto quando terminar a etapa e quiser a próxima.", common)
             Phase.IDLE -> reply(listOf("Toque no botão para começar."), listen = false)
@@ -221,7 +259,51 @@ class Conversation(private val map: FloorMap) {
         originHeading = map.exitHeading(place.id)
         suggested = null
         phase = Phase.DESTINATION
+        pendingDestination?.let { text ->
+            pendingDestination = null
+            routeTo(text, "Você está ${place.emLugar}.")?.let { return it }
+        }
         return reply("Você está ${place.emLugar}. ${destinationQuestion()}")
+    }
+
+    /** Goes straight to the destination said (no confirmation), from the origin already set. Null if not found. */
+    private fun routeTo(text: String, prefix: String): Reply? {
+        val from = origin!!.id
+        var match = map.findPlace(text)
+        if (match is PlaceMatch.Several) match = PlaceMatch.Found(match.places.minBy { map.routeWeight(from, it.id) })
+        if (match !is PlaceMatch.Found || match.place.id == from) return null
+        candidate = match.place
+        val route = beginRoute()
+        return route.copy(say = listOf(prefix) + route.say)
+    }
+
+    /**
+     * "Estou na 3A e quero ir para a 10B": with origin and destination in one phrase, the app goes straight to the
+     * route. Only the destination, before the origin is known ("quero ir para a 10B"): the app keeps the destination
+     * and asks where the person is. Null when the phrase says nothing about a destination.
+     */
+    private fun hearTrip(heard: List<String>): Reply? {
+        val originKnown = phase != Phase.ORIGIN && phase != Phase.CONFIRM_ORIGIN
+        for (text in heard) {
+            val trip = splitTrip(text)
+            val wanted = trip.destino ?: continue
+            var from = trip.origem?.let { map.findPlace(it) } ?: PlaceMatch.None
+            val answer = trip.origem?.let { classifyYesNo(it) }
+            // "Sim, quero ir para a 15B" after "it looks like you are at X": confirms X and goes.
+            if (from !is PlaceMatch.Found && phase == Phase.CONFIRM_ORIGIN && answer == YesNo.YES) from = PlaceMatch.Found(suggested!!)
+            if (from is PlaceMatch.Found) {
+                // setOrigin goes straight to the destination; if it is not recognized, it asks again.
+                pendingDestination = wanted
+                return setOrigin(from.place)
+            }
+            if (originKnown || from !is PlaceMatch.None || map.findPlace(wanted) is PlaceMatch.None) continue
+            pendingDestination = wanted
+            if (phase == Phase.CONFIRM_ORIGIN && answer != YesNo.NO) return reply(suggestionQuestion())
+            suggested = null
+            phase = Phase.ORIGIN
+            return reply(originQuestion())
+        }
+        return null
     }
 
     /** Answer to "it looks like you are at X": yes confirms, no asks, naming another place corrects directly. */
@@ -303,7 +385,7 @@ class Conversation(private val map: FloorMap) {
         steps = map.buildInstructions(originHeading, segments)
         index = 0
         phase = Phase.NAVIGATING
-        return reply("Rota ${to.ateLugar}, em ${plural(steps.size, "etapa", "etapas")}, seguindo o piso tátil.", stepLine(0))
+        return reply("Rota ${to.ateLugar}, em ${plural(steps.size, "etapa", "etapas")}.", stepLine(0))
     }
 
     private fun hearNavigation(heard: List<String>): Reply {
@@ -311,8 +393,14 @@ class Conversation(private val map: FloorMap) {
             when (classifyCommand(text)) {
                 Command.NEXT -> {
                     if (index + 1 >= steps.size) {
-                        phase = Phase.IDLE
-                        return reply(listOf("Você chegou ${destination!!.emLugar}. Toque no botão para uma nova orientação."), listen = false)
+                        // Arrived: the destination becomes the new starting place and the app already listens for the next.
+                        val arrived = destination!!
+                        setOrigin(arrived)
+                        candidate = null
+                        destination = null
+                        steps = emptyList()
+                        index = 0
+                        return reply("Você chegou ${arrived.emLugar}. Se quiser ir para outro lugar, diga o destino. Para encerrar, diga parar.")
                     }
                     index++
                     return reply(stepLine(index))

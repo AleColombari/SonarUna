@@ -2,11 +2,9 @@
 <!-- System messages. The conversation itself (questions, routes) is in guia/Conversation.kt, shared in content with web/. -->
 <resources>
     <string name="app_name">SonarUna</string>
-    <string name="welcome">SonarUna. Toque no botão, no centro da tela, para começar a orientação.</string>
     <string name="permissions_explanation">Para ouvir suas respostas, o aplicativo precisa do microfone. A localização precisa é opcional: ela serve para sugerir onde você está quando chega numa entrada da universidade. Permita os acessos a seguir.</string>
     <string name="permissions_denied">Sem o microfone, o aplicativo não consegue ouvir suas respostas. Toque no botão para permitir o acesso ao microfone.</string>
     <string name="permissions_settings">O acesso ao microfone está bloqueado. Toque no botão para abrir as configurações do aplicativo, entre em Permissões e libere o microfone. Depois, volte ao aplicativo.</string>
-    <string name="locating">Buscando sua localização.</string>
     <string name="map_error">Não consegui carregar o mapa da universidade. Toque no botão para tentar novamente.</string>
     <string name="speech_unavailable">O serviço de reconhecimento de voz não está disponível. Verifique o serviço de voz nas configurações do celular e toque no botão para tentar novamente.</string>
     <string name="speech_network">O serviço de voz encontrou um problema de conexão. Verifique sua conexão ou os idiomas disponíveis para uso sem internet. Toque no botão para tentar novamente.</string>
@@ -18,7 +16,7 @@
     <string name="action_continue">Continuar orientação</string>
     <string name="action_listening">Ouvindo. Pode falar</string>
     <string name="action_speaking">Falando. Toque para responder agora</string>
-    <string name="action_locating">Buscando sua localização. Aguarde</string>
+    <string name="action_locating">Procurando sua localização. Aguarde</string>
     <string name="action_initializing">Inicializando a voz em português do Brasil. Aguarde</string>
     <string name="action_permissions">Permitir acesso ao microfone e à localização</string>
     <string name="action_settings">Abrir configurações do aplicativo para liberar o microfone</string>

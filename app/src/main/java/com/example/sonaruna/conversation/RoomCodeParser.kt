@@ -59,7 +59,8 @@ object RoomCodeParser {
 
     fun parse(text: String): RoomCode? {
         val terms = toTerms(withoutTrailingCourtesy(tokenize(text)))
-        return blockAndRoom(terms) ?: letterAndNumber(terms) ?: numberAndLetter(terms) ?: roomOnly(terms)
+        // The letter closing the phrase wins over a letter before the number: in "para a 10B" the "a" is the article.
+        return blockAndRoom(terms) ?: numberAndLetter(terms) ?: letterAndNumber(terms) ?: roomOnly(terms)
     }
 
     private fun withoutTrailingCourtesy(tokens: List<String>): List<String> {

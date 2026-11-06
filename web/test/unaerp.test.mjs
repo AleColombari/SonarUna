@@ -101,7 +101,8 @@ test('lado da virada depende do sentido, e salas nao sao referencia no caminho',
 
 test('conversa: onde voce esta, banheiro mais perto e troca para o feminino', () => {
   const session = createSession(map);
-  assert.match(session.start().say.join(' '), /Onde você está agora\? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A\./);
+  assert.deepEqual(session.start().say, ['Onde você está agora?']);
+  assert.match(session.hear(['ajuda']).say.join(' '), /por exemplo, entrada principal, balcão de informações ou sala 5A/);
   assert.match(session.hear(['estou na sala 5A']).say[0], /^Você está na sala 5A\./);
   assert.match(session.hear(['banheiro']).say[0], /banheiro masculino do bloco A/);
   assert.match(session.hear(['não, feminino']).say[0], /banheiro feminino do bloco A/);
