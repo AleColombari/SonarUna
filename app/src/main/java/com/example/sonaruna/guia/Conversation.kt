@@ -119,20 +119,17 @@ class Conversation(private val map: FloorMap) {
     }
 
     /**
-     * Nothing was heard (silence, noise or a passing microphone error). On a route, silence is the person walking:
-     * the microphone closes and the route is kept until the next tap. On questions, after a few tries the
-     * microphone also closes, without losing what was already answered.
+     * Nothing was heard (silence, noise or a passing microphone error). After the first tap the person never has to
+     * tap again: the microphone keeps listening until they say "parar". On questions the app asks again a few
+     * times and then just listens; on a route it just listens.
      */
     fun silence(): Reply {
         if (phase == Phase.IDLE) return reply(emptyList(), listen = false)
-        if (phase == Phase.NAVIGATING) {
-            return reply(listOf("Microfone pausado. Quando terminar a etapa, toque no botão."), listen = false)
-        }
+        // On a route, silence is the person walking: the microphone keeps listening, quietly, until "pronto".
+        if (phase == Phase.NAVIGATING) return reply(emptyList())
         silences++
-        if (silences >= MAX_SILENCE_RETRIES) {
-            silences = 0
-            return reply(listOf("Não ouvi nenhuma resposta. Toque no botão quando quiser continuar."), listen = false)
-        }
+        // After asking again a few times, it just listens, so the app does not talk on and on.
+        if (silences >= MAX_SILENCE_RETRIES) return reply(emptyList())
         return reply("Não ouvi. Pode repetir?")
     }
 

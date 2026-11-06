@@ -28,12 +28,12 @@ class MainScreenTest {
         assertEquals(1, clicks)
     }
 
-    @Test fun listeningButtonCanPause() {
+    @Test fun listeningButtonStaysEnabled() {
         var clicks = 0
         compose.setContent {
-            MainScreen(MainUiState(actionDescription = "Ouvindo. Toque para pausar", listening = true, busy = false)) { clicks++ }
+            MainScreen(MainUiState(actionDescription = "Ouvindo. Pode falar", listening = true, busy = false)) { clicks++ }
         }
-        compose.onNodeWithContentDescription("Ouvindo. Toque para pausar").assertIsEnabled().performClick()
+        compose.onNodeWithContentDescription("Ouvindo. Pode falar").assertIsEnabled().performClick()
         assertEquals(1, clicks)
     }
 

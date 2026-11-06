@@ -7,7 +7,6 @@
     <string name="permissions_denied">Sem o microfone, o aplicativo não consegue ouvir suas respostas. Toque no botão para permitir o acesso ao microfone.</string>
     <string name="permissions_settings">O acesso ao microfone está bloqueado. Toque no botão para abrir as configurações do aplicativo, entre em Permissões e libere o microfone. Depois, volte ao aplicativo.</string>
     <string name="locating">Buscando sua localização.</string>
-    <string name="listening_paused">Escuta pausada. Toque no botão quando quiser continuar.</string>
     <string name="map_error">Não consegui carregar o mapa da universidade. Toque no botão para tentar novamente.</string>
     <string name="speech_unavailable">O serviço de reconhecimento de voz não está disponível. Verifique o serviço de voz nas configurações do celular e toque no botão para tentar novamente.</string>
     <string name="speech_network">O serviço de voz encontrou um problema de conexão. Verifique sua conexão ou os idiomas disponíveis para uso sem internet. Toque no botão para tentar novamente.</string>
@@ -17,7 +16,7 @@
     <string name="settings_unavailable">Não consegui abrir as configurações. Abra as configurações do celular, entre em Aplicativos, SonarUna e Permissões. Depois, volte ao aplicativo.</string>
     <string name="action_start">Começar orientação</string>
     <string name="action_continue">Continuar orientação</string>
-    <string name="action_listening">Ouvindo. Toque para pausar</string>
+    <string name="action_listening">Ouvindo. Pode falar</string>
     <string name="action_speaking">Falando. Toque para responder agora</string>
     <string name="action_locating">Buscando sua localização. Aguarde</string>
     <string name="action_initializing">Inicializando a voz em português do Brasil. Aguarde</string>

@@ -137,10 +137,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         permissions = status
         if (!foreground || state.value.busy) return
         if (listening) {
-            // A tap while listening pauses: the microphone closes until the next tap.
-            recognition.cancel()
-            listening = false
-            runOperation { say(R.string.listening_paused) }
+            // Already listening: a tap "to talk" must not cut the microphone. The person just speaks.
+            haptics.start()
             return
         }
         if (speaking && phase != Phase.IDLE && recovery == null && status.microphone) {

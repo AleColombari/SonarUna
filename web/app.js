@@ -359,16 +359,15 @@ els.measure?.addEventListener('click', async () => {
     + `"geometry": { "type": "Point", "coordinates": [${best.lon.toFixed(7)}, ${best.lat.toFixed(7)}] }`;
 });
 
-function end() {
-  cancelEverything();
-  session.stop();
-  showTranscript('', false);
-  setState('idle', 'Orientação encerrada.');
-}
-
+// Um toque comeca; depois a pessoa so fala. Tocar enquanto o app ouve nao corta o microfone, e tocar enquanto ele
+// fala interrompe a fala e ja escuta. Para encerrar, a pessoa diz "parar".
 els.mic.addEventListener('click', () => {
-  if (state === 'idle') begin();
-  else if (state !== 'loading') end();
+  if (state === 'idle' || state === 'typing') return void begin();
+  if (state !== 'speaking') return;
+  if (session.phase === 'idle') return void begin();
+  if (recognition) return interruptSpeech();
+  cancelEverything();
+  listen(generation);
 });
 
 els.form.addEventListener('submit', (event) => {

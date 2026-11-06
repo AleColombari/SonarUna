@@ -1,6 +1,7 @@
 package com.example.sonaruna.platform
 
 import android.Manifest
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -9,6 +10,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.speech.RecognitionListener
+import android.speech.RecognitionService
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 
@@ -17,12 +19,25 @@ enum class SpeechFailure {
     NO_SPEECH, LANGUAGE_UNAVAILABLE, UNKNOWN,
 }
 
-/** Every start is one user-requested utterance. Stale callbacks cannot affect a new session. */
+/** Which recognizer an attempt uses. */
+private sealed interface Engine {
+    /** Google's recognition service, chosen by name: the phone's default may be another one without pt-BR. */
+    data class Service(val component: ComponentName) : Engine
+    data object OnDevice : Engine
+    data object Default : Engine
+}
+
+/**
+ * Every start is one utterance. Stale callbacks cannot affect a new session. Engines are tried in order (Google's
+ * service, on-device, the phone's default) until one accepts pt-BR; the one that worked is remembered.
+ */
 class SpeechRecognitionManager(context: Context) {
     private val context = context.applicationContext
     private val handler = Handler(Looper.getMainLooper())
     private var nextSessionId = 0L
     private var active: Session? = null
+    private val engines: List<Engine> by lazy(::findEngines)
+    private var workingEngine = 0
 
     @Volatile
     private var closed = false
@@ -60,10 +75,11 @@ class SpeechRecognitionManager(context: Context) {
 
         val session = Session(++nextSessionId, onResult, onError, onPartial)
         active = session
-        val onDeviceAvailable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-            runCatching { SpeechRecognizer.isOnDeviceRecognitionAvailable(context) }
-                .getOrDefault(false)
-        beginAttempt(session, onDeviceAvailable)
+        if (engines.isEmpty()) {
+            finishError(session, SpeechFailure.UNAVAILABLE)
+            return@onMain
+        }
+        beginAttempt(session, workingEngine)
     }
 
     fun cancel() = onMain { cancelActive() }
@@ -73,23 +89,48 @@ class SpeechRecognitionManager(context: Context) {
         onMain { cancelActive() }
     }
 
-    private fun beginAttempt(session: Session, onDevice: Boolean) {
+    private fun findEngines(): List<Engine> = buildList {
+        googleRecognitionService()?.let { add(Engine.Service(it)) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            runCatching { SpeechRecognizer.isOnDeviceRecognitionAvailable(context) }.getOrDefault(false)
+        ) {
+            add(Engine.OnDevice)
+        }
+        if (runCatching { SpeechRecognizer.isRecognitionAvailable(context) }.getOrDefault(false)) add(Engine.Default)
+    }
+
+    private fun googleRecognitionService(): ComponentName? {
+        val intent = Intent(RecognitionService.SERVICE_INTERFACE)
+        val services = runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.queryIntentServices(intent, PackageManager.ResolveInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.queryIntentServices(intent, 0)
+            }
+        }.getOrDefault(emptyList())
+        return GOOGLE_PACKAGES.firstNotNullOfOrNull { name ->
+            services.firstOrNull { it.serviceInfo.packageName == name }
+                ?.let { ComponentName(it.serviceInfo.packageName, it.serviceInfo.name) }
+        }
+    }
+
+    private fun beginAttempt(session: Session, engineIndex: Int) {
         if (closed || active !== session) return
         val attempt = ++session.attempt
         disposeRecognizer(session)
-
-        if (!onDevice && !runCatching { SpeechRecognizer.isRecognitionAvailable(context) }
-                .getOrDefault(false)
-        ) {
-            finishError(session, SpeechFailure.UNAVAILABLE)
-            return
-        }
+        val engine = engines[engineIndex]
+        val hasNext = engineIndex + 1 < engines.size
 
         try {
-            val recognizer = if (onDevice && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
-            } else {
-                SpeechRecognizer.createSpeechRecognizer(context)
+            val recognizer = when (engine) {
+                is Engine.Service -> SpeechRecognizer.createSpeechRecognizer(context, engine.component)
+                Engine.OnDevice -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+                } else {
+                    SpeechRecognizer.createSpeechRecognizer(context)
+                }
+                Engine.Default -> SpeechRecognizer.createSpeechRecognizer(context)
             }
             session.recognizer = recognizer
             recognizer.setRecognitionListener(object : RecognitionListener {
@@ -109,8 +150,8 @@ class SpeechRecognitionManager(context: Context) {
 
                 override fun onError(error: Int) = onMain {
                     if (!isCurrent(session, attempt)) return@onMain
-                    if (onDevice && canFallbackFromOnDevice(error)) {
-                        beginAttempt(session, onDevice = false)
+                    if (hasNext && canTryNextEngine(error)) {
+                        beginAttempt(session, engineIndex + 1)
                     } else {
                         finishError(session, classify(error))
                     }
@@ -125,6 +166,7 @@ class SpeechRecognitionManager(context: Context) {
                     if (hypotheses.isEmpty()) {
                         finishError(session, SpeechFailure.NO_SPEECH)
                     } else {
+                        workingEngine = engineIndex
                         active = null
                         disposeRecognizer(session)
                         session.onResult(hypotheses)
@@ -148,8 +190,8 @@ class SpeechRecognitionManager(context: Context) {
         } catch (_: SecurityException) {
             finishError(session, SpeechFailure.PERMISSION_DENIED)
         } catch (_: RuntimeException) {
-            if (onDevice && active === session && !closed) {
-                beginAttempt(session, onDevice = false)
+            if (hasNext && active === session && !closed) {
+                beginAttempt(session, engineIndex + 1)
             } else {
                 finishError(session, SpeechFailure.UNAVAILABLE)
             }
@@ -197,13 +239,19 @@ class SpeechRecognitionManager(context: Context) {
         else -> SpeechFailure.UNKNOWN
     }
 
-    private fun canFallbackFromOnDevice(error: Int): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && when (error) {
+    /** Errors that mean "this engine cannot do it" (language, service), not "the person said nothing". */
+    private fun canTryNextEngine(error: Int): Boolean = when (error) {
+        SpeechRecognizer.ERROR_SERVER, SpeechRecognizer.ERROR_CLIENT -> true
+        else -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && when (error) {
             SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
             SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE,
-            SpeechRecognizer.ERROR_SERVER,
-            SpeechRecognizer.ERROR_SERVER_DISCONNECTED,
-            SpeechRecognizer.ERROR_CLIENT -> true
+            SpeechRecognizer.ERROR_SERVER_DISCONNECTED -> true
             else -> false
         }
+    }
+
+    private companion object {
+        /** Google's recognition services, preferred in this order (Google app, then Speech Services by Google). */
+        val GOOGLE_PACKAGES = listOf("com.google.android.googlequicksearchbox", "com.google.android.tts")
+    }
 }

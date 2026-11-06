@@ -400,23 +400,22 @@ export function createSession(map, getContacts = () => []) {
   }
 
   /**
-   * Nada foi ouvido (silencio, ruido ou erro passageiro do microfone). Na rota, silencio e a pessoa andando: o
-   * microfone fecha e a rota fica guardada ate o proximo toque. Nas perguntas, depois de algumas tentativas o
-   * microfone tambem fecha, sem perder o que ja foi respondido.
+   * Nada foi ouvido (silencio, ruido ou erro passageiro do microfone). Depois do primeiro toque a pessoa nao precisa
+   * tocar de novo: o microfone segue ouvindo ate ela dizer parar. Nas perguntas, o app pede para repetir algumas
+   * vezes e depois so escuta; na rota, so escuta.
    */
   function silence() {
     if (phase === 'idle') return reply([], false);
-    if (phase === 'navigating') {
-      return reply(['Microfone pausado. Quando terminar a etapa, toque no botão.'], false);
-    }
+    // Na rota, silencio e a pessoa andando: o microfone continua ouvindo, calado, ate ela dizer pronto.
+    if (phase === 'navigating') return reply([]);
     silences++;
     if (silences >= MAX_SILENCE_RETRIES) {
-      silences = 0;
       if (phase === 'assist-choose' || phase === 'assist-confirm') {
-        phase = returnPhase;
-        pendingContact = null;
+        silences = 0;
+        return cancelAssist();
       }
-      return reply(['Não ouvi nenhuma resposta. Toque no botão quando quiser continuar.'], false);
+      // Ja perguntou de novo algumas vezes: continua ouvindo sem repetir, para nao falar sem parar.
+      return reply([]);
     }
     return reply(['Não ouvi. Pode repetir?']);
   }

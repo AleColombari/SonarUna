@@ -98,14 +98,17 @@ class ConversationTest {
     }
 
     @Test
-    fun `silence on a question asks again, then closes the microphone keeping the phase`() {
+    fun `silence on a question asks again twice, then keeps listening quietly without a tap`() {
         val session = Conversation(map)
         session.start()
         assertEquals("Não ouvi. Pode repetir?", session.silence().say[0])
         session.silence()
-        val paused = session.silence()
-        assertEquals(Phase.ORIGIN, paused.phase)
-        assertFalse(paused.listen)
+        repeat(3) {
+            val quiet = session.silence()
+            assertEquals(Phase.ORIGIN, quiet.phase)
+            assertTrue(quiet.listen)
+            assertEquals(emptyList<String>(), quiet.say)
+        }
         assertEquals("Retomando.", session.resume().say[0])
     }
 
@@ -117,14 +120,14 @@ class ConversationTest {
     }
 
     @Test
-    fun `on a route, silence is the person walking - pause without losing the route`() {
+    fun `on a route, silence is the person walking - keep listening quietly`() {
         val session = navigating()
         session.hear(listOf("pronto"))
         repeat(5) {
-            val paused = session.silence()
-            assertEquals(Phase.NAVIGATING, paused.phase)
-            assertFalse(paused.listen)
-            assertEquals("Microfone pausado. Quando terminar a etapa, toque no botão.", paused.say[0])
+            val quiet = session.silence()
+            assertEquals(Phase.NAVIGATING, quiet.phase)
+            assertTrue(quiet.listen)
+            assertEquals(emptyList<String>(), quiet.say)
         }
         assertTrue(session.resume().say[0].startsWith("Retomando a etapa 2 de 8. Diga pronto para a próxima"))
         assertTrue(session.hear(listOf("pronto")).say[0].startsWith("Etapa 3 de 8. Suba a escada"))

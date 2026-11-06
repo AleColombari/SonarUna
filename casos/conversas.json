@@ -385,10 +385,8 @@
         },
         {
           "fase": "destination",
-          "ouvir": false,
-          "dizer": [
-            "Não ouvi nenhuma resposta. Toque no botão quando quiser continuar."
-          ]
+          "ouvir": true,
+          "dizer": []
         },
         {
           "fase": "destination",
@@ -415,17 +413,13 @@
         },
         {
           "fase": "navigating",
-          "ouvir": false,
-          "dizer": [
-            "Microfone pausado. Quando terminar a etapa, toque no botão."
-          ]
+          "ouvir": true,
+          "dizer": []
         },
         {
           "fase": "navigating",
-          "ouvir": false,
-          "dizer": [
-            "Microfone pausado. Quando terminar a etapa, toque no botão."
-          ]
+          "ouvir": true,
+          "dizer": []
         },
         {
           "fase": "navigating",

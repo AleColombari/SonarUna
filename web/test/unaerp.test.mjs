@@ -128,7 +128,7 @@ test('origem com nome repetido pede o nome completo', () => {
   assert.equal(session.phase, 'entrance');
 });
 
-test('na rota, silencio e a pessoa andando: pausa sem perder a rota', () => {
+test('na rota, silencio e a pessoa andando: o microfone segue ouvindo calado', () => {
   const session = createSession(map);
   session.start();
   session.hear(['informações']);
@@ -136,10 +136,10 @@ test('na rota, silencio e a pessoa andando: pausa sem perder a rota', () => {
   session.hear(['sim']);
   session.hear(['pronto']);
   for (let i = 0; i < 5; i++) {
-    const paused = session.silence();
-    assert.equal(paused.phase, 'navigating');
-    assert.equal(paused.listen, false);
-    assert.equal(paused.say[0], 'Microfone pausado. Quando terminar a etapa, toque no botão.');
+    const quiet = session.silence();
+    assert.equal(quiet.phase, 'navigating');
+    assert.equal(quiet.listen, true);
+    assert.deepEqual(quiet.say, []);
   }
   assert.match(session.resume().say[0], /^Retomando a etapa 2 de 8\. Diga pronto para a próxima/);
   assert.match(session.hear(['pronto']).say[0], /^Etapa 3 de 8\. Suba a escada/);
