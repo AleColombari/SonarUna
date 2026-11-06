@@ -34,6 +34,9 @@ data class MainUiState(
     val listening: Boolean = false,
     val speaking: Boolean = false,
     val busy: Boolean = true,
+    /** What the person is saying (live) and the app's last sentence, written under the button. Memory only. */
+    val heard: String = "",
+    val said: String = "",
 )
 
 sealed interface PlatformAction {
@@ -92,6 +95,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** The person has started a phrase on the plain microphone (partial results arrived), not yet finished. */
     private var hearingPhrase = false
+
+    private var heardText = ""
+    private var saidText = ""
 
     private val phase: Phase get() = guide?.conversation?.phase ?: Phase.IDLE
 
@@ -336,12 +342,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             onPartial = { hypotheses ->
                 // Speech over (or never there): this is the person's phrase in progress.
                 if (duringSpeech == null || !duringSpeech.active) hearingPhrase = true
-                if (duringSpeech != null && foreground) takeOver(hypotheses, final = false)
+                // Echo of the app's own voice is not written; the person's words appear as they speak.
+                if (foreground && takeOver(hypotheses, final = false)) showHeard(hypotheses.first())
             },
             onResult = { hypotheses ->
                 duringSpeech?.recognizing = false
                 hearingPhrase = false
                 if (foreground && takeOver(hypotheses, final = true) && listening) {
+                    showHeard(hypotheses.first())
                     listening = false
                     haptics.success()
                     runOperation { deliver(guide!!.conversation.hear(hypotheses)) }
@@ -363,6 +371,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             },
         )
+    }
+
+    private fun showHeard(text: String) {
+        heardText = text
+        refresh()
     }
 
     /** The person started talking over the app: their answer has priority, so the voice stops now. */
@@ -440,6 +453,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             listening = false
         }
         speaking = true
+        saidText = message
         refresh()
         val completed = voice.speak(message)
         speaking = false
@@ -486,6 +500,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             listening = listening,
             speaking = speaking,
             busy = working || awaitingPermissions,
+            heard = heardText,
+            said = saidText,
         )
     }
 
