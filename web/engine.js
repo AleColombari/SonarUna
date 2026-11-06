@@ -156,8 +156,8 @@ export function parseRoomCode(text) {
   return null;
 }
 
-/** Artigo do lugar ("a sala A12", "o banheiro"): "o" quando o mapa diz, senao "a". */
-const article = (point) => point.artigo === 'o' ? 'o' : 'a';
+/** Artigo do lugar ("a sala A12", "o banheiro"): o do mapa; sem ele, "o" para cruzamentos e patamares, senao "a". */
+const article = (point) => point.artigo ?? (['cruzamento', 'patamar'].includes(point.tipo) ? 'o' : 'a');
 export const paraLugar = (point) => `para ${article(point)} ${point.nome}`;
 export const ateLugar = (point) => `até ${article(point)} ${point.nome}`;
 export const emLugar = (point) => `n${article(point)} ${point.nome}`;
@@ -425,14 +425,16 @@ export function buildInstructions(map, entrance, segments) {
   });
 }
 
-const ORDINAIS = ['primeiro', 'segundo', 'terceiro', 'quarto', 'quinto', 'sexto', 'sétimo', 'oitavo', 'nono', 'décimo'];
-const ordinal = (n) => ORDINAIS[n - 1] ?? `${n}º`;
+const STRAIGHT = 'Siga em frente';
+const turnVerb = (virar) => virar.charAt(0).toLowerCase() + virar.slice(1);
 
 /**
- * Guia pelo piso tatil, sem medidas: cada etapa vai ate uma curva, uma escada, o destino ou, numa reta longa,
- * ate um cruzamento no meio do caminho, e diz em qual cruzamento do piso parar. Todo ponto no meio de uma reta
- * conta como cruzamento (menos curvas e patamares), porque no mapa de piso os pontos sao as interseccoes que a
- * pessoa sente com a bengala. Cada item: { texto, cruzamentos, bruto: null }.
+ * Guia pelo piso tatil, sem medidas e sem salas como referencia: a pessoa conta os cruzamentos que sente com a
+ * bengala ("Daqui a 3 cruzamentos, vire à esquerda"). A virada e avisada na etapa que leva ate ela; a sala so
+ * aparece quando e o destino. Uma reta longa vira etapas de ate `cruzamentosPorEtapa` cruzamentos. Todo ponto no
+ * meio de uma reta conta como cruzamento (menos curvas, patamares, portas e marcos).
+ * Cada item: { texto, cruzamentos, bruto: null, ponto, rumo } (ponto e rumo: onde a etapa termina e para que lado
+ * a pessoa fica virada, ja depois da virada avisada).
  */
 function buildFloorInstructions(map, entrance, segments) {
   const groups = [];
@@ -451,27 +453,42 @@ function buildFloorInstructions(map, entrance, segments) {
   const steps = [];
   groups.forEach((group, index) => {
     const isLast = index === groups.length - 1;
+    const previous = groups[index - 1];
     const next = groups[index + 1];
     if (group.escada) {
       const action = { sobe: 'Suba a escada', desce: 'Desça a escada' }[group.escada];
-      const turn = group.virar === 'Siga em frente' ? '' : `${group.virar}. `;
+      const turn = group.virar === STRAIGHT ? '' : `${group.virar}. `;
       steps.push(floorStep(map, group.trechos, [action ? `${turn}${action}.` : `${turn}Atenção, escada. Use o corrimão.`], isLast));
       return;
     }
-    for (const [i, chunk] of splitLongStraight(map, group.trechos, isLast || next.escada).entries()) {
-      const go = i > 0 ? 'Continue em frente pelo piso tátil'
-        : group.virar === 'Siga em frente' ? 'Siga em frente pelo piso tátil' : `${group.virar} e siga o piso tátil`;
+    // A virada do comeco ja foi dita no fim da etapa anterior, a nao ser no inicio da rota ou depois de uma escada.
+    const startTurn = (!previous || previous.escada) && group.virar !== STRAIGHT ? group.virar : null;
+    // A virada do fim (no cruzamento onde a proxima reta comeca) e dita nesta etapa.
+    const endTurn = next && !next.escada ? next.virar : null;
+    const chunks = splitLongStraight(map, group.trechos, isLast || Boolean(next?.escada));
+    chunks.forEach((chunk, i) => {
+      const lastChunk = i === chunks.length - 1;
+      const turnNow = i === 0 ? startTurn : null;
+      const go = turnNow ? `${turnNow} e siga o piso tátil` : `${i > 0 ? 'Continue' : 'Siga'} em frente pelo piso tátil`;
       const end = map.points.get(chunk.trechos[chunk.trechos.length - 1].para);
       const passing = chunk.passados > 0 ? `, passando por ${plural(chunk.passados, 'cruzamento', 'cruzamentos')},` : '';
+      const count = chunk.passados + 1;
       let text;
-      if (chunk.pausa) text = `${go} até o ${ordinal(chunk.passados + 1)} cruzamento${landmark(map, end.id)}.`;
-      else if (isLast && end.tipo === 'porta') text = `${go}${passing} até a porta.`;
-      else if (isLast) text = `${go}${passing} até o fim.`;
-      else if (next.escada) text = `${go}${passing} até a escada.`;
-      else if (end.tipo === 'curva') text = `${go}${passing} até a curva do piso.`;
-      else text = `${go} até o ${ordinal(chunk.passados + 1)} cruzamento.`;
-      steps.push(floorStep(map, chunk.trechos, [text], isLast && !chunk.pausa, chunk.passados));
-    }
+      if (chunk.pausa) {
+        text = `${go} por ${plural(count, 'cruzamento', 'cruzamentos')}.`;
+      } else if (isLast) {
+        text = `${go}${passing} até ${end.tipo === 'porta' ? 'a porta' : 'o fim'}.`;
+      } else if (next.escada) {
+        text = `${go}${passing} até a escada.`;
+      } else if (end.tipo === 'curva') {
+        text = `${go}${passing} até a curva do piso e ${turnVerb(endTurn)}.`;
+      } else {
+        const when = count === 1 ? 'No próximo cruzamento' : `Daqui a ${count} cruzamentos`;
+        text = `${turnNow ? `${go}. ` : ''}${when}, ${turnVerb(endTurn)}.`;
+      }
+      const faces = lastChunk && endTurn ? next.trechos[0].rumo : undefined;
+      steps.push(floorStep(map, chunk.trechos, [text], isLast && !chunk.pausa, chunk.passados, faces));
+    });
   });
   return steps;
 }
@@ -507,21 +524,13 @@ function splitLongStraight(map, trechos, endsWithoutTurn) {
   return chunks;
 }
 
-/** ", na altura da sala 14B": o primeiro lugar com nome ligado ao cruzamento, para a pessoa confirmar onde parou. */
-function landmark(map, crossingId) {
-  const named = map.adjacency.get(crossingId)
-    .map((edge) => map.points.get(edge.to))
-    .find((point) => !['cruzamento', 'curva', 'patamar'].includes(point.tipo));
-  return named ? `, na altura ${deLugar(named)}` : '';
-}
-
-function floorStep(map, trechos, parts, arrives, passados = 0) {
+function floorStep(map, trechos, parts, arrives, passados = 0, faces = undefined) {
   const referencias = [...new Set(trechos.flatMap((segment) => segment.referencias))];
   if (referencias.length > 0) parts.push(`Referência: ${referencias.join(', ')}.`);
   const end = map.points.get(trechos[trechos.length - 1].para);
   parts.push(arrives ? `Você chegará ${emLugar(end)}. Quando chegar, diga pronto.` : 'Quando terminar, diga pronto.');
   // ponto/rumo: onde a etapa termina e para que lado a pessoa esta virada, para trocar de destino no meio da rota.
-  return { texto: parts.join(' '), cruzamentos: passados, bruto: null, ponto: end.id, rumo: trechos[trechos.length - 1].rumo };
+  return { texto: parts.join(' '), cruzamentos: passados, bruto: null, ponto: end.id, rumo: faces ?? trechos[trechos.length - 1].rumo };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -573,13 +582,20 @@ const COMMANDS = [
   ['restart', ['recomecar', 'reiniciar', 'comecar de novo']],
   // Trocar so o destino mantem onde a pessoa esta (ou onde terminou a ultima etapa feita).
   ['destination', ['novo destino', 'outro destino', 'nova rota', 'outra rota', 'mudar o destino', 'mudar destino', 'trocar o destino', 'trocar destino']],
+  ['remaining', ['quanto falta', 'falta muito', 'quantas etapas faltam', 'quantas faltam']],
+  // Antes de 'repeat', porque "repete o caminho" tem "repete".
+  ['overview', [
+    'repasse o caminho', 'repassa o caminho', 'repassar o caminho', 'repete o caminho', 'repita o caminho', 'caminho todo',
+    'caminho completo', 'resumo do caminho', 'resumo da rota',
+  ]],
+  ['where', ['onde estou', 'onde eu estou', 'aonde estou', 'aonde eu estou']],
   ['help', ['ajuda']],
   ['repeat', ['repetir', 'repete', 'repita', 'de novo', 'nao ouvi', 'nao entendi']],
   ['back', ['voltar', 'volta', 'anterior', 'passo anterior']],
   ['next', ['pronto', 'proximo', 'continuar', 'continua', 'seguir', 'cheguei', 'ok', 'feito', 'ja fui', 'ja andei']],
 ];
 
-/** 'assist' | 'stop' | 'restart' | 'destination' | 'help' | 'repeat' | 'back' | 'next' | null. */
+/** 'assist' | 'stop' | 'restart' | 'destination' | 'remaining' | 'overview' | 'where' | 'help' | 'repeat' | 'back' | 'next' | null. */
 export function classifyCommand(text) {
   const normalized = normalize(text);
   for (const [name, phrases] of COMMANDS) {

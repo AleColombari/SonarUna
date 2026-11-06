@@ -14,7 +14,8 @@ data class Place(
     val aliases: List<String> = emptyList(),
     val rumoPartida: Double? = null,
 ) {
-    private val article: String get() = if (artigo == "o") "o" else "a"
+    /** The map's article; without one, "o" for crossings and landings ("no cruzamento"), otherwise "a". */
+    private val article: String get() = artigo ?: if (tipo == "cruzamento" || tipo == "patamar") "o" else "a"
     val emLugar: String get() = "n$article $nome"
     val paraLugar: String get() = "para $article $nome"
     val ateLugar: String get() = "até $article $nome"

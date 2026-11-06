@@ -1,0 +1,1053 @@
+{
+  "sobre": "Conversas de referencia, iguais para a versao web e o app Android. As entradas (gps, passos) sao escritas a mao; as respostas esperadas sao geradas pela versao web com: node casos/atualizar.mjs. Os testes das duas versoes (web/test/casos.test.mjs e app/src/test/.../CasesTest.kt) exigem exatamente estas falas. O pedido de ajuda por ligacao fica de fora: so existe na web.",
+  "casos": [
+    {
+      "nome": "sem GPS: das informacoes ate a 15B, rota inteira",
+      "passos": [
+        [
+          "informações"
+        ],
+        [
+          "sala 15B"
+        ],
+        [
+          "sim"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "pronto"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está no balcão de informações. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para a sala 15B. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Rota até a sala 15B, em 8 etapas, seguindo o piso tátil.",
+            "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 2 de 8. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 3 de 8. Suba a escada. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 4 de 8. No próximo cruzamento, vire à esquerda. Referência: trecho curto, de poucos passos. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 5 de 8. Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 6 de 8. Continue em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 7 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 8 de 8. Siga em frente pelo piso tátil até o fim. Você chegará na sala 15B. Quando chegar, diga pronto."
+          ]
+        },
+        {
+          "fase": "idle",
+          "ouvir": false,
+          "dizer": [
+            "Você chegou na sala 15B. Toque no botão para uma nova orientação."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "GPS na entrada principal: confirma e vai a 20B",
+      "gps": {
+        "lat": -21.2030256,
+        "lon": -47.779547,
+        "precisao": 5
+      },
+      "passos": [
+        [
+          "sim, estou"
+        ],
+        [
+          "vinte b"
+        ],
+        [
+          "isso"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "pronto"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "confirm-origin",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Pela sua localização, parece que você está na entrada principal. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está na entrada principal. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para a sala 20B. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Rota até a sala 20B, em 3 etapas, seguindo o piso tátil.",
+            "Etapa 1 de 3. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 2 de 3. Daqui a 2 cruzamentos, vire à esquerda. Referência: porta da entrada do bloco B, sempre aberta. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 3 de 3. Siga em frente pelo piso tátil até o fim. Você chegará na sala 20B. Quando chegar, diga pronto."
+          ]
+        },
+        {
+          "fase": "idle",
+          "ouvir": false,
+          "dizer": [
+            "Você chegou na sala 20B. Toque no botão para uma nova orientação."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "GPS sugere e a pessoa corrige; banheiro mais perto e troca para o feminino",
+      "gps": {
+        "lat": -21.2030256,
+        "lon": -47.779547,
+        "precisao": 5
+      },
+      "passos": [
+        [
+          "não, estou no balcão de informações"
+        ],
+        [
+          "banheiro"
+        ],
+        [
+          "não, feminino"
+        ],
+        [
+          "sim"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "confirm-origin",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Pela sua localização, parece que você está na entrada principal. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está no balcão de informações. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para o banheiro masculino do bloco A. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para o banheiro feminino do bloco A. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Rota até o banheiro feminino do bloco A, em 4 etapas, seguindo o piso tátil.",
+            "Etapa 1 de 4. Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "GPS fora do campus",
+      "gps": {
+        "lat": -21.17,
+        "lon": -47.81,
+        "precisao": 10
+      },
+      "passos": [
+        [
+          "sala 5A"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Pela sua localização, você não parece estar no campus da UNAERP.",
+            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está na sala 5A. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "GPS impreciso nao sugere lugar",
+      "gps": {
+        "lat": -21.2030256,
+        "lon": -47.779547,
+        "precisao": 30
+      },
+      "passos": [
+        [
+          "entrada principal"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está na entrada principal. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "silencio numa pergunta e andando na rota",
+      "passos": [
+        [
+          "informações"
+        ],
+        "silencio",
+        "silencio",
+        "silencio",
+        "retomar",
+        [
+          "sala 15B"
+        ],
+        [
+          "sim"
+        ],
+        "silencio",
+        "silencio",
+        "retomar",
+        [
+          "pronto"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está no balcão de informações. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Não ouvi. Pode repetir?"
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Não ouvi. Pode repetir?"
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": false,
+          "dizer": [
+            "Não ouvi nenhuma resposta. Toque no botão quando quiser continuar."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Retomando.",
+            "Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para a sala 15B. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Rota até a sala 15B, em 8 etapas, seguindo o piso tátil.",
+            "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": false,
+          "dizer": [
+            "Microfone pausado. Quando terminar a etapa, toque no botão."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": false,
+          "dizer": [
+            "Microfone pausado. Quando terminar a etapa, toque no botão."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Retomando a etapa 1 de 8. Diga pronto para a próxima, ou repetir para ouvir de novo."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 2 de 8. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "outro destino no meio da rota parte do fim da ultima etapa feita",
+      "passos": [
+        [
+          "informações"
+        ],
+        [
+          "sala 15B"
+        ],
+        [
+          "sim"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "novo destino"
+        ],
+        [
+          "sala 20B"
+        ],
+        [
+          "sim"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está no balcão de informações. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para a sala 15B. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Rota até a sala 15B, em 8 etapas, seguindo o piso tátil.",
+            "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 2 de 8. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 3 de 8. Suba a escada. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 4 de 8. No próximo cruzamento, vire à esquerda. Referência: trecho curto, de poucos passos. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Certo. Para onde você quer ir?"
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para a sala 20B. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Rota até a sala 20B, em 6 etapas, seguindo o piso tátil.",
+            "Etapa 1 de 6. No próximo cruzamento, vire à esquerda. Referência: trecho curto, de poucos passos. Quando terminar, diga pronto."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "outro destino na confirmacao e lugar dito no meio da rota",
+      "passos": [
+        [
+          "informações"
+        ],
+        [
+          "sala 15B"
+        ],
+        [
+          "não, outro destino"
+        ],
+        [
+          "sala 5A"
+        ],
+        [
+          "sim"
+        ],
+        [
+          "quero ir para o protocolo"
+        ],
+        [
+          "sim"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está no balcão de informações. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para a sala 15B. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Certo. Para onde você quer ir?"
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para a sala 5A. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Rota até a sala 5A, em 3 etapas, seguindo o piso tátil.",
+            "Etapa 1 de 3. Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para o protocolo. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Rota até o protocolo, em 3 etapas, seguindo o piso tátil.",
+            "Etapa 1 de 3. No próximo cruzamento, vire à direita. Quando terminar, diga pronto."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "saida e quero sair levam a saida mais perto",
+      "passos": [
+        [
+          "sala 20B"
+        ],
+        [
+          "saída"
+        ],
+        [
+          "não"
+        ],
+        [
+          "quero sair"
+        ],
+        [
+          "sim"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está na sala 20B. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para a entrada do bloco B. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Certo. Para onde você quer ir?"
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para a entrada do bloco B. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Rota até a entrada do bloco B, em 2 etapas, seguindo o piso tátil.",
+            "Etapa 1 de 2. No próximo cruzamento, vire à direita. Quando terminar, diga pronto."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "quanto falta, onde estou e repasse o caminho",
+      "passos": [
+        [
+          "onde estou"
+        ],
+        [
+          "informações"
+        ],
+        [
+          "quanto falta"
+        ],
+        [
+          "sala 15B"
+        ],
+        [
+          "sim"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "pronto"
+        ],
+        [
+          "quanto falta?"
+        ],
+        [
+          "onde eu estou"
+        ],
+        [
+          "repasse o caminho"
+        ],
+        [
+          "voltar"
+        ],
+        [
+          "repetir"
+        ],
+        [
+          "ajuda"
+        ],
+        [
+          "parar"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A."
+          ]
+        },
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Ainda não sei onde você está.",
+            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está no balcão de informações. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Ainda não há uma rota.",
+            "Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para a sala 15B. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Rota até a sala 15B, em 8 etapas, seguindo o piso tátil.",
+            "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 2 de 8. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 3 de 8. Suba a escada. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Você está na etapa 3 de 8. Depois desta, faltam 5 etapas até a sala 15B."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Se você terminou a etapa 2, está no pé da escada entre os blocos.",
+            "Etapa 3 de 8. Suba a escada. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Caminho até a sala 15B.",
+            "Etapa 3: Suba a escada.",
+            "Etapa 4: No próximo cruzamento, vire à esquerda. Referência: trecho curto, de poucos passos.",
+            "Etapa 5: Siga em frente pelo piso tátil por 5 cruzamentos.",
+            "Etapa 6: Continue em frente pelo piso tátil por 5 cruzamentos.",
+            "Etapa 7: No próximo cruzamento, vire à esquerda.",
+            "Etapa 8: Siga em frente pelo piso tátil até o fim. Você chegará na sala 15B.",
+            "Agora você está na etapa 3. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 2 de 8. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 2 de 8. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Diga pronto quando terminar a etapa e quiser a próxima.",
+            "Você pode dizer a qualquer momento: repetir, voltar, recomeçar ou parar."
+          ]
+        },
+        {
+          "fase": "idle",
+          "ouvir": false,
+          "dizer": [
+            "Orientação encerrada. Toque no botão para começar de novo."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "salas faladas de varios jeitos",
+      "passos": [
+        [
+          "entrada principal"
+        ],
+        [
+          "sala 9"
+        ],
+        [
+          "trinta a"
+        ],
+        [
+          "cantina"
+        ],
+        [
+          "bê doze"
+        ],
+        [
+          "sim"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está na entrada principal. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Encontrei mais de uma sala: sala 9B, sala 9A. Diga o nome completo da sala."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Não encontrei a sala A30 neste mapa. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Não entendi o destino. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para a sala 12B. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Rota até a sala 12B, em 5 etapas, seguindo o piso tátil.",
+            "Etapa 1 de 5. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "origem com nome repetido e hipoteses do reconhecedor",
+      "passos": [
+        [
+          "estou no banheiro"
+        ],
+        [
+          "xis",
+          "banheiro feminino do bloco a"
+        ],
+        [
+          "sala dos computadores"
+        ],
+        [
+          "pode ser"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A."
+          ]
+        },
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Encontrei mais de um lugar: banheiro feminino do bloco B, banheiro masculino do bloco B, banheiro feminino do bloco A, banheiro masculino do bloco A. Diga o nome completo."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está no banheiro feminino do bloco A. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para a sala de estudos. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Rota até a sala de estudos, em 4 etapas, seguindo o piso tátil.",
+            "Etapa 1 de 4. No próximo cruzamento, vire à direita. Quando terminar, diga pronto."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "recomecar volta ao inicio",
+      "passos": [
+        [
+          "informações"
+        ],
+        [
+          "sala 5A"
+        ],
+        [
+          "recomeçar"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está no balcão de informações. Para onde você quer ir? Diga, por exemplo, sala 15B, financeiro ou banheiro."
+          ]
+        },
+        {
+          "fase": "confirm",
+          "ouvir": true,
+          "dizer": [
+            "Você quer ir para a sala 5A. Está certo? Diga sim ou não."
+          ]
+        },
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Olá. Eu sou o SonarUna, no campus da UNAERP.",
+            "Onde você está agora? Diga a sala ou o lugar, por exemplo, entrada principal, balcão de informações ou sala 5A."
+          ]
+        }
+      ]
+    }
+  ]
+}

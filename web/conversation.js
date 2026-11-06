@@ -2,7 +2,7 @@
 // Nao fala nem ouve: recebe o que foi ouvido e devolve o que deve ser dito. Quem fala e ouve e o app.js.
 
 import {
-  ateLugar, buildInstructions, classifyCommand, classifyYesNo, emLugar, exitHeading, findContact, findEntrance, findPlace,
+  ateLugar, buildInstructions, classifyCommand, classifyYesNo, deLugar, emLugar, exitHeading, findContact, findEntrance, findPlace,
   paraLugar, planRoute, routeWeight, stepsPhrase,
 } from './engine.js';
 
@@ -34,7 +34,6 @@ export function createSession(map, getContacts = () => []) {
     ? `Onde você está agora? Diga a sala ou o lugar, por exemplo, ${map.exemploOrigem ?? 'balcão de informações'}.`
     : `Por qual entrada você entrou? Diga ${entranceNames()}.`);
   const destinationQuestion = () => `Para onde você quer ir? Diga, por exemplo, ${map.exemplo}.`;
-  const deLugar = (place) => `d${place.artigo === 'o' ? 'o' : 'a'} ${place.nome}`;
   const contactNames = (contacts) => contacts.map((c) => c.nome).join(' ou ');
   const stepLine = (i) => `Etapa ${i + 1} de ${steps.length}. ${steps[i].texto}`;
 
@@ -161,6 +160,37 @@ export function createSession(map, getContacts = () => []) {
     return reply(['Retomando.', ...announceCurrentQuestion().say]);
   }
 
+  const noRouteYet = () => reply(['Ainda não há uma rota.', ...announceCurrentQuestion().say]);
+  const withoutPrompt = (texto) => texto.replace(/ Quando (terminar|chegar), diga pronto\.$/, '');
+
+  /** "Quanto falta?": quantas etapas faltam depois da atual. */
+  function remaining() {
+    if (phase !== 'navigating') return noRouteYet();
+    const rest = steps.length - index - 1;
+    const left = rest === 0
+      ? `Esta é a última etapa ${ateLugar(destination)}.`
+      : `Você está na etapa ${index + 1} de ${steps.length}. Depois desta, ${rest === 1 ? 'falta 1 etapa' : `faltam ${rest} etapas`} ${ateLugar(destination)}.`;
+    return reply([left]);
+  }
+
+  /** "Repasse o caminho": as etapas que faltam, da atual ate o destino, e onde a pessoa esta nelas. */
+  function overview() {
+    if (phase !== 'navigating') return noRouteYet();
+    const rest = steps.slice(index).map((step, i) => `Etapa ${index + i + 1}: ${withoutPrompt(step.texto)}`);
+    return reply([`Caminho ${ateLugar(destination)}.`, ...rest, `Agora você está na etapa ${index + 1}. Quando terminar, diga pronto.`]);
+  }
+
+  /** "Onde estou?": o lugar de partida, ou o fim da ultima etapa feita. */
+  function whereAmI() {
+    if (phase === 'navigating') {
+      if (index === 0) return reply([`Você está ${emLugar(entrance)}, no começo da rota.`, stepLine(index)]);
+      const done = steps[index - 1];
+      return reply([`Se você terminou a etapa ${index}, está ${emLugar(map.points.get(done.ponto))}.`, stepLine(index)]);
+    }
+    if (entrance) return reply([`Você está ${emLugar(entrance)}.`, ...announceCurrentQuestion().say]);
+    return reply(['Ainda não sei onde você está.', ...announceCurrentQuestion().say]);
+  }
+
   /**
    * Novo destino sem perder onde a pessoa esta. No meio da rota, ela esta onde terminou a ultima etapa feita,
    * virada para o lado em que andava.
@@ -169,7 +199,7 @@ export function createSession(map, getContacts = () => []) {
     if (phase === 'navigating' && index > 0 && steps[index - 1].ponto) {
       const done = steps[index - 1];
       const place = map.points.get(done.ponto);
-      entrance = { id: place.id, nome: place.nome, artigo: place.artigo, ponto: place.id, rumo: done.rumo };
+      entrance = { id: place.id, nome: place.nome, artigo: place.artigo, tipo: place.tipo, ponto: place.id, rumo: done.rumo };
     }
     candidate = destination = null;
     steps = [];
@@ -194,7 +224,7 @@ export function createSession(map, getContacts = () => []) {
   }
 
   function setOrigin(place) {
-    entrance = { id: place.id, nome: place.nome, artigo: place.artigo, ponto: place.id, rumo: exitHeading(map, place.id) };
+    entrance = { id: place.id, nome: place.nome, artigo: place.artigo, tipo: place.tipo, ponto: place.id, rumo: exitHeading(map, place.id) };
     suggested = null;
     phase = 'destination';
     return reply([`Você está ${emLugar(place)}. ${destinationQuestion()}`]);
@@ -342,6 +372,9 @@ export function createSession(map, getContacts = () => []) {
       if (command === 'stop') return stop();
       if (command === 'restart') return start();
       if (command === 'destination') return entrance ? changeDestination() : announceCurrentQuestion();
+      if (command === 'remaining') return remaining();
+      if (command === 'overview') return overview();
+      if (command === 'where') return whereAmI();
       if (command === 'help') return help();
     }
     if (phase !== 'navigating') {

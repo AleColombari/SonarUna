@@ -28,8 +28,10 @@ Se o microfone não funcionar, aparece um campo de texto que passa pela mesma co
 
 ## Testes automáticos
 
+As conversas de referência em [casos/conversas.json](../casos/conversas.json) valem para a web e para o app Android: os dois precisam dizer exatamente as mesmas frases. Depois de mudar uma fala de propósito, rode `node casos/atualizar.mjs`, confira a diferença no Git e faça a mesma mudança no Kotlin (`app/src/main/java/com/example/sonaruna/guia/`).
+
 ```bash
-node --test web/test/engine.test.mjs web/test/conversation.test.mjs web/test/contacts.test.mjs web/test/piso.test.mjs web/test/unaerp.test.mjs web/test/localizacao.test.mjs
+node --test web/test/engine.test.mjs web/test/conversation.test.mjs web/test/contacts.test.mjs web/test/piso.test.mjs web/test/unaerp.test.mjs web/test/localizacao.test.mjs web/test/casos.test.mjs
 ```
 
 ## Arquivos

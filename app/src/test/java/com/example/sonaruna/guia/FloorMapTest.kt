@@ -46,17 +46,17 @@ class FloorMapTest {
     }
 
     @Test
-    fun `from the information desk to 15B climbs the stairs and splits corridor B`() {
+    fun `from the information desk to 15B climbs the stairs and counts crossings to each turn`() {
         assertEquals(
             listOf(
-                "Siga em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.",
-                "Vire à esquerda e siga o piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto.",
+                "No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto.",
+                "Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto.",
                 "Suba a escada. Quando terminar, diga pronto.",
-                "Siga em frente pelo piso tátil até o primeiro cruzamento. Referência: trecho curto, de poucos passos. Quando terminar, diga pronto.",
-                "Vire à esquerda e siga o piso tátil até o quinto cruzamento, na altura da sala 9B. Quando terminar, diga pronto.",
-                "Continue em frente pelo piso tátil até o quinto cruzamento, na altura da sala 16B. Quando terminar, diga pronto.",
-                "Continue em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.",
-                "Vire à esquerda e siga o piso tátil até o fim. Você chegará na sala 15B. Quando chegar, diga pronto.",
+                "No próximo cruzamento, vire à esquerda. Referência: trecho curto, de poucos passos. Quando terminar, diga pronto.",
+                "Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto.",
+                "Continue em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto.",
+                "No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto.",
+                "Siga em frente pelo piso tátil até o fim. Você chegará na sala 15B. Quando chegar, diga pronto.",
             ),
             route("informacoes", "15B"),
         )
@@ -64,45 +64,53 @@ class FloorMapTest {
     }
 
     @Test
-    fun `from the main entrance the block B door is a reference, 20B left and 17B right`() {
+    fun `from the main entrance the block B door is a reference and not a crossing, 20B left and 17B right`() {
         assertEquals(
             listOf(
-                "Siga em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.",
-                "Vire à esquerda e siga o piso tátil até o segundo cruzamento. Referência: porta da entrada do bloco B, sempre aberta. Quando terminar, diga pronto.",
-                "Vire à esquerda e siga o piso tátil até o fim. Você chegará na sala 20B. Quando chegar, diga pronto.",
+                "No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto.",
+                "Daqui a 2 cruzamentos, vire à esquerda. Referência: porta da entrada do bloco B, sempre aberta. Quando terminar, diga pronto.",
+                "Siga em frente pelo piso tátil até o fim. Você chegará na sala 20B. Quando chegar, diga pronto.",
             ),
             route("entrada-principal", "20B"),
         )
-        assertTrue(route("entrada-principal", "17B")[2].startsWith("Vire à direita"))
-        // The door is not a crossing: from the block B door, 18B is the third crossing.
-        assertTrue(route("entrada-b", "18B")[0].startsWith("Siga em frente pelo piso tátil até o terceiro cruzamento"))
+        assertTrue(route("entrada-principal", "17B")[1].startsWith("Daqui a 3 cruzamentos, vire à direita"))
+        assertTrue(route("entrada-b", "18B")[0].startsWith("Daqui a 3 cruzamentos, vire à esquerda"))
         assertTrue(route("20B", "entrada-b").last().contains("até a porta. Você chegará na entrada do bloco B"))
     }
 
     @Test
-    fun `the side of a turn depends on the direction of travel`() {
+    fun `the side of a turn depends on the direction of travel, and rooms are not references on the way`() {
         assertEquals(
             listOf(
-                "Siga em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.",
-                "Vire à esquerda e siga o piso tátil até o terceiro cruzamento. Quando terminar, diga pronto.",
-                "Vire à esquerda e siga o piso tátil até o fim. Você chegará no banheiro feminino do bloco B. Quando chegar, diga pronto.",
+                "No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto.",
+                "Daqui a 3 cruzamentos, vire à esquerda. Quando terminar, diga pronto.",
+                "Siga em frente pelo piso tátil até o fim. Você chegará no banheiro feminino do bloco B. Quando chegar, diga pronto.",
             ),
             route("20B", "banheiro-f-b"),
         )
         assertEquals(
             listOf(
-                "Vire à direita e siga o piso tátil até o quinto cruzamento, na altura da sala 6A. Quando terminar, diga pronto.",
-                "Continue em frente pelo piso tátil até o quinto cruzamento, na altura da sala 3A. Quando terminar, diga pronto.",
-                "Continue em frente pelo piso tátil até o terceiro cruzamento. Quando terminar, diga pronto.",
-                "Vire à esquerda e siga o piso tátil até o fim. Você chegará na sala 4A. Quando chegar, diga pronto.",
+                "Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto.",
+                "Continue em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto.",
+                "Daqui a 3 cruzamentos, vire à esquerda. Quando terminar, diga pronto.",
+                "Siga em frente pelo piso tátil até o fim. Você chegará na sala 4A. Quando chegar, diga pronto.",
             ),
             route("protocolo", "4A").drop(2),
         )
+        val roomReference = Regex("sala|na altura")
+        for (from in places) {
+            for (to in places) {
+                if (from == to) continue
+                for (text in route(from.id, to.id).dropLast(1)) {
+                    assertFalse("${from.id} -> ${to.id}: $text", roomReference.containsMatchIn(text))
+                }
+            }
+        }
     }
 
     @Test
     fun `no step asks to count more than five crossings`() {
-        val tooMany = Regex("(sexto|sétimo|oitavo|nono|décimo|\\dº) cruzamento|passando por ([6-9]|\\d\\d) cruzamentos")
+        val tooMany = Regex("(Daqui a|por) ([6-9]|\\d\\d) cruzamentos")
         for (from in places) {
             for (to in places) {
                 if (from == to) continue

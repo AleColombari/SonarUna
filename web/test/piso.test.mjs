@@ -37,10 +37,10 @@ test('modo piso carrega trechos sem metros; o modo passos continua exigindo metr
   assert.throws(() => loadMap({ ...raw, trechos: [{ de: 'c3', para: 'topo', rumo: 0, escada: 'cima' }] }), /sobe/);
 });
 
-test('guia pelo piso conta os cruzamentos ate a curva e termina no fim do ramal', () => {
+test('guia pelo piso avisa a virada contando os cruzamentos ate ela', () => {
   assert.deepEqual(texts('A1'), [
-    'Siga em frente pelo piso tátil até o segundo cruzamento. Quando terminar, diga pronto.',
-    'Vire à direita e siga o piso tátil até o fim. Você chegará na sala A1. Quando chegar, diga pronto.',
+    'Daqui a 2 cruzamentos, vire à direita. Quando terminar, diga pronto.',
+    'Siga em frente pelo piso tátil até o fim. Você chegará na sala A1. Quando chegar, diga pronto.',
   ]);
 });
 
@@ -76,7 +76,7 @@ test('conversa no modo piso fala etapas, sem passos', () => {
   const route = session.hear(['sim']);
   assert.equal(route.phase, 'navigating');
   assert.match(route.say[0], /^Rota até a sala A1, em 2 etapas, seguindo o piso tátil\.$/);
-  assert.match(route.say[1], /^Etapa 1 de 2\. Siga em frente pelo piso tátil até o segundo cruzamento/);
+  assert.match(route.say[1], /^Etapa 1 de 2\. Daqui a 2 cruzamentos, vire à direita/);
   assert.doesNotMatch(route.say.join(' '), /passo/);
 });
 
@@ -94,8 +94,8 @@ function corridor(n, { turn = false, limit } = {}) {
 
 test('reta longa ate o fim vira etapas de ate 5 cruzamentos', () => {
   assert.deepEqual(corridor(11), [
-    'Siga em frente pelo piso tátil até o quinto cruzamento',
-    'Continue em frente pelo piso tátil até o quinto cruzamento',
+    'Siga em frente pelo piso tátil por 5 cruzamentos',
+    'Continue em frente pelo piso tátil por 5 cruzamentos',
     'Continue em frente pelo piso tátil, passando por 1 cruzamento, até o fim',
   ]);
   assert.deepEqual(corridor(5), ['Siga em frente pelo piso tátil, passando por 5 cruzamentos, até o fim']);
@@ -103,20 +103,20 @@ test('reta longa ate o fim vira etapas de ate 5 cruzamentos', () => {
 
 test('o cruzamento onde se vira tambem conta para o limite', () => {
   assert.deepEqual(corridor(5, { turn: true }), [
-    'Siga em frente pelo piso tátil até o quinto cruzamento',
-    'Vire à direita e siga o piso tátil até o fim',
+    'Daqui a 5 cruzamentos, vire à direita',
+    'Siga em frente pelo piso tátil até o fim',
   ]);
   assert.deepEqual(corridor(6, { turn: true }), [
-    'Siga em frente pelo piso tátil até o quinto cruzamento',
-    'Continue em frente pelo piso tátil até o primeiro cruzamento',
-    'Vire à direita e siga o piso tátil até o fim',
+    'Siga em frente pelo piso tátil por 5 cruzamentos',
+    'No próximo cruzamento, vire à direita',
+    'Siga em frente pelo piso tátil até o fim',
   ]);
 });
 
 test('cruzamentosPorEtapa no mapa muda o limite', () => {
   assert.deepEqual(corridor(7, { limit: 3 }), [
-    'Siga em frente pelo piso tátil até o terceiro cruzamento',
-    'Continue em frente pelo piso tátil até o terceiro cruzamento',
+    'Siga em frente pelo piso tátil por 3 cruzamentos',
+    'Continue em frente pelo piso tátil por 3 cruzamentos',
     'Continue em frente pelo piso tátil, passando por 1 cruzamento, até o fim',
   ]);
 });

@@ -2,7 +2,7 @@ package com.example.sonaruna.guia
 
 enum class YesNo { YES, NO }
 
-enum class Command { ASSIST, STOP, RESTART, DESTINATION, HELP, REPEAT, BACK, NEXT }
+enum class Command { ASSIST, STOP, RESTART, DESTINATION, REMAINING, OVERVIEW, WHERE, HELP, REPEAT, BACK, NEXT }
 
 // Words and expressions anywhere in the phrase: "acho que sim", "sim sim", "isso aí, pode ir".
 private val positive = listOf(
@@ -50,6 +50,13 @@ private val commands = listOf(
     Command.DESTINATION to listOf(
         "novo destino", "outro destino", "nova rota", "outra rota", "mudar o destino", "mudar destino", "trocar o destino", "trocar destino",
     ),
+    Command.REMAINING to listOf("quanto falta", "falta muito", "quantas etapas faltam", "quantas faltam"),
+    // Before REPEAT, because "repete o caminho" contains "repete".
+    Command.OVERVIEW to listOf(
+        "repasse o caminho", "repassa o caminho", "repassar o caminho", "repete o caminho", "repita o caminho", "caminho todo",
+        "caminho completo", "resumo do caminho", "resumo da rota",
+    ),
+    Command.WHERE to listOf("onde estou", "onde eu estou", "aonde estou", "aonde eu estou"),
     Command.HELP to listOf("ajuda"),
     Command.REPEAT to listOf("repetir", "repete", "repita", "de novo", "nao ouvi", "nao entendi"),
     Command.BACK to listOf("voltar", "volta", "anterior", "passo anterior"),

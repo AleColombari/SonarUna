@@ -24,8 +24,8 @@ class InstructionsTest {
     fun `a long straight to the end becomes steps of at most five crossings`() {
         assertEquals(
             listOf(
-                "Siga em frente pelo piso tátil até o quinto cruzamento",
-                "Continue em frente pelo piso tátil até o quinto cruzamento",
+                "Siga em frente pelo piso tátil por 5 cruzamentos",
+                "Continue em frente pelo piso tátil por 5 cruzamentos",
                 "Continue em frente pelo piso tátil, passando por 1 cruzamento, até o fim",
             ),
             corridor(11),
@@ -36,14 +36,14 @@ class InstructionsTest {
     @Test
     fun `the crossing where the person turns counts toward the limit`() {
         assertEquals(
-            listOf("Siga em frente pelo piso tátil até o quinto cruzamento", "Vire à direita e siga o piso tátil até o fim"),
+            listOf("Daqui a 5 cruzamentos, vire à direita", "Siga em frente pelo piso tátil até o fim"),
             corridor(5, turn = true),
         )
         assertEquals(
             listOf(
-                "Siga em frente pelo piso tátil até o quinto cruzamento",
-                "Continue em frente pelo piso tátil até o primeiro cruzamento",
-                "Vire à direita e siga o piso tátil até o fim",
+                "Siga em frente pelo piso tátil por 5 cruzamentos",
+                "No próximo cruzamento, vire à direita",
+                "Siga em frente pelo piso tátil até o fim",
             ),
             corridor(6, turn = true),
         )
@@ -53,8 +53,8 @@ class InstructionsTest {
     fun `the map can change the limit`() {
         assertEquals(
             listOf(
-                "Siga em frente pelo piso tátil até o terceiro cruzamento",
-                "Continue em frente pelo piso tátil até o terceiro cruzamento",
+                "Siga em frente pelo piso tátil por 3 cruzamentos",
+                "Continue em frente pelo piso tátil por 3 cruzamentos",
                 "Continue em frente pelo piso tátil, passando por 1 cruzamento, até o fim",
             ),
             corridor(7, limit = 3),

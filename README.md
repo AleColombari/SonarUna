@@ -1,6 +1,6 @@
 # SonarUna
 
-Protótipo acadêmico Android para um projeto da **UNAERP, em Ribeirão Preto**: um guia por voz para pessoas com deficiência visual, que orienta pelo piso tátil do campus. A pessoa diz onde está e para onde quer ir, e o app fala o caminho em etapas ("Vire à esquerda e siga o piso tátil até o segundo cruzamento").
+Protótipo acadêmico Android para um projeto da **UNAERP, em Ribeirão Preto**: um guia por voz para pessoas com deficiência visual, que orienta pelo piso tátil do campus. A pessoa diz onde está e para onde quer ir, e o app fala o caminho em etapas, só pelo piso: "Daqui a 3 cruzamentos, vire à esquerda".
 
 **O aplicativo não substitui bengala, cão-guia, orientação humana ou outras ferramentas de mobilidade, e nunca afirma que um caminho é seguro.**
 
@@ -16,12 +16,15 @@ O repositório tem duas versões com o mesmo comportamento e os mesmos dados:
   1. Toque no botão. Se a pessoa estiver perto de uma entrada, o GPS sugere: "Pela sua localização, parece que você está na entrada principal. Está certo?". Sem sugestão, o app pergunta "Onde você está agora?".
   2. A pessoa diz o destino: "sala 15B", "quinze b", "financeiro", "banheiro" (o mais perto), "LIAPE".
   3. O app confirma o destino e fala a rota em etapas. A pessoa diz "pronto" para ouvir a próxima.
-- **Mapa:** o da UNAERP, guiado pelo piso tátil e sem medidas: [docs/MAPA-UNAERP.md](docs/MAPA-UNAERP.md). Uma reta longa vira etapas de até 5 cruzamentos, e cada pausa cita a sala daquele ponto. Escadas, portas e referências ("porta sempre aberta") também são faladas.
+- **Mapa:** o da UNAERP, guiado pelo piso tátil e sem medidas: [docs/MAPA-UNAERP.md](docs/MAPA-UNAERP.md). Cada etapa conta os cruzamentos até a próxima virada ("No próximo cruzamento, vire à direita"). As salas não servem de referência no caminho, só aparecem como destino. Uma reta longa vira etapas de até 5 cruzamentos, e escadas, portas e referências físicas ("porta sempre aberta") também são faladas.
 - **Respostas:** sim e não são entendidos dentro de frases ("acho que sim", "não, me enganei"). Na confirmação, dizer outro lugar já troca o destino.
-- **Comandos a qualquer momento:** repetir, voltar, recomeçar, ajuda e parar.
+- **Comandos a qualquer momento:** repetir, voltar, recomeçar, ajuda e parar. Na rota, também: "quanto falta?", "repasse o caminho" (as etapas que faltam) e "onde estou?".
 - **Trocar o destino sem recomeçar:** "outro destino" ou "nova rota" pergunta só o destino. No meio da rota, dizer um lugar também troca o destino, e a nova rota parte do fim da última etapa feita.
 - **Saída:** "saída" ou "quero sair" leva à saída mais perto (entrada principal, porta do bloco B ou porta do bloco A).
-- **Microfone:** abre sozinho depois de cada pergunta. Tocar no botão enquanto o app fala interrompe a fala e já escuta, para a resposta da pessoa ter prioridade. Tocar enquanto ele escuta pausa a orientação. Numa pergunta, depois de três silêncios seguidos, o microfone fecha. Durante a rota, o primeiro silêncio já fecha o microfone ("Microfone pausado"), porque a pessoa está andando. A rota fica guardada, e o toque seguinte retoma na mesma etapa.
+- **Microfone:** quando o app espera resposta, o microfone já escuta enquanto ele fala.
+  - A pessoa pode **responder por cima**, falando: a voz do app para e a resposta vale. Palavras que o próprio app já disse são tratadas como eco do alto-falante, e por isso funciona melhor com fone de ouvido.
+  - Tocar no botão enquanto o app fala também interrompe e já escuta.
+  - Tocar enquanto ele escuta pausa a orientação. Numa pergunta, depois de três silêncios seguidos, o microfone fecha. Durante a rota, o primeiro silêncio já fecha o microfone ("Microfone pausado"), porque a pessoa está andando. A rota fica guardada, e o toque seguinte retoma na mesma etapa.
 
 **Ainda não estão no app Android:** o pedido de ajuda por ligação (existe só na versão web) e os caminhos marcados como futuros no mapa (bloco H, pavimentos superiores).
 
@@ -110,7 +113,7 @@ Os testes Compose (`app/src/androidTest/`) verificam:
 
 | Verificação | Situação |
 | --- | --- |
-| Build de debug, testes unitários e Lint | Aprovados localmente: 44 testes unitários; Lint sem erros, com 14 avisos de versões de dependências e metadados de backup |
+| Build de debug, testes unitários e Lint | Aprovados localmente: 49 testes unitários, incluindo os 13 casos compartilhados com a web; Lint sem erros, com 14 avisos de versões de dependências e metadados de backup |
 | Testes de interface | 4 compilados; execução em dispositivo/emulador a fazer |
 | Conversa, mapa e rotas no celular com voz real | A executar |
 | Sugestão por GPS nas entradas do campus | A executar |
@@ -127,7 +130,7 @@ O workflow [Android](.github/workflows/android.yml) repete o build, os testes un
 3. **Onde você está:** com a localização permitida, o app diz "Buscando sua localização" e faz uma leitura de até 8 segundos.
    - Perto de uma entrada marcada no mapa, ele pergunta se a pessoa está ali.
    - Fora do campus, ele avisa antes de perguntar.
-   - Sem leitura boa (erro maior que 60 m), ele só pergunta onde a pessoa está.
+   - Sem leitura boa (erro maior que 10 m), ele só pergunta onde a pessoa está.
 4. **Destino e confirmação:** a pessoa diz o destino; "sim" confirma, "não" pergunta de novo, e dizer outro lugar já troca o destino.
 5. **Rota:** o app fala o resumo e a primeira etapa. "Pronto" passa para a próxima, "voltar" repete a anterior, "repetir" repete a atual. Na última etapa, "Você chegou" encerra a orientação.
 

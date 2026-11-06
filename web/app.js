@@ -327,6 +327,11 @@ async function begin() {
   if (session.phase !== 'idle') return void deliver(session.resume(), gen);
   let gps = null;
   if (gpsPoints) {
+    // Ate 8 segundos de silencio confundem quem nao enxerga: diz antes o que esta acontecendo.
+    setState('speaking');
+    speech = { interrupted: false, words: new Set(), active: false };
+    await speak('Buscando sua localização.', gen);
+    if (gen !== generation) return;
     setState('loading', 'Buscando sua localização…');
     const posicao = await readPosition();
     if (gen !== generation) return;

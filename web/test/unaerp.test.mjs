@@ -50,46 +50,53 @@ test('salas e servicos sao achados pelo que a pessoa fala', () => {
   assert.equal(findPlace(map, 'banheiro').kind, 'several');
 });
 
-test('das informacoes ate a 15B: sobe a escada e divide o corredor B em etapas de ate 5 cruzamentos', () => {
+test('das informacoes ate a 15B: sobe a escada e conta os cruzamentos ate cada virada', () => {
   assert.deepEqual(route('informacoes', '15B'), [
-    'Siga em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.',
-    'Vire à esquerda e siga o piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto.',
+    'No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto.',
+    'Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto.',
     'Suba a escada. Quando terminar, diga pronto.',
-    'Siga em frente pelo piso tátil até o primeiro cruzamento. Referência: trecho curto, de poucos passos. Quando terminar, diga pronto.',
-    'Vire à esquerda e siga o piso tátil até o quinto cruzamento, na altura da sala 9B. Quando terminar, diga pronto.',
-    'Continue em frente pelo piso tátil até o quinto cruzamento, na altura da sala 16B. Quando terminar, diga pronto.',
-    'Continue em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.',
-    'Vire à esquerda e siga o piso tátil até o fim. Você chegará na sala 15B. Quando chegar, diga pronto.',
+    'No próximo cruzamento, vire à esquerda. Referência: trecho curto, de poucos passos. Quando terminar, diga pronto.',
+    'Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto.',
+    'Continue em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto.',
+    'No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto.',
+    'Siga em frente pelo piso tátil até o fim. Você chegará na sala 15B. Quando chegar, diga pronto.',
   ]);
   assert.ok(route('15B', 'protocolo').includes('Desça a escada. Quando terminar, diga pronto.'));
 });
 
-test('da entrada principal: vira no primeiro cruzamento, passa a porta do bloco B; 20B a esquerda, 17B a direita', () => {
+test('da entrada principal: a porta do bloco B e referencia e nao conta; 20B a esquerda, 17B a direita', () => {
   assert.deepEqual(route('entrada-principal', '20B'), [
-    'Siga em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.',
-    'Vire à esquerda e siga o piso tátil até o segundo cruzamento. Referência: porta da entrada do bloco B, sempre aberta. Quando terminar, diga pronto.',
-    'Vire à esquerda e siga o piso tátil até o fim. Você chegará na sala 20B. Quando chegar, diga pronto.',
+    'No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto.',
+    'Daqui a 2 cruzamentos, vire à esquerda. Referência: porta da entrada do bloco B, sempre aberta. Quando terminar, diga pronto.',
+    'Siga em frente pelo piso tátil até o fim. Você chegará na sala 20B. Quando chegar, diga pronto.',
   ]);
-  assert.match(route('entrada-principal', '17B')[2], /^Vire à direita/);
-  // A porta nao conta como cruzamento: da entrada do bloco B, a 18B e o terceiro.
-  const fromDoor = buildInstructions(map, { ponto: 'entrada-b', rumo: null }, planRoute(map, 'entrada-b', '18B'));
-  assert.match(fromDoor[0].texto, /^Siga em frente pelo piso tátil até o terceiro cruzamento/);
+  assert.match(route('entrada-principal', '17B')[1], /^Daqui a 3 cruzamentos, vire à direita/);
+  const fromDoor = buildInstructions(map, { ponto: 'entrada-b', rumo: exitHeading(map, 'entrada-b') }, planRoute(map, 'entrada-b', '18B'));
+  assert.match(fromDoor[0].texto, /^Daqui a 3 cruzamentos, vire à esquerda/);
   assert.match(route('20B', 'entrada-b').at(-1), /até a porta\. Você chegará na entrada do bloco B/);
 });
 
-test('lado da curva depende do sentido: sair da 20B e sair do protocolo', () => {
+test('lado da virada depende do sentido, e salas nao sao referencia no caminho', () => {
   assert.deepEqual(route('20B', 'banheiro-f-b'), [
-    'Siga em frente pelo piso tátil até o primeiro cruzamento. Quando terminar, diga pronto.',
-    'Vire à esquerda e siga o piso tátil até o terceiro cruzamento. Quando terminar, diga pronto.',
-    'Vire à esquerda e siga o piso tátil até o fim. Você chegará no banheiro feminino do bloco B. Quando chegar, diga pronto.',
+    'No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto.',
+    'Daqui a 3 cruzamentos, vire à esquerda. Quando terminar, diga pronto.',
+    'Siga em frente pelo piso tátil até o fim. Você chegará no banheiro feminino do bloco B. Quando chegar, diga pronto.',
   ]);
-  assert.match(route('protocolo', '4A')[1], /^Vire à direita/);
-  assert.deepEqual(route('protocolo', '4A').slice(2), [
-    'Vire à direita e siga o piso tátil até o quinto cruzamento, na altura da sala 6A. Quando terminar, diga pronto.',
-    'Continue em frente pelo piso tátil até o quinto cruzamento, na altura da sala 3A. Quando terminar, diga pronto.',
-    'Continue em frente pelo piso tátil até o terceiro cruzamento. Quando terminar, diga pronto.',
-    'Vire à esquerda e siga o piso tátil até o fim. Você chegará na sala 4A. Quando chegar, diga pronto.',
+  assert.deepEqual(route('protocolo', '4A'), [
+    'No próximo cruzamento, vire à direita. Quando terminar, diga pronto.',
+    'No próximo cruzamento, vire à direita. Quando terminar, diga pronto.',
+    'Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto.',
+    'Continue em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto.',
+    'Daqui a 3 cruzamentos, vire à esquerda. Quando terminar, diga pronto.',
+    'Siga em frente pelo piso tátil até o fim. Você chegará na sala 4A. Quando chegar, diga pronto.',
   ]);
+  for (const from of places) {
+    for (const to of places) {
+      if (from === to) continue;
+      const steps = route(from.id, to.id);
+      for (const text of steps.slice(0, -1)) assert.doesNotMatch(text, /sala|na altura/, `${from.id} -> ${to.id}: ${text}`);
+    }
+  }
 });
 
 test('conversa: onde voce esta, banheiro mais perto e troca para o feminino', () => {
@@ -108,7 +115,7 @@ test('nenhuma etapa do mapa pede para contar mais de 5 cruzamentos', () => {
     for (const to of places) {
       if (from === to) continue;
       for (const text of route(from.id, to.id)) {
-        assert.doesNotMatch(text, /(sexto|sétimo|oitavo|nono|décimo|\dº) cruzamento|passando por ([6-9]|\d\d) cruzamentos/, `${from.id} -> ${to.id}: ${text}`);
+        assert.doesNotMatch(text, /(Daqui a|por) ([6-9]|\d\d) cruzamentos/, `${from.id} -> ${to.id}: ${text}`);
       }
     }
   }
@@ -182,4 +189,27 @@ test('saida e quero sair levam a saida mais perto, sem encerrar a orientacao', (
   assert.match(destino('sala 5A', 'saída'), /entrada do bloco A/);
   assert.match(destino('sala 5A', 'quero sair'), /entrada do bloco A/);
   assert.match(destino('informações', 'saída principal'), /entrada principal/);
+});
+
+test('quanto falta, repasse o caminho e onde estou', () => {
+  const session = createSession(map);
+  session.start();
+  assert.equal(session.hear(['onde estou']).say[0], 'Ainda não sei onde você está.');
+  session.hear(['informações']);
+  assert.equal(session.hear(['quanto falta']).say[0], 'Ainda não há uma rota.');
+  session.hear(['sala 15B']);
+  session.hear(['sim']);
+  session.hear(['pronto']);
+  session.hear(['pronto']);
+  assert.equal(session.hear(['quanto falta?']).say[0], 'Você está na etapa 3 de 8. Depois desta, faltam 5 etapas até a sala 15B.');
+  const where = session.hear(['onde eu estou']).say;
+  assert.equal(where[0], 'Se você terminou a etapa 2, está no pé da escada entre os blocos.');
+  assert.match(where[1], /^Etapa 3 de 8\. Suba a escada/);
+  const overview = session.hear(['repasse o caminho']).say;
+  assert.equal(overview[0], 'Caminho até a sala 15B.');
+  assert.equal(overview[1], 'Etapa 3: Suba a escada.');
+  assert.equal(overview.length, 8);
+  assert.equal(overview.at(-1), 'Agora você está na etapa 3. Quando terminar, diga pronto.');
+  for (let i = 0; i < 5; i++) session.hear(['pronto']);
+  assert.equal(session.hear(['quanto falta']).say[0], 'Esta é a última etapa até a sala 15B.');
 });

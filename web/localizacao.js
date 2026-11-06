@@ -1,8 +1,11 @@
 // Pontos de GPS (data/*-pontos.geojson) e sugestao de onde a pessoa esta. Nao depende do navegador.
 // O GPS so sugere: a pessoa sempre confirma por voz, e dentro dos predios ele nao serve para achar a sala.
 
-/** Acima disso (metros) a leitura nao distingue uma entrada da outra; o app nao sugere nada. */
-export const PRECISAO_MAXIMA = 60;
+/**
+ * Acima disso (metros) a leitura nao distingue uma entrada da outra; o app nao sugere nada. As entradas mais
+ * proximas (principal e bloco B) ficam a uns 26 m: com raio de 15 m e erro de ate 10 m, nunca se confundem.
+ */
+export const PRECISAO_MAXIMA = 10;
 
 const RAIO_TERRA = 6371000;
 const rad = (graus) => (graus * Math.PI) / 180;

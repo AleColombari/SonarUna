@@ -31,13 +31,21 @@ class SpeechRecognitionManager(context: Context) {
         val id: Long,
         val onResult: (List<String>) -> Unit,
         val onError: (SpeechFailure) -> Unit,
+        val onPartial: ((List<String>) -> Unit)?,
         var attempt: Int = 0,
         var recognizer: SpeechRecognizer? = null,
         var timeout: Runnable? = null,
     )
 
-    /** [onResult] receives the recognizer's hypotheses, best first, never empty. */
-    fun start(onResult: (List<String>) -> Unit, onError: (SpeechFailure) -> Unit) = onMain {
+    /**
+     * [onResult] receives the recognizer's hypotheses, best first, never empty. With [onPartial], partial
+     * hypotheses arrive while the person is still speaking (used to interrupt the app's own voice).
+     */
+    fun start(
+        onResult: (List<String>) -> Unit,
+        onError: (SpeechFailure) -> Unit,
+        onPartial: ((List<String>) -> Unit)? = null,
+    ) = onMain {
         cancelActive()
         if (closed) {
             onError(SpeechFailure.UNAVAILABLE)
@@ -50,7 +58,7 @@ class SpeechRecognitionManager(context: Context) {
             return@onMain
         }
 
-        val session = Session(++nextSessionId, onResult, onError)
+        val session = Session(++nextSessionId, onResult, onError, onPartial)
         active = session
         val onDeviceAvailable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
             runCatching { SpeechRecognizer.isOnDeviceRecognitionAvailable(context) }
@@ -90,7 +98,13 @@ class SpeechRecognitionManager(context: Context) {
                 override fun onRmsChanged(rmsdB: Float) = Unit
                 override fun onBufferReceived(buffer: ByteArray?) = Unit
                 override fun onEndOfSpeech() = Unit
-                override fun onPartialResults(partialResults: Bundle?) = Unit
+                override fun onPartialResults(partialResults: Bundle?) = onMain {
+                    if (!isCurrent(session, attempt)) return@onMain
+                    val partial = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        .orEmpty()
+                        .filter { it.isNotBlank() }
+                    if (partial.isNotEmpty()) session.onPartial?.invoke(partial)
+                }
                 override fun onEvent(eventType: Int, params: Bundle?) = Unit
 
                 override fun onError(error: Int) = onMain {
@@ -126,7 +140,7 @@ class SpeechRecognitionManager(context: Context) {
             recognizer.startListening(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "pt-BR")
-                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, session.onPartial != null)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
                 // The system recognizer may ignore this preference; offline use is not guaranteed.
                 putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)

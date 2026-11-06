@@ -21,7 +21,3 @@ internal fun containsAny(normalized: String, phrases: List<String>): Boolean =
     phrases.any { containsPhrase(normalized, it) }
 
 internal fun plural(count: Int, one: String, many: String): String = "$count ${if (count == 1) one else many}"
-
-private val ordinals = listOf("primeiro", "segundo", "terceiro", "quarto", "quinto", "sexto", "sétimo", "oitavo", "nono", "décimo")
-
-internal fun ordinal(n: Int): String = ordinals.getOrNull(n - 1) ?: "${n}º"

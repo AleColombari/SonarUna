@@ -90,6 +90,9 @@ class Conversation(private val map: FloorMap) {
                 Command.STOP -> return stop()
                 Command.RESTART -> return start()
                 Command.DESTINATION -> return if (origin != null) changeDestination() else currentQuestion()
+                Command.REMAINING -> return remaining()
+                Command.OVERVIEW -> return overview()
+                Command.WHERE -> return whereAmI()
                 Command.HELP -> return help()
                 else -> Unit
             }
@@ -131,6 +134,39 @@ class Conversation(private val map: FloorMap) {
             return reply(listOf("Não ouvi nenhuma resposta. Toque no botão quando quiser continuar."), listen = false)
         }
         return reply("Não ouvi. Pode repetir?")
+    }
+
+    private fun noRouteYet(): Reply = reply(listOf("Ainda não há uma rota.") + currentQuestion().say)
+
+    /** "Quanto falta?": how many steps are left after the current one. */
+    private fun remaining(): Reply {
+        if (phase != Phase.NAVIGATING) return noRouteYet()
+        val rest = steps.size - index - 1
+        val to = destination!!.ateLugar
+        return reply(
+            if (rest == 0) "Esta é a última etapa $to."
+            else "Você está na etapa ${index + 1} de ${steps.size}. Depois desta, ${if (rest == 1) "falta 1 etapa" else "faltam $rest etapas"} $to.",
+        )
+    }
+
+    /** "Repasse o caminho": the steps left, from the current one to the destination, and where the person is in them. */
+    private fun overview(): Reply {
+        if (phase != Phase.NAVIGATING) return noRouteYet()
+        val rest = steps.drop(index).mapIndexed { i, step ->
+            "Etapa ${index + i + 1}: ${step.texto.replace(promptSuffix, "")}"
+        }
+        return reply(listOf("Caminho ${destination!!.ateLugar}.") + rest + "Agora você está na etapa ${index + 1}. Quando terminar, diga pronto.")
+    }
+
+    /** "Onde estou?": the starting place, or where the last finished step ended. */
+    private fun whereAmI(): Reply {
+        if (phase == Phase.NAVIGATING) {
+            if (index == 0) return reply("Você está ${origin!!.emLugar}, no começo da rota.", stepLine(index))
+            val done = map.points.getValue(steps[index - 1].ponto)
+            return reply("Se você terminou a etapa $index, está ${done.emLugar}.", stepLine(index))
+        }
+        val here = origin?.let { "Você está ${it.emLugar}." } ?: "Ainda não sei onde você está."
+        return reply(listOf(here) + currentQuestion().say)
     }
 
     /** A new destination without losing where the person is: halfway, where the last finished step ended. */
@@ -302,5 +338,6 @@ class Conversation(private val map: FloorMap) {
 
     companion object {
         const val MAX_SILENCE_RETRIES = 3
+        private val promptSuffix = Regex(" Quando (terminar|chegar), diga pronto\\.$")
     }
 }

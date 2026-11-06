@@ -42,8 +42,12 @@ class GpsPoints(val campus: GpsArea?, val pontos: List<GpsPoint>, val pendentes:
     }
 
     companion object {
-        /** Above this accuracy (meters) a reading cannot tell one entrance from another, so nothing is suggested. */
-        const val MAX_ACCURACY_METERS = 60.0
+        /**
+         * Above this accuracy (meters) a reading cannot tell one entrance from another, so nothing is suggested. The
+         * closest entrances (main and block B) are about 26 m apart: with a 15 m radius and at most 10 m of error,
+         * they are never confused.
+         */
+        const val MAX_ACCURACY_METERS = 10.0
 
         fun parse(json: String, map: FloorMap): GpsPoints {
             val raw = JSONObject(json)

@@ -12,6 +12,9 @@ object TestData {
 
     fun read(name: String): String = File(dataDir, name).readText()
 
+    /** A file from the repository root, such as casos/conversas.json. */
+    fun repoFile(path: String): String = File(dataDir.parentFile, path).readText()
+
     val map: FloorMap by lazy { FloorMap.parse(read("unaerp.json")) }
     val gps: GpsPoints by lazy { GpsPoints.parse(read("unaerp-pontos.geojson"), map) }
 
