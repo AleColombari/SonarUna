@@ -1,5 +1,7 @@
 package com.example.sonaruna.guia
 
+import com.example.sonaruna.conversation.RoomCodeParser
+
 /** Where the person is and where they want to go, both normalized, from one phrase. Same as splitTrip in web/engine.js. */
 data class Trip(val origem: String?, val destino: String?)
 
@@ -9,6 +11,8 @@ private val destinationMarkers = listOf(
     "preciso ir para", "preciso ir pra", "preciso ir pro", "preciso ir ate", "preciso ir",
     "vou para", "vou pra", "vou pro", "vou ate", "ir para", "ir pra", "ir pro", "ir ate",
     "me leva para", "me leva pra", "me leve para", "me leve pra", "me levar para",
+    // Alone, last: "estou na 3B, quero a 10B", "estou na 3B, pra 10B".
+    "quero", "vou", "para", "pra", "pro", "ate",
 )
 private val originMarkers = listOf("estou", "to", "tou", "estamos", "aqui")
 
@@ -37,11 +41,24 @@ private fun firstMarker(padded: String, markers: List<String>): Marker? {
     return best
 }
 
+/** "3A e 10B", "estou na 3B, 10B": two rooms with a block and no destination word; the first is where the person is. */
+private fun twoRooms(text: String): Trip? {
+    val words = text.split(' ').filter(String::isNotEmpty)
+    for (i in 1 until words.size) {
+        val origem = trimLinking(words.subList(0, i).joinToString(" "))
+        val destino = trimLinking(words.subList(i, words.size).joinToString(" "))
+        val from = RoomCodeParser.parse(origem)
+        val to = RoomCodeParser.parse(destino)
+        if (from?.block != null && to?.block != null && from.canonical != to.canonical) return Trip(origem, destino)
+    }
+    return null
+}
+
 /** Splits the part that says where the person is from the part that says where they want to go. */
 fun splitTrip(text: String): Trip {
     val padded = " ${normalize(text)} "
     val destination = firstMarker(padded, destinationMarkers)
-        ?: return Trip(trimLinking(padded.trim()).ifEmpty { null }, null)
+        ?: return twoRooms(padded.trim()) ?: Trip(trimLinking(padded.trim()).ifEmpty { null }, null)
     val before = trimLinking(padded.substring(0, destination.at))
     val after = " ${padded.substring(destination.at + destination.marker.length + 1).trim()} "
     val origin = firstMarker(after, originMarkers)

@@ -148,6 +148,17 @@ function isEcho(text) {
   return repeated / words.length >= ECHO_RATIO;
 }
 
+/**
+ * O reconhecimento aberto durante a fala pode trazer o fim da pergunta do app antes da resposta ("... para onde voce
+ * quer ir banheiro"). Tira do comeco as palavras que o app disse, para a resposta nao ser lida junto com a pergunta.
+ */
+function withoutEcho(text, words) {
+  const heard = normalize(text).split(' ').filter(Boolean);
+  let start = 0;
+  while (start < heard.length && words.has(heard[start])) start++;
+  return start === 0 ? text : heard.slice(start).join(' ');
+}
+
 function stopRecognition() {
   const attempt = recognition;
   recognition = null;
@@ -243,6 +254,7 @@ function listen(gen, duringSpeech = false) {
   let heard = null;
   let failure = null;
   let userSpoke = !duringSpeech;
+  const spoken = duringSpeech ? speech.words : null;
   attempt.onresult = (event) => {
     if (recognition !== attempt) return;
     const results = Array.from(event.results);
@@ -254,7 +266,10 @@ function listen(gen, duringSpeech = false) {
     }
     showTranscript(text, true);
     const final = results.find((result) => result.isFinal);
-    if (final) heard = Array.from(final, (alternative) => alternative.transcript);
+    if (final) {
+      heard = Array.from(final, (alternative) => alternative.transcript);
+      if (spoken) heard = heard.map((text) => withoutEcho(text, spoken)).filter(Boolean);
+    }
   };
   attempt.onerror = (event) => { failure = event.error; };
   attempt.onend = () => {

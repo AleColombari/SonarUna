@@ -2,7 +2,7 @@
 // Nao fala nem ouve: recebe o que foi ouvido e devolve o que deve ser dito. Quem fala e ouve e o app.js.
 
 import {
-  ateLugar, buildInstructions, classifyCommand, classifyYesNo, deLugar, emLugar, exitHeading, findContact, findEntrance, findPlace,
+  ateLugar, buildInstructions, classifyCommand, classifyYesNo, deLugar, emLugar, exitHeading, findContact, findEntrance, findPlace, normalize,
   paraLugar, planRoute, routeWeight, splitTrip, stepsPhrase,
 } from './engine.js';
 
@@ -14,6 +14,9 @@ export const MAX_SILENCE_RETRIES = 3;
  * Quando o usuario pede ajuda e escolhe alguem, vem tambem `action: { type: 'call', contact }`: quem liga e o app.js.
  * `getContacts()` devolve os contatos de ajuda com telefone (veja contacts.js); e lido a cada uso.
  */
+// O reconhecedor confunde numeros curtos ("dez bê" virando "3B"); com o bloco antes, ele costuma acertar.
+const ROOM_TIP = 'Tente dizer o bloco e o número, por exemplo: bloco B, sala 10.';
+
 export function createSession(map, getContacts = () => []) {
   let phase = 'idle';
   let entrance = null;
@@ -37,10 +40,18 @@ export function createSession(map, getContacts = () => []) {
   const originQuestion = () => (byPlace ? 'Onde você está agora?' : `Por qual entrada você entrou? Diga ${entranceNames()}.`);
   const destinationQuestion = () => 'Para onde você quer ir?';
   const contactNames = (contacts) => contacts.map((c) => c.nome).join(' ou ');
-  const stepLine = (i) => `Etapa ${i + 1} de ${steps.length}. ${steps[i].texto}`;
+  // A primeira etapa diz quantas sao e ensina o "pronto"; as outras vao direto ao que fazer.
+  const stepLine = (i) => {
+    if (i === 0) return `Etapa 1 de ${steps.length}. ${steps[0].texto}`;
+    const label = i === steps.length - 1 ? 'Última etapa.' : `Etapa ${i + 1}.`;
+    return `${label} ${withoutPrompt(steps[i].texto)}`;
+  };
+  const withoutPrompt = (texto) => texto.replace(/ Quando (terminar|chegar), diga pronto\.$/, '');
+  // Na UNAERP as salas se chamam pelo numero e depois o bloco ("10B"); o codigo interno vem com o bloco antes.
+  const roomName = (code) => (byPlace ? code.replace(/^([A-Z]+)(\d+)$/, '$2$1') : code);
+  const capitalize = (text) => `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 
   const suggestionQuestion = () => `Parece que você está ${emLugar(suggested)}. Está certo?`;
-  const confirmQuestion = () => `Você quer ir ${paraLugar(candidate)}?`;
 
   function reset() {
     phase = 'entrance';
@@ -100,8 +111,7 @@ export function createSession(map, getContacts = () => []) {
       case 'entrance': return reply([byPlace ? `Diga onde você está, por exemplo, ${map.exemploOrigem ?? 'balcão de informações'}. Pode dizer também para onde quer ir.` : originQuestion(), common]);
       case 'confirm-origin': return reply(['Diga sim se você está nesse lugar, ou diga onde você está.', common]);
       case 'destination': return reply([`Diga para onde quer ir, por exemplo, ${map.exemplo}.`, common]);
-      case 'confirm': return reply(['Diga sim para confirmar o destino ou não para escolher outro.', common]);
-      case 'navigating': return reply(['Diga pronto quando terminar a etapa e quiser a próxima.', common]);
+      case 'navigating': return reply(['Diga pronto quando terminar a etapa e quiser a próxima. Para trocar o destino, diga o novo lugar.', common]);
       default: return reply(['Toque no botão para começar.'], false);
     }
   }
@@ -111,7 +121,6 @@ export function createSession(map, getContacts = () => []) {
       case 'entrance': return reply([originQuestion()]);
       case 'confirm-origin': return reply([suggestionQuestion()]);
       case 'destination': return reply([destinationQuestion()]);
-      case 'confirm': return reply([confirmQuestion()]);
       case 'navigating': return reply([stepLine(index)]);
       case 'assist-choose': return reply([`Com quem você quer falar? Diga ${contactNames(getContacts())}, ou diga cancelar.`]);
       case 'assist-confirm': return reply([`Você quer falar com ${pendingContact.rotulo}? Diga sim ou não.`]);
@@ -185,7 +194,6 @@ export function createSession(map, getContacts = () => []) {
   }
 
   const noRouteYet = () => reply(['Ainda não há uma rota.', ...announceCurrentQuestion().say]);
-  const withoutPrompt = (texto) => texto.replace(/ Quando (terminar|chegar), diga pronto\.$/, '');
 
   /** "Quanto falta?": quantas etapas faltam depois da atual. */
   function remaining() {
@@ -235,15 +243,18 @@ export function createSession(map, getContacts = () => []) {
   /** Onde a pessoa esta: qualquer lugar do mapa; ela sai dele pelo unico trecho do piso que leva ate ali. */
   function hearOrigin(alternatives) {
     let several = null;
+    let unknown = null;
     for (const text of alternatives) {
       const result = findPlace(map, text);
       if (result.kind === 'found') return setOrigin(result.place);
       several ??= ['several', 'ambiguous'].includes(result.kind) ? result : null;
+      unknown ??= result.kind === 'unknown-room' ? result : null;
     }
     if (several) {
       const names = several.places.map((place) => place.nome).join(', ');
       return reply([`Encontrei mais de um lugar: ${names}. Diga o nome completo.`]);
     }
+    if (unknown) return reply([`Não encontrei a sala ${roomName(unknown.code)} neste mapa. ${ROOM_TIP}`]);
     return reply([`Não reconheci esse lugar. ${originQuestion()}`]);
   }
 
@@ -254,24 +265,23 @@ export function createSession(map, getContacts = () => []) {
     if (pendingDestination) {
       const text = pendingDestination;
       pendingDestination = null;
-      const route = routeTo(text, `Você está ${emLugar(place)}.`);
+      const route = routeTo(text);
       if (route) return route;
     }
     return reply([`Você está ${emLugar(place)}. ${destinationQuestion()}`]);
   }
 
-  /** Sai direto para o destino dito (sem confirmar), a partir da origem ja definida. Null se nao achar o lugar. */
-  function routeTo(text, prefix) {
+  /** Origem e destino ditos juntos: sai direto, dizendo de onde para onde. Null se nao achar o destino. */
+  function routeTo(text) {
     let to = findPlace(map, text);
-    if (to.kind === 'several') {
-      const nearest = [...to.places].sort((a, b) => routeWeight(map, entrance.ponto, a.id) - routeWeight(map, entrance.ponto, b.id))[0];
-      to = { kind: 'found', place: nearest };
-    }
+    if (to.kind === 'several') to = { kind: 'found', place: nearestOf(to.places) };
     if (to.kind !== 'found' || to.place.id === entrance.ponto) return null;
     candidate = to.place;
-    const route = beginRoute();
-    return { ...route, say: [prefix, ...route.say] };
+    return beginRoute(true);
   }
+
+  /** Entre varios lugares com o mesmo nome ("banheiro"), o mais perto de onde a pessoa esta. */
+  const nearestOf = (places) => [...places].sort((a, b) => routeWeight(map, entrance.ponto, a.id) - routeWeight(map, entrance.ponto, b.id))[0];
 
   /** Resposta a "parece que voce esta em X": sim confirma; nao pergunta; citar outro lugar ja corrige. */
   function hearOriginConfirmation(alternatives) {
@@ -305,57 +315,51 @@ export function createSession(map, getContacts = () => []) {
     return reply([`Não reconheci essa entrada. Diga ${entranceNames()}.`]);
   }
 
-  function hearDestination(alternatives) {
+  /**
+   * O destino ja vira rota, sem pergunta de confirmacao: o resumo diz o lugar, e dizer outro lugar no caminho troca.
+   * `avoid`: o destino que a pessoa acabou de trocar. Se o reconhecedor ouvir de novo o mesmo lugar como melhor
+   * hipotese ("3B" quando ela disse "10B"), vale a proxima hipotese que traz outro lugar.
+   */
+  function hearDestination(alternatives, avoid = null) {
     let unknown = null;
     let ambiguous = null;
+    let same = null;
     for (const text of alternatives) {
       const result = findPlace(map, text);
-      // Varios lugares com o mesmo nome ("banheiro"): vai para o mais perto de onde a pessoa esta.
       if (result.kind === 'several') {
-        const nearest = [...result.places].sort((a, b) => routeWeight(map, entrance.ponto, a.id) - routeWeight(map, entrance.ponto, b.id))[0];
+        const nearest = nearestOf(result.places);
         if (routeWeight(map, entrance.ponto, nearest.id) < Infinity) Object.assign(result, { kind: 'found', place: nearest });
+      }
+      if (result.kind === 'found' && result.place.id === avoid) {
+        same ??= result.place;
+        continue;
       }
       if (result.kind === 'found') {
         if (result.place.id === entrance.ponto) {
           return reply([byPlace ? 'Você já está aí. Diga outro destino.' : 'Você já está na entrada. Diga para onde quer ir.']);
         }
         candidate = result.place;
-        phase = 'confirm';
-        return reply([confirmQuestion()]);
+        return beginRoute();
       }
       unknown ??= result.kind === 'unknown-room' ? result : null;
       ambiguous ??= result.kind === 'ambiguous' ? result : null;
+    }
+    if (same) {
+      candidate = same;
+      return beginRoute();
     }
     if (ambiguous) {
       const names = ambiguous.places.map((place) => place.nome).join(', ');
       return reply([`Encontrei mais de uma sala: ${names}. Diga o nome completo da sala.`]);
     }
     if (unknown) {
-      return reply([`Não encontrei a sala ${unknown.code} neste mapa. ${destinationQuestion()}`]);
+      return reply([`Não encontrei a sala ${roomName(unknown.code)} neste mapa. ${ROOM_TIP}`]);
     }
     return reply([`Não entendi o destino. ${destinationQuestion()}`]);
   }
 
-  function hearConfirmation(alternatives) {
-    // Citar outro lugar troca o destino ("não, a secretaria"), em vez de "quero" contar como sim.
-    for (const text of alternatives) {
-      const result = findPlace(map, text);
-      const same = result.kind === 'found' && result.place.id === candidate.id;
-      if (result.kind !== 'none' && !same) return hearDestination(alternatives);
-    }
-    for (const text of alternatives) {
-      const answer = classifyYesNo(text);
-      if (answer === 'yes') return beginRoute();
-      if (answer === 'no') {
-        candidate = null;
-        phase = 'destination';
-        return reply(['Certo. Para onde você quer ir?']);
-      }
-    }
-    return reply(['Não entendi. Diga apenas sim ou não.']);
-  }
-
-  function beginRoute() {
+  /** `fromOrigin`: a pessoa acabou de dizer onde esta; o resumo diz de onde para onde. */
+  function beginRoute(fromOrigin = false) {
     const segments = planRoute(map, entrance.ponto, candidate.id);
     if (!segments || segments.length === 0) {
       phase = 'destination';
@@ -367,9 +371,10 @@ export function createSession(map, getContacts = () => []) {
     phase = 'navigating';
     const etapas = `${steps.length} ${steps.length === 1 ? 'etapa' : 'etapas'}`;
     // No modo piso nao ha medida: a rota so diz quantas etapas tem.
+    const going = fromOrigin ? `${capitalize(deLugar(entrance))} ${paraLugar(destination)}` : `Indo ${paraLugar(destination)}`;
     const summary = map.guia === 'piso'
-      ? `Rota ${ateLugar(destination)}, em ${etapas}.`
-      : `Rota ${ateLugar(destination)}: ${stepsPhrase(steps.reduce((sum, step) => sum + step.bruto, 0))}, em ${etapas}.`;
+      ? `${going}, em ${etapas}.`
+      : `${going}: ${stepsPhrase(steps.reduce((sum, step) => sum + step.bruto, 0))}, em ${etapas}.`;
     return reply([summary, stepLine(0)]);
   }
 
@@ -384,7 +389,7 @@ export function createSession(map, getContacts = () => []) {
             candidate = destination = null;
             steps = [];
             index = 0;
-            return reply([`Você chegou ${emLugar(arrived)}. Se quiser ir para outro lugar, diga o destino. Para encerrar, diga parar.`]);
+            return reply([`Você chegou ${emLugar(arrived)}. Diga outro destino, ou parar para encerrar.`]);
           }
           index++;
           return reply([stepLine(index)]);
@@ -399,9 +404,14 @@ export function createSession(map, getContacts = () => []) {
     }
     // Dizer um lugar no meio da rota ("quero ir para o banheiro") troca o destino a partir de onde a pessoa esta.
     if (alternatives.some((text) => findPlace(map, text).kind !== 'none')) {
+      const previous = destination.id;
       changeDestination();
-      return hearDestination(alternatives);
+      return hearDestination(alternatives, previous);
     }
+    // "Sim" ou "ok" no caminho e so a pessoa concordando: o app segue ouvindo, calado.
+    if (alternatives.some((text) => classifyYesNo(text) === 'yes')) return reply([]);
+    // "Nao" no caminho: o destino ouvido estava errado; pergunta de novo, sem perder onde a pessoa esta.
+    if (alternatives.some((text) => classifyYesNo(text) === 'no' && normalize(text).split(' ').length <= 4)) return changeDestination();
     return reply(['Não entendi. Diga pronto para a próxima etapa, repetir, voltar ou parar.']);
   }
 
@@ -425,7 +435,14 @@ export function createSession(map, getContacts = () => []) {
         pendingDestination = trip.destino;
         return setOrigin(from.place);
       }
-      if (originKnown || from.kind !== 'none' || findPlace(map, trip.destino).kind === 'none') continue;
+      if (!originKnown && from.kind !== 'none') {
+        // A origem dita nao existe no mapa ("3B") ou e ambigua: guarda o destino e pergunta so a origem de novo.
+        pendingDestination = trip.destino;
+        suggested = null;
+        phase = 'entrance';
+        return hearOrigin([trip.origem]);
+      }
+      if (originKnown || findPlace(map, trip.destino).kind === 'none') continue;
       pendingDestination = trip.destino;
       if (phase === 'confirm-origin' && answer !== 'no') return reply([suggestionQuestion()]);
       suggested = null;
@@ -462,14 +479,14 @@ export function createSession(map, getContacts = () => []) {
         const command = classifyCommand(text);
         if (command === 'repeat') return announceCurrentQuestion();
         if (command === 'back' && phase !== 'entrance') {
-          phase = phase === 'confirm' ? 'destination' : 'entrance';
+          phase = 'entrance';
           candidate = null;
           return announceCurrentQuestion();
         }
       }
     }
 
-    if (['entrance', 'confirm-origin', 'destination', 'confirm'].includes(phase)) {
+    if (['entrance', 'confirm-origin', 'destination'].includes(phase)) {
       const trip = hearTrip(heard);
       if (trip) return trip;
     }
@@ -478,7 +495,6 @@ export function createSession(map, getContacts = () => []) {
       case 'entrance': return hearEntrance(heard);
       case 'confirm-origin': return hearOriginConfirmation(heard);
       case 'destination': return hearDestination(heard);
-      case 'confirm': return hearConfirmation(heard);
       case 'navigating': return hearNavigation(heard);
       default: return reply([], false);
     }

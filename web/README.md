@@ -17,7 +17,7 @@ Abra <http://localhost:8080/> e permita o microfone. O Chrome envia o áudio ao 
 1. Toque no botão (o navegador exige um toque para liberar voz e microfone). O app diz "Procurando sua localização." e já escuta: diga onde você está, ou tudo de uma vez, como "estou na 3A e quero ir para a 10B"
 2. Diga um lugar do mapa: "balcão de informações", "sala 5A", "financeiro".
 3. Diga o destino: "sala 15B", "quinze b", "sala dos professores", "banheiro" (vai para o mais perto).
-4. Confirme com "sim" (ou "não" para trocar; "não, feminino" troca o banheiro). Origem e destino na mesma frase pulam esta confirmação.
+4. A rota começa na hora, sem confirmação. Se o destino saiu errado, diga "não" ou o lugar certo ("não, feminino" troca o banheiro).
 5. A cada etapa, diga "pronto" para a próxima. Você também pode dizer "repetir", "voltar", "recomeçar", "ajuda" ou "parar".
 
 O mapa usado é o da UNAERP ([docs/MAPA-UNAERP.md](../docs/MAPA-UNAERP.md)), que guia pelo piso tátil sem medidas. O mapa fictício antigo, com entradas e passos, abre em <http://localhost:8080/web/?mapa=bloco-a>.
@@ -43,7 +43,7 @@ node --test web/test/engine.test.mjs web/test/conversation.test.mjs web/test/con
 | `../data/unaerp-pontos.geojson` | Pontos de GPS (entrada principal, campus) para sugerir onde a pessoa está. Veja [docs/LOCALIZACAO.md](../docs/LOCALIZACAO.md). |
 | `localizacao.js` | Lê o GeoJSON e escolhe o ponto mais perto da leitura do GPS. |
 | `engine.js` | Reconhece sala e entrada ("a quinze" → A15, "trinta a" → A30), calcula a rota e escreve as instruções. |
-| `conversation.js` | A conversa: onde você está (ou entrada) → destino → confirmação → etapas. Não depende do navegador. |
+| `conversation.js` | A conversa: onde você está (ou entrada) → destino → etapas. Não depende do navegador. |
 | `app.js`, `index.html`, `style.css` | Interface, microfone e voz. |
 | `contacts.js` | Telefones de ajuda: validação, armazenamento local e modo de ligação (real ou simulada). |
 | `serve.mjs` | Servidor local sem dependências. Também lê o `.env` e entrega os telefones em `/config.json`. |

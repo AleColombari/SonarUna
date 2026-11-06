@@ -18,7 +18,6 @@ class CasesTest {
         "entrance" to Phase.ORIGIN,
         "confirm-origin" to Phase.CONFIRM_ORIGIN,
         "destination" to Phase.DESTINATION,
-        "confirm" to Phase.CONFIRM,
         "navigating" to Phase.NAVIGATING,
     )
 

@@ -1,6 +1,7 @@
 package com.example.sonaruna
 
 import android.app.Application
+import android.content.pm.ApplicationInfo
 import android.util.Log
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
@@ -73,6 +74,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val recognition = SpeechRecognitionManager(application)
     private val voice = TextToSpeechManager(application)
     private val haptics = HapticFeedback(application)
+
+    // Test builds only (debuggable): logcat shows what the recognizer heard, to check misrecognitions on the phone.
+    private val debugLog = (application.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     private val mutableState = MutableStateFlow(MainUiState())
     val state = mutableState.asStateFlow()
     private val actionsChannel = Channel<PlatformAction>(Channel.BUFFERED)
@@ -229,14 +233,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun deliver(reply: Reply) {
         val turn = if (VOICE_INTERRUPTION && reply.listen && foreground && permissions.microphone) SpokenTurn() else null
         turn?.let { startRecognition(duringSpeech = it) }
-        for (line in reply.say) {
-            if (turn?.interrupted == true) break
+        // The whole reply queued at once: no gap between its sentences, so the voice flows.
+        val lines = reply.say.filter(String::isNotBlank)
+        if (lines.isNotEmpty() && turn?.interrupted != true) {
             // Only what the app has started saying can come back as echo through the microphone.
-            turn?.words?.addAll(normalize(line).split(' '))
-            if (!speakMessage(line, turn)) {
-                if (turn?.interrupted == true) break
-                return
-            }
+            if (!speakMessage(lines, turn) { i -> turn?.words?.addAll(normalize(lines[i]).split(' ')) } &&
+                turn?.interrupted != true
+            ) return
         }
         turn?.active = false
         // Interrupted: the recognition that started during the speech has the floor and delivers the answer.
@@ -282,6 +285,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }.getOrNull()
         working = false
         guide = loaded
+        loaded?.let { recognition.biasing = it.conversation.placeNames() }
         if (loaded == null) {
             recovery = Recovery.MAP
             haptics.error()
@@ -349,10 +353,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 duringSpeech?.recognizing = false
                 hearingPhrase = false
                 if (foreground && takeOver(hypotheses, final = true) && listening) {
-                    showHeard(hypotheses.first())
+                    val answer = duringSpeech?.let { turn ->
+                        hypotheses.map { withoutEcho(it, turn) }.filter(String::isNotEmpty).ifEmpty { hypotheses }
+                    } ?: hypotheses
+                    if (debugLog) Log.d(TAG, "Ouviu: ${hypotheses.joinToString(" | ")} -> ${answer.first()}")
+                    showHeard(answer.first())
                     listening = false
                     haptics.success()
-                    runOperation { deliver(guide!!.conversation.hear(hypotheses)) }
+                    runOperation { deliver(guide!!.conversation.hear(answer)) }
                 } else if (foreground && duringSpeech != null && !personSpoke) {
                     reopenDuringSpeech(duringSpeech)
                 }
@@ -394,6 +402,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             delay(REOPEN_DELAY_MILLIS)
             if (currentGeneration == generation && turn.active && !turn.interrupted && foreground) startRecognition(turn)
         }
+    }
+
+    /**
+     * The recognition opened during the speech may bring the end of the app's question before the answer ("... para
+     * onde você quer ir banheiro"). The leading words the app said are dropped, so the answer is not read with them.
+     */
+    private fun withoutEcho(text: String, turn: SpokenTurn): String {
+        val words = normalize(text).split(' ').filter(String::isNotEmpty)
+        val start = words.indexOfFirst { it !in turn.words }.let { if (it < 0) words.size else it }
+        return if (start == 0) text else words.drop(start).joinToString(" ")
     }
 
     /** The microphone heard the app's own voice: most heard words were already said by the app. */
@@ -444,18 +462,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         actionsChannel.send(PlatformAction.AnnounceVoiceFailure(string(R.string.tts_unavailable)))
     }
 
-    private suspend fun say(@StringRes resource: Int): Boolean = speakMessage(string(resource))
+    private suspend fun say(@StringRes resource: Int): Boolean = speakMessage(listOf(string(resource)))
 
     /** With [turn], the microphone stays open while speaking; an interruption by the person is not a voice failure. */
-    private suspend fun speakMessage(message: String, turn: SpokenTurn? = null): Boolean {
+    private suspend fun speakMessage(lines: List<String>, turn: SpokenTurn? = null, onLine: ((Int) -> Unit)? = null): Boolean {
         if (turn == null) {
             recognition.cancel()
             listening = false
         }
         speaking = true
-        saidText = message
+        saidText = lines.joinToString(" ")
         refresh()
-        val completed = voice.speak(message)
+        val completed = voice.speak(lines, onLine)
         speaking = false
         if (!completed && turn?.interrupted != true) voiceFailed()
         refresh()

@@ -290,4 +290,7 @@ test('splitTrip separa onde a pessoa esta e para onde quer ir, em qualquer ordem
   assert.deepEqual(splitTrip('sim, quero ir para o financeiro'), { origem: 'sim', destino: 'o financeiro' });
   assert.deepEqual(splitTrip('quero ir para a 10B'), { origem: null, destino: 'a 10 b' });
   assert.equal(splitTrip('estou na sala 5A').destino, null);
+  assert.deepEqual(splitTrip('estou na 3B quero a 10B'), { origem: 'estou na 3 b', destino: 'a 10 b' });
+  assert.deepEqual(splitTrip('3A e 10B'), { origem: '3 a', destino: '10 b' });
+  assert.deepEqual(splitTrip('quero sair'), { origem: null, destino: 'sair' });
 });

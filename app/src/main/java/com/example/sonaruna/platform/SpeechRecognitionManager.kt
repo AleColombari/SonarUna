@@ -49,6 +49,9 @@ class SpeechRecognitionManager(context: Context) {
      */
     private val recognizers = mutableMapOf<Engine, SpeechRecognizer>()
 
+    /** Names on the map ("sala 10B", "financeiro"): recognizers that support it lean towards them (Android 13+). */
+    var biasing: List<String> = emptyList()
+
     @Volatile
     private var closed = false
 
@@ -221,7 +224,15 @@ class SpeechRecognitionManager(context: Context) {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "pt-BR")
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, session.onPartial != null)
-                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+                // More hypotheses: when the best one misses ("3B" for "dez bê"), another may carry the right room.
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+                // A short pause in "estou na 3A ... e quero ir para a 10B" should not end the phrase. Some
+                // recognizers ignore these lengths; then the conversation still takes the second half as the destination.
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, PHRASE_SILENCE_MILLIS)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, PHRASE_SILENCE_MILLIS)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && biasing.isNotEmpty()) {
+                    putStringArrayListExtra(RecognizerIntent.EXTRA_BIASING_STRINGS, ArrayList(biasing))
+                }
                 // The system recognizer may ignore this preference; offline use is not guaranteed.
                 putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, offline)
             })
@@ -299,6 +310,7 @@ class SpeechRecognitionManager(context: Context) {
         val GOOGLE_PACKAGES = listOf("com.google.android.googlequicksearchbox", "com.google.android.tts")
         const val TAG = "SonarUna"
         const val RECONNECT_DELAY_MILLIS = 400L
+        const val PHRASE_SILENCE_MILLIS = 1500L
 
     }
 }

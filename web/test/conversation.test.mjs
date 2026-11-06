@@ -7,7 +7,7 @@ import { MAX_SILENCE_RETRIES, createSession } from '../conversation.js';
 const map = loadMap(JSON.parse(readFileSync(new URL('../../data/bloco-a.json', import.meta.url), 'utf8')));
 const said = (result) => result.say.join(' ');
 
-test('fluxo completo: entrada principal, sala A12, confirmacao e tres passos', () => {
+test('fluxo completo: entrada principal, sala A12 e tres passos, sem confirmar o destino', () => {
   const session = createSession(map);
   const start = session.start();
   assert.equal(start.phase, 'entrance');
@@ -18,34 +18,32 @@ test('fluxo completo: entrada principal, sala A12, confirmacao e tres passos', (
   assert.equal(entrance.phase, 'destination');
   assert.match(said(entrance), /^Entrada principal\. Para onde você quer ir/);
 
-  const destination = session.hear(['quero ir para a sala A12']);
-  assert.equal(destination.phase, 'confirm');
-  assert.match(said(destination), /^Você quer ir para a sala A12\?$/);
-
-  const route = session.hear(['sim']);
+  const route = session.hear(['quero ir para a sala A12']);
   assert.equal(route.phase, 'navigating');
-  assert.match(said(route), /Rota até a sala A12: 60 passos, em 3 etapas/);
+  assert.match(said(route), /^Indo para a sala A12: 60 passos, em 3 etapas/);
   assert.match(said(route), /Etapa 1 de 3\. Siga em frente/);
+  // "Sim" no caminho e so concordar: o app segue ouvindo, calado.
+  assert.deepEqual(session.hear(['sim']).say, []);
 
-  assert.match(said(session.hear(['pronto'])), /Etapa 2 de 3\. Vire à direita/);
-  assert.match(said(session.hear(['repetir'])), /Etapa 2 de 3/);
-  assert.match(said(session.hear(['voltar'])), /Etapa 1 de 3/);
+  assert.match(said(session.hear(['pronto'])), /^Etapa 2\. Vire à direita/);
+  assert.doesNotMatch(said(session.hear(['repetir'])), /diga pronto/);
+  assert.match(said(session.hear(['voltar'])), /^Etapa 1 de 3/);
   session.hear(['próximo']);
-  assert.match(said(session.hear(['pronto'])), /Etapa 3 de 3/);
+  assert.match(said(session.hear(['pronto'])), /^Última etapa\./);
 
   // Chegou: o app ja escuta o proximo destino, partindo de onde a pessoa esta.
   const arrived = session.hear(['pronto']);
   assert.equal(arrived.phase, 'destination');
   assert.equal(arrived.listen, true);
-  assert.match(said(arrived), /^Você chegou na sala A12\. Se quiser ir para outro lugar, diga o destino\./);
-  assert.equal(session.hear(['secretaria']).phase, 'confirm');
+  assert.match(said(arrived), /^Você chegou na sala A12\. Diga outro destino, ou parar para encerrar\.$/);
+  assert.equal(session.hear(['secretaria']).phase, 'navigating');
 });
 
 test('usa as outras hipoteses do reconhecimento quando a primeira nao serve', () => {
   const session = createSession(map);
   session.start();
   assert.equal(session.hear(['entrei pela intrada', 'entrada lateral']).phase, 'destination');
-  assert.equal(session.hear(['xis', 'sala a doze']).phase, 'confirm');
+  assert.equal(session.hear(['xis', 'sala a doze']).phase, 'navigating');
 });
 
 test('entrada nao reconhecida pergunta de novo sem avancar', () => {
@@ -66,29 +64,26 @@ test('destino desconhecido, ambiguo ou igual a entrada nao avancam', () => {
   assert.equal(session.phase, 'destination');
 });
 
-test('responder nao na confirmacao volta a pedir o destino', () => {
+test('nao no comeco da rota volta a pedir o destino, sem perder a origem', () => {
   const session = createSession(map);
   session.start();
   session.hear(['principal']);
   session.hear(['secretaria']);
-  assert.equal(session.hear(['não']).phase, 'destination');
-  assert.equal(session.hear(['banheiro']).phase, 'confirm');
-  assert.match(said(session.hear(['talvez'])), /Diga apenas sim ou não/);
-  assert.equal(session.phase, 'confirm');
+  const again = session.hear(['não']);
+  assert.equal(again.phase, 'destination');
+  assert.equal(said(again), 'Certo. Para onde você quer ir?');
+  assert.equal(session.hear(['banheiro']).phase, 'navigating');
 });
 
-test('confirmacao aceita frases e troca o destino quando outro lugar e citado', () => {
+test('no caminho, outro lugar troca o destino; a hipotese com o destino de antes e pulada', () => {
   const session = createSession(map);
   session.start();
   session.hear(['principal']);
   session.hear(['sala A12']);
-  // "quero" nao confirma A12 quando a pessoa pede outro lugar.
-  const changed = session.hear(['não, quero ir para a secretaria']);
-  assert.equal(changed.phase, 'confirm');
-  assert.match(said(changed), /secretaria/);
+  const changed = session.hear(['não, quero ir para a sala A12', 'não, quero ir para a secretaria']);
+  assert.equal(changed.phase, 'navigating');
+  assert.match(said(changed), /^Indo para a secretaria/);
   assert.match(said(session.hear(['quero ir para a sala 30'])), /Não encontrei a sala 30/);
-  session.hear(['banheiro']);
-  assert.equal(session.hear(['acho que sim, pode ir']).phase, 'navigating');
 });
 
 test('parar, recomecar e ajuda funcionam em qualquer etapa', () => {

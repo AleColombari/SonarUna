@@ -40,8 +40,7 @@ class ConversationTest {
         session.startLocating()
         val route = session.hear(listOf("estou na 3A e quero ir para a 10B"))
         assertEquals(Phase.NAVIGATING, route.phase)
-        assertEquals("Você está na sala 3A.", route.say[0])
-        assertEquals("Rota até a sala 10B, em 8 etapas.", route.say[1])
+        assertEquals("Da sala 3A para a sala 10B, em 8 etapas.", route.say[0])
 
         val first = Conversation(map)
         first.start()
@@ -88,37 +87,36 @@ class ConversationTest {
         val session = Conversation(map)
         session.start()
         session.hear(listOf("estou na sala 5A"))
-        assertTrue(session.hear(listOf("banheiro")).say[0].contains("banheiro masculino do bloco A"))
-        assertTrue(session.hear(listOf("não, feminino")).say[0].contains("banheiro feminino do bloco A"))
-        val go = session.hear(listOf("isso"))
+        assertTrue(session.hear(listOf("banheiro")).say[0].startsWith("Indo para o banheiro masculino do bloco A"))
+        val go = session.hear(listOf("não, feminino"))
         assertEquals(Phase.NAVIGATING, go.phase)
-        assertEquals("Rota até o banheiro feminino do bloco A, em 3 etapas.", go.say[0])
+        assertEquals("Indo para o banheiro feminino do bloco A, em 3 etapas.", go.say[0])
         assertTrue(go.say[1].startsWith("Etapa 1 de 3. "))
-        assertTrue(session.hear(listOf("pronto")).say[0].startsWith("Etapa 2 de 3. "))
+        // Agreeing on the way is quiet.
+        assertEquals(emptyList<String>(), session.hear(listOf("isso")).say)
+        assertTrue(session.hear(listOf("pronto")).say[0].startsWith("Etapa 2. "))
         assertTrue(session.hear(listOf("voltar")).say[0].startsWith("Etapa 1 de 3. "))
         session.hear(listOf("pronto"))
         session.hear(listOf("pronto"))
         val arrived = session.hear(listOf("cheguei"))
         assertEquals(Phase.DESTINATION, arrived.phase)
         assertTrue(arrived.listen)
-        assertEquals(
-            "Você chegou no banheiro feminino do bloco A. Se quiser ir para outro lugar, diga o destino. Para encerrar, diga parar.",
-            arrived.say[0],
-        )
+        assertEquals("Você chegou no banheiro feminino do bloco A. Diga outro destino, ou parar para encerrar.", arrived.say[0])
         // The arrival is the new origin: asking for the same place says so.
         assertEquals("Você já está aí. Diga outro destino.", session.hear(listOf("banheiro feminino do bloco a")).say[0])
     }
 
     @Test
-    fun `confirmation that names another place changes the destination`() {
-        val session = Conversation(map)
-        session.start()
-        session.hear(listOf("informações"))
-        session.hear(listOf("sala 15B"))
-        val changed = session.hear(listOf("não, quero ir para o financeiro"))
-        assertEquals(Phase.CONFIRM, changed.phase)
-        assertTrue(changed.say[0].contains("financeiro"))
+    fun `on the way, another place changes the destination and the hypothesis with the old one is skipped`() {
+        val session = navigating()
+        val changed = session.hear(listOf("não, quero ir para a sala 15B", "não, quero ir para o financeiro"))
+        assertEquals(Phase.NAVIGATING, changed.phase)
+        assertTrue(changed.say[0].startsWith("Indo para o financeiro"))
         assertTrue(session.hear(listOf("quero ir para a sala 30")).say[0].startsWith("Não encontrei a sala 30"))
+        val back = Conversation(map)
+        back.start()
+        back.hear(listOf("sala 5A"))
+        assertEquals("Não encontrei a sala 3B neste mapa. Tente dizer o bloco e o número, por exemplo: bloco B, sala 10.", back.hear(listOf("3B")).say[0])
     }
 
     @Test
@@ -147,7 +145,6 @@ class ConversationTest {
         it.start()
         it.hear(listOf("informações"))
         it.hear(listOf("sala 15B"))
-        it.hear(listOf("sim"))
     }
 
     @Test
@@ -161,7 +158,7 @@ class ConversationTest {
             assertEquals(emptyList<String>(), quiet.say)
         }
         assertTrue(session.resume().say[0].startsWith("Retomando a etapa 2 de 8. Diga pronto para a próxima"))
-        assertTrue(session.hear(listOf("pronto")).say[0].startsWith("Etapa 3 de 8. Suba a escada"))
+        assertTrue(session.hear(listOf("pronto")).say[0].startsWith("Etapa 3. Suba a escada"))
     }
 
     @Test
@@ -170,24 +167,23 @@ class ConversationTest {
         confirm.start()
         confirm.hear(listOf("informações"))
         confirm.hear(listOf("sala 15B"))
-        val other = confirm.hear(listOf("não, outro destino"))
+        val other = confirm.hear(listOf("não"))
         assertEquals(Phase.DESTINATION, other.phase)
         assertEquals("Certo. Para onde você quer ir?", other.say[0])
 
         val midway = navigating()
         repeat(3) { midway.hear(listOf("pronto")) } // steps 1 to 3 done: the person is at the top of the stairs
         assertEquals(Phase.DESTINATION, midway.hear(listOf("novo destino")).phase)
-        midway.hear(listOf("sala 20B"))
-        val route = midway.hear(listOf("sim"))
-        assertTrue(route.say[0].startsWith("Rota até a sala 20B, em 6 etapas"))
+        val route = midway.hear(listOf("sala 20B"))
+        assertTrue(route.say[0].startsWith("Indo para a sala 20B, em 6 etapas"))
         assertFalse(route.say.joinToString(" ").contains("escada"))
     }
 
     @Test
     fun `naming a place halfway changes the destination`() {
         val changed = navigating().hear(listOf("quero ir para o protocolo"))
-        assertEquals(Phase.CONFIRM, changed.phase)
-        assertTrue(changed.say[0].contains("protocolo"))
+        assertEquals(Phase.NAVIGATING, changed.phase)
+        assertTrue(changed.say[0].startsWith("Indo para o protocolo"))
     }
 
     @Test

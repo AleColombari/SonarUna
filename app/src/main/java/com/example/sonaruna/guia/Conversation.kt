@@ -1,6 +1,6 @@
 package com.example.sonaruna.guia
 
-enum class Phase { IDLE, ORIGIN, CONFIRM_ORIGIN, DESTINATION, CONFIRM, NAVIGATING }
+enum class Phase { IDLE, ORIGIN, CONFIRM_ORIGIN, DESTINATION, NAVIGATING }
 
 /** What to say, in order; when [listen] is true the app opens the microphone after the last sentence. */
 data class Reply(val say: List<String>, val listen: Boolean, val phase: Phase)
@@ -31,6 +31,12 @@ class Conversation(private val map: FloorMap) {
     /** A destination said before the origin ("quero ir para a 10B"): it applies as soon as the origin is known. */
     private var pendingDestination: String? = null
 
+    /** What a person may say: the names of rooms and services, for the recognizer to lean towards. */
+    fun placeNames(): List<String> = map.points.values
+        .filter { it.tipo == "sala" || it.tipo == "servico" || it.tipo == "acesso" }
+        .flatMap { listOf(it.nome) + it.aliases }
+        .distinct()
+
     private fun reply(say: List<String>, listen: Boolean = true) = Reply(say, listen, phase)
     private fun reply(vararg say: String) = reply(say.toList())
 
@@ -38,8 +44,16 @@ class Conversation(private val map: FloorMap) {
     private fun originQuestion() = "Onde você está agora?"
     private fun destinationQuestion() = "Para onde você quer ir?"
     private fun suggestionQuestion() = "Parece que você está ${suggested!!.emLugar}. Está certo?"
-    private fun confirmQuestion() = "Você quer ir ${candidate!!.paraLugar}?"
-    private fun stepLine(i: Int) = "Etapa ${i + 1} de ${steps.size}. ${steps[i].texto}"
+
+    /** The first step says how many there are and teaches "pronto"; the others go straight to what to do. */
+    private fun stepLine(i: Int): String {
+        if (i == 0) return "Etapa 1 de ${steps.size}. ${steps[0].texto}"
+        val label = if (i == steps.size - 1) "Última etapa." else "Etapa ${i + 1}."
+        return "$label ${steps[i].texto.replace(promptSuffix, "")}"
+    }
+
+    // At UNAERP rooms are named by number, then block ("10B"); the internal code has the block first.
+    private fun roomName(code: String) = code.replace(blockFirst, "$2$1")
 
     private fun reset() {
         phase = Phase.ORIGIN
@@ -136,20 +150,19 @@ class Conversation(private val map: FloorMap) {
                 val command = classifyCommand(text)
                 if (command == Command.REPEAT) return currentQuestion()
                 if (command == Command.BACK && phase != Phase.ORIGIN) {
-                    phase = if (phase == Phase.CONFIRM) Phase.DESTINATION else Phase.ORIGIN
+                    phase = Phase.ORIGIN
                     candidate = null
                     return currentQuestion()
                 }
             }
         }
-        if (phase in setOf(Phase.ORIGIN, Phase.CONFIRM_ORIGIN, Phase.DESTINATION, Phase.CONFIRM)) {
+        if (phase in setOf(Phase.ORIGIN, Phase.CONFIRM_ORIGIN, Phase.DESTINATION)) {
             hearTrip(heard)?.let { return it }
         }
         return when (phase) {
             Phase.ORIGIN -> hearOrigin(heard)
             Phase.CONFIRM_ORIGIN -> hearOriginConfirmation(heard)
             Phase.DESTINATION -> hearDestination(heard)
-            Phase.CONFIRM -> hearConfirmation(heard)
             Phase.NAVIGATING -> hearNavigation(heard)
             Phase.IDLE -> reply(emptyList(), listen = false)
         }
@@ -225,8 +238,7 @@ class Conversation(private val map: FloorMap) {
             Phase.ORIGIN -> reply("Diga onde você está, por exemplo, ${map.exemploOrigem}. Pode dizer também para onde quer ir.", common)
             Phase.CONFIRM_ORIGIN -> reply("Diga sim se você está nesse lugar, ou diga onde você está.", common)
             Phase.DESTINATION -> reply("Diga para onde quer ir, por exemplo, ${map.exemplo}.", common)
-            Phase.CONFIRM -> reply("Diga sim para confirmar o destino ou não para escolher outro.", common)
-            Phase.NAVIGATING -> reply("Diga pronto quando terminar a etapa e quiser a próxima.", common)
+            Phase.NAVIGATING -> reply("Diga pronto quando terminar a etapa e quiser a próxima. Para trocar o destino, diga o novo lugar.", common)
             Phase.IDLE -> reply(listOf("Toque no botão para começar."), listen = false)
         }
     }
@@ -235,22 +247,24 @@ class Conversation(private val map: FloorMap) {
         Phase.ORIGIN -> reply(originQuestion())
         Phase.CONFIRM_ORIGIN -> reply(suggestionQuestion())
         Phase.DESTINATION -> reply(destinationQuestion())
-        Phase.CONFIRM -> reply(confirmQuestion())
         Phase.NAVIGATING -> reply(stepLine(index))
         Phase.IDLE -> reply(emptyList(), listen = false)
     }
 
     private fun hearOrigin(heard: List<String>): Reply {
         var several: List<Place>? = null
+        var unknown: PlaceMatch.UnknownRoom? = null
         for (text in heard) {
             when (val match = map.findPlace(text)) {
                 is PlaceMatch.Found -> return setOrigin(match.place)
                 is PlaceMatch.Several -> several = several ?: match.places
                 is PlaceMatch.Ambiguous -> several = several ?: match.places
+                is PlaceMatch.UnknownRoom -> unknown = unknown ?: match
                 else -> Unit
             }
         }
         if (several != null) return reply("Encontrei mais de um lugar: ${several.joinToString(", ") { it.nome }}. Diga o nome completo.")
+        unknown?.let { return reply("Não encontrei a sala ${roomName(it.code)} neste mapa. $ROOM_TIP") }
         return reply("Não reconheci esse lugar. ${originQuestion()}")
     }
 
@@ -261,21 +275,23 @@ class Conversation(private val map: FloorMap) {
         phase = Phase.DESTINATION
         pendingDestination?.let { text ->
             pendingDestination = null
-            routeTo(text, "Você está ${place.emLugar}.")?.let { return it }
+            routeTo(text)?.let { return it }
         }
         return reply("Você está ${place.emLugar}. ${destinationQuestion()}")
     }
 
-    /** Goes straight to the destination said (no confirmation), from the origin already set. Null if not found. */
-    private fun routeTo(text: String, prefix: String): Reply? {
+    /** Origin and destination said together: goes straight, saying from where to where. Null if not found. */
+    private fun routeTo(text: String): Reply? {
         val from = origin!!.id
         var match = map.findPlace(text)
-        if (match is PlaceMatch.Several) match = PlaceMatch.Found(match.places.minBy { map.routeWeight(from, it.id) })
+        if (match is PlaceMatch.Several) match = PlaceMatch.Found(nearestOf(match.places))
         if (match !is PlaceMatch.Found || match.place.id == from) return null
         candidate = match.place
-        val route = beginRoute()
-        return route.copy(say = listOf(prefix) + route.say)
+        return beginRoute(fromOrigin = true)
     }
+
+    /** Among several places with the same name ("banheiro"), the nearest to where the person is. */
+    private fun nearestOf(places: List<Place>): Place = places.minBy { map.routeWeight(origin!!.id, it.id) }
 
     /**
      * "Estou na 3A e quero ir para a 10B": with origin and destination in one phrase, the app goes straight to the
@@ -296,7 +312,14 @@ class Conversation(private val map: FloorMap) {
                 pendingDestination = wanted
                 return setOrigin(from.place)
             }
-            if (originKnown || from !is PlaceMatch.None || map.findPlace(wanted) is PlaceMatch.None) continue
+            if (!originKnown && from !is PlaceMatch.None) {
+                // The origin said is not on the map ("3B") or is ambiguous: keep the destination, ask only the origin.
+                pendingDestination = wanted
+                suggested = null
+                phase = Phase.ORIGIN
+                return hearOrigin(listOf(trip.origem!!))
+            }
+            if (originKnown || map.findPlace(wanted) is PlaceMatch.None) continue
             pendingDestination = wanted
             if (phase == Phase.CONFIRM_ORIGIN && answer != YesNo.NO) return reply(suggestionQuestion())
             suggested = null
@@ -328,52 +351,49 @@ class Conversation(private val map: FloorMap) {
         return match !is PlaceMatch.None && !(match is PlaceMatch.Found && match.place.id == current.id)
     }
 
-    private fun hearDestination(heard: List<String>): Reply {
+    /**
+     * The destination becomes a route right away, with no confirmation question: the summary says the place, and
+     * naming another place on the way changes it. [avoid]: the destination the person just changed. If the recognizer
+     * hears the same place again as the best hypothesis ("3B" when they said "10B"), the next hypothesis with another
+     * place wins.
+     */
+    private fun hearDestination(heard: List<String>, avoid: String? = null): Reply {
         val from = origin!!.id
         var unknown: PlaceMatch.UnknownRoom? = null
         var ambiguous: PlaceMatch.Ambiguous? = null
+        var same: Place? = null
         for (text in heard) {
             var match = map.findPlace(text)
-            // Several places with the same name ("banheiro"): go to the nearest one.
             if (match is PlaceMatch.Several) {
-                val nearest = match.places.minBy { map.routeWeight(from, it.id) }
+                val nearest = nearestOf(match.places)
                 if (map.routeWeight(from, nearest.id).isFinite()) match = PlaceMatch.Found(nearest)
             }
             when (match) {
                 is PlaceMatch.Found -> {
+                    if (match.place.id == avoid) {
+                        same = same ?: match.place
+                        continue
+                    }
                     if (match.place.id == from) return reply("Você já está aí. Diga outro destino.")
                     candidate = match.place
-                    phase = Phase.CONFIRM
-                    return reply(confirmQuestion())
+                    return beginRoute()
                 }
                 is PlaceMatch.UnknownRoom -> unknown = unknown ?: match
                 is PlaceMatch.Ambiguous -> ambiguous = ambiguous ?: match
                 else -> Unit
             }
         }
+        same?.let {
+            candidate = it
+            return beginRoute()
+        }
         ambiguous?.let { return reply("Encontrei mais de uma sala: ${it.places.joinToString(", ") { place -> place.nome }}. Diga o nome completo da sala.") }
-        unknown?.let { return reply("Não encontrei a sala ${it.code} neste mapa. ${destinationQuestion()}") }
+        unknown?.let { return reply("Não encontrei a sala ${roomName(it.code)} neste mapa. $ROOM_TIP") }
         return reply("Não entendi o destino. ${destinationQuestion()}")
     }
 
-    private fun hearConfirmation(heard: List<String>): Reply {
-        // Naming another place changes the destination ("não, a secretaria") instead of "quero" counting as yes.
-        if (heard.any { namesOtherPlace(it, candidate!!) }) return hearDestination(heard)
-        for (text in heard) {
-            when (classifyYesNo(text)) {
-                YesNo.YES -> return beginRoute()
-                YesNo.NO -> {
-                    candidate = null
-                    phase = Phase.DESTINATION
-                    return reply("Certo. Para onde você quer ir?")
-                }
-                null -> Unit
-            }
-        }
-        return reply("Não entendi. Diga apenas sim ou não.")
-    }
-
-    private fun beginRoute(): Reply {
+    /** [fromOrigin]: the person just said where they are; the summary says from where to where. */
+    private fun beginRoute(fromOrigin: Boolean = false): Reply {
         val from = origin!!
         val to = candidate!!
         val segments = map.planRoute(from.id, to.id)
@@ -385,7 +405,8 @@ class Conversation(private val map: FloorMap) {
         steps = map.buildInstructions(originHeading, segments)
         index = 0
         phase = Phase.NAVIGATING
-        return reply("Rota ${to.ateLugar}, em ${plural(steps.size, "etapa", "etapas")}.", stepLine(0))
+        val going = if (fromOrigin) "${from.deLugar.replaceFirstChar(Char::uppercase)} ${to.paraLugar}" else "Indo ${to.paraLugar}"
+        return reply("$going, em ${plural(steps.size, "etapa", "etapas")}.", stepLine(0))
     }
 
     private fun hearNavigation(heard: List<String>): Reply {
@@ -400,7 +421,7 @@ class Conversation(private val map: FloorMap) {
                         destination = null
                         steps = emptyList()
                         index = 0
-                        return reply("Você chegou ${arrived.emLugar}. Se quiser ir para outro lugar, diga o destino. Para encerrar, diga parar.")
+                        return reply("Você chegou ${arrived.emLugar}. Diga outro destino, ou parar para encerrar.")
                     }
                     index++
                     return reply(stepLine(index))
@@ -415,14 +436,23 @@ class Conversation(private val map: FloorMap) {
         }
         // Naming a place halfway ("quero ir para o banheiro") changes the destination from where the person is.
         if (heard.any { map.findPlace(it) !is PlaceMatch.None }) {
+            val previous = destination!!.id
             changeDestination()
-            return hearDestination(heard)
+            return hearDestination(heard, avoid = previous)
         }
+        // "Sim" or "ok" on the way is just the person agreeing: the app keeps listening, quietly.
+        if (heard.any { classifyYesNo(it) == YesNo.YES }) return reply(emptyList())
+        // "Não" on the way: the destination heard was wrong; ask again without losing where the person is.
+        if (heard.any { classifyYesNo(it) == YesNo.NO && normalize(it).split(' ').size <= 4 }) return changeDestination()
         return reply("Não entendi. Diga pronto para a próxima etapa, repetir, voltar ou parar.")
     }
 
     companion object {
         const val MAX_SILENCE_RETRIES = 3
         private val promptSuffix = Regex(" Quando (terminar|chegar), diga pronto\\.$")
+        private val blockFirst = Regex("^([A-Z]+)(\\d+)$")
+
+        // The recognizer mixes up short numbers ("dez bê" turning into "3B"); with the block first it usually gets it.
+        private const val ROOM_TIP = "Tente dizer o bloco e o número, por exemplo: bloco B, sala 10."
     }
 }

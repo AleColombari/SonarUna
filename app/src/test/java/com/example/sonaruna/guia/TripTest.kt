@@ -13,5 +13,8 @@ class TripTest {
         assertEquals(Trip("sim", "o financeiro"), splitTrip("sim, quero ir para o financeiro"))
         assertEquals(Trip(null, "a 10 b"), splitTrip("quero ir para a 10B"))
         assertEquals(null, splitTrip("estou na sala 5A").destino)
+        assertEquals(Trip("estou na 3 b", "a 10 b"), splitTrip("estou na 3B quero a 10B"))
+        assertEquals(Trip("3 a", "10 b"), splitTrip("3A e 10B"))
+        assertEquals(Trip(null, "sair"), splitTrip("quero sair"))
     }
 }

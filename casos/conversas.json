@@ -11,9 +11,6 @@
           "sala 15B"
         ],
         [
-          "sim"
-        ],
-        [
           "pronto"
         ],
         [
@@ -54,17 +51,10 @@
           ]
         },
         {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para a sala 15B?"
-          ]
-        },
-        {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até a sala 15B, em 8 etapas.",
+            "Indo para a sala 15B, em 8 etapas.",
             "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         },
@@ -72,56 +62,56 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 2 de 8. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto."
+            "Etapa 2. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 3 de 8. Suba a escada. Quando terminar, diga pronto."
+            "Etapa 3. Suba a escada."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 4 de 8. No próximo cruzamento, vire à esquerda. Referência: trecho curto, de poucos passos. Quando terminar, diga pronto."
+            "Etapa 4. No próximo cruzamento, vire à esquerda. Referência: trecho curto, de poucos passos."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 5 de 8. Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
+            "Etapa 5. Siga em frente pelo piso tátil por 5 cruzamentos."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 6 de 8. Continue em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
+            "Etapa 6. Continue em frente pelo piso tátil por 5 cruzamentos."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 7 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+            "Etapa 7. No próximo cruzamento, vire à esquerda."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 8 de 8. Siga em frente pelo piso tátil até o fim. Você chegará na sala 15B. Quando chegar, diga pronto."
+            "Última etapa. Siga em frente pelo piso tátil até o fim. Você chegará na sala 15B."
           ]
         },
         {
           "fase": "destination",
           "ouvir": true,
           "dizer": [
-            "Você chegou na sala 15B. Se quiser ir para outro lugar, diga o destino. Para encerrar, diga parar."
+            "Você chegou na sala 15B. Diga outro destino, ou parar para encerrar."
           ]
         }
       ]
@@ -139,9 +129,6 @@
         ],
         [
           "vinte b"
-        ],
-        [
-          "isso"
         ],
         [
           "pronto"
@@ -169,17 +156,10 @@
           ]
         },
         {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para a sala 20B?"
-          ]
-        },
-        {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até a sala 20B, em 3 etapas.",
+            "Indo para a sala 20B, em 3 etapas.",
             "Etapa 1 de 3. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         },
@@ -187,21 +167,21 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 2 de 3. Daqui a 2 cruzamentos, vire à esquerda. Referência: porta da entrada do bloco B, sempre aberta. Quando terminar, diga pronto."
+            "Etapa 2. Daqui a 2 cruzamentos, vire à esquerda. Referência: porta da entrada do bloco B, sempre aberta."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 3 de 3. Siga em frente pelo piso tátil até o fim. Você chegará na sala 20B. Quando chegar, diga pronto."
+            "Última etapa. Siga em frente pelo piso tátil até o fim. Você chegará na sala 20B."
           ]
         },
         {
           "fase": "destination",
           "ouvir": true,
           "dizer": [
-            "Você chegou na sala 20B. Se quiser ir para outro lugar, diga o destino. Para encerrar, diga parar."
+            "Você chegou na sala 20B. Diga outro destino, ou parar para encerrar."
           ]
         }
       ]
@@ -222,9 +202,6 @@
         ],
         [
           "não, feminino"
-        ],
-        [
-          "sim"
         ]
       ],
       "esperado": [
@@ -243,24 +220,18 @@
           ]
         },
         {
-          "fase": "confirm",
+          "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Você quer ir para o banheiro masculino do bloco A?"
-          ]
-        },
-        {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para o banheiro feminino do bloco A?"
+            "Indo para o banheiro masculino do bloco A, em 3 etapas.",
+            "Etapa 1 de 3. Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até o banheiro feminino do bloco A, em 4 etapas.",
+            "Indo para o banheiro feminino do bloco A, em 4 etapas.",
             "Etapa 1 de 4. Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
           ]
         }
@@ -338,9 +309,6 @@
         [
           "sala 15B"
         ],
-        [
-          "sim"
-        ],
         "silencio",
         "silencio",
         "retomar",
@@ -391,17 +359,10 @@
           ]
         },
         {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para a sala 15B?"
-          ]
-        },
-        {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até a sala 15B, em 8 etapas.",
+            "Indo para a sala 15B, em 8 etapas.",
             "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         },
@@ -426,7 +387,7 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 2 de 8. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto."
+            "Etapa 2. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada."
           ]
         }
       ]
@@ -439,9 +400,6 @@
         ],
         [
           "sala 15B"
-        ],
-        [
-          "sim"
         ],
         [
           "pronto"
@@ -457,9 +415,6 @@
         ],
         [
           "sala 20B"
-        ],
-        [
-          "sim"
         ]
       ],
       "esperado": [
@@ -478,17 +433,10 @@
           ]
         },
         {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para a sala 15B?"
-          ]
-        },
-        {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até a sala 15B, em 8 etapas.",
+            "Indo para a sala 15B, em 8 etapas.",
             "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         },
@@ -496,21 +444,21 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 2 de 8. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto."
+            "Etapa 2. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 3 de 8. Suba a escada. Quando terminar, diga pronto."
+            "Etapa 3. Suba a escada."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 4 de 8. No próximo cruzamento, vire à esquerda. Referência: trecho curto, de poucos passos. Quando terminar, diga pronto."
+            "Etapa 4. No próximo cruzamento, vire à esquerda. Referência: trecho curto, de poucos passos."
           ]
         },
         {
@@ -521,24 +469,17 @@
           ]
         },
         {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para a sala 20B?"
-          ]
-        },
-        {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até a sala 20B, em 6 etapas.",
+            "Indo para a sala 20B, em 6 etapas.",
             "Etapa 1 de 6. No próximo cruzamento, vire à esquerda. Referência: trecho curto, de poucos passos. Quando terminar, diga pronto."
           ]
         }
       ]
     },
     {
-      "nome": "outro destino na confirmacao e lugar dito no meio da rota",
+      "nome": "nao e outro destino no comeco da rota; lugar dito no meio da rota",
       "passos": [
         [
           "informações"
@@ -553,13 +494,7 @@
           "sala 5A"
         ],
         [
-          "sim"
-        ],
-        [
           "quero ir para o protocolo"
-        ],
-        [
-          "sim"
         ]
       ],
       "esperado": [
@@ -578,10 +513,11 @@
           ]
         },
         {
-          "fase": "confirm",
+          "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Você quer ir para a sala 15B?"
+            "Indo para a sala 15B, em 8 etapas.",
+            "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         },
         {
@@ -592,32 +528,18 @@
           ]
         },
         {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para a sala 5A?"
-          ]
-        },
-        {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até a sala 5A, em 3 etapas.",
+            "Indo para a sala 5A, em 3 etapas.",
             "Etapa 1 de 3. Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
           ]
         },
         {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para o protocolo?"
-          ]
-        },
-        {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até o protocolo, em 3 etapas.",
+            "Indo para o protocolo, em 3 etapas.",
             "Etapa 1 de 3. No próximo cruzamento, vire à direita. Quando terminar, diga pronto."
           ]
         }
@@ -637,9 +559,6 @@
         ],
         [
           "quero sair"
-        ],
-        [
-          "sim"
         ]
       ],
       "esperado": [
@@ -658,10 +577,11 @@
           ]
         },
         {
-          "fase": "confirm",
+          "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Você quer ir para a entrada do bloco B?"
+            "Indo para a entrada do bloco B, em 2 etapas.",
+            "Etapa 1 de 2. No próximo cruzamento, vire à direita. Quando terminar, diga pronto."
           ]
         },
         {
@@ -672,17 +592,10 @@
           ]
         },
         {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para a entrada do bloco B?"
-          ]
-        },
-        {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até a entrada do bloco B, em 2 etapas.",
+            "Indo para a entrada do bloco B, em 2 etapas.",
             "Etapa 1 de 2. No próximo cruzamento, vire à direita. Quando terminar, diga pronto."
           ]
         }
@@ -702,9 +615,6 @@
         ],
         [
           "sala 15B"
-        ],
-        [
-          "sim"
         ],
         [
           "pronto"
@@ -766,17 +676,10 @@
           ]
         },
         {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para a sala 15B?"
-          ]
-        },
-        {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até a sala 15B, em 8 etapas.",
+            "Indo para a sala 15B, em 8 etapas.",
             "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         },
@@ -784,14 +687,14 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 2 de 8. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto."
+            "Etapa 2. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 3 de 8. Suba a escada. Quando terminar, diga pronto."
+            "Etapa 3. Suba a escada."
           ]
         },
         {
@@ -806,7 +709,7 @@
           "ouvir": true,
           "dizer": [
             "Se você terminou a etapa 2, está no pé da escada entre os blocos.",
-            "Etapa 3 de 8. Suba a escada. Quando terminar, diga pronto."
+            "Etapa 3. Suba a escada."
           ]
         },
         {
@@ -827,21 +730,21 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 2 de 8. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto."
+            "Etapa 2. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 2 de 8. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada. Quando terminar, diga pronto."
+            "Etapa 2. Siga em frente pelo piso tátil, passando por 1 cruzamento, até a escada."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Diga pronto quando terminar a etapa e quiser a próxima.",
+            "Diga pronto quando terminar a etapa e quiser a próxima. Para trocar o destino, diga o novo lugar.",
             "Você pode dizer a qualquer momento: repetir, voltar, recomeçar ou parar."
           ]
         },
@@ -871,9 +774,6 @@
         ],
         [
           "bê doze"
-        ],
-        [
-          "sim"
         ]
       ],
       "esperado": [
@@ -902,7 +802,7 @@
           "fase": "destination",
           "ouvir": true,
           "dizer": [
-            "Não encontrei a sala A30 neste mapa. Para onde você quer ir?"
+            "Não encontrei a sala 30A neste mapa. Tente dizer o bloco e o número, por exemplo: bloco B, sala 10."
           ]
         },
         {
@@ -913,17 +813,10 @@
           ]
         },
         {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para a sala 12B?"
-          ]
-        },
-        {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até a sala 12B, em 5 etapas.",
+            "Indo para a sala 12B, em 5 etapas.",
             "Etapa 1 de 5. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         }
@@ -941,9 +834,6 @@
         ],
         [
           "sala dos computadores"
-        ],
-        [
-          "pode ser"
         ]
       ],
       "esperado": [
@@ -969,17 +859,10 @@
           ]
         },
         {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para a sala de estudos?"
-          ]
-        },
-        {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até a sala de estudos, em 4 etapas.",
+            "Indo para a sala de estudos, em 4 etapas.",
             "Etapa 1 de 4. No próximo cruzamento, vire à direita. Quando terminar, diga pronto."
           ]
         }
@@ -1014,10 +897,11 @@
           ]
         },
         {
-          "fase": "confirm",
+          "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Você quer ir para a sala 5A?"
+            "Indo para a sala 5A, em 3 etapas.",
+            "Etapa 1 de 3. Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
           ]
         },
         {
@@ -1045,9 +929,6 @@
         ],
         [
           "sala 20B"
-        ],
-        [
-          "sim"
         ]
       ],
       "esperado": [
@@ -1073,17 +954,10 @@
           ]
         },
         {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para a sala 20B?"
-          ]
-        },
-        {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até a sala 20B, em 3 etapas.",
+            "Indo para a sala 20B, em 3 etapas.",
             "Etapa 1 de 3. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         }
@@ -1105,9 +979,6 @@
         },
         [
           "quero ir para a 10B"
-        ],
-        [
-          "sim"
         ]
       ],
       "esperado": [
@@ -1127,17 +998,10 @@
         },
         null,
         {
-          "fase": "confirm",
-          "ouvir": true,
-          "dizer": [
-            "Você quer ir para a sala 10B?"
-          ]
-        },
-        {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Rota até a sala 10B, em 8 etapas.",
+            "Indo para a sala 10B, em 8 etapas.",
             "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         }
@@ -1198,8 +1062,7 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Você está na sala 3A.",
-            "Rota até a sala 10B, em 8 etapas.",
+            "Da sala 3A para a sala 10B, em 8 etapas.",
             "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         }
@@ -1230,8 +1093,7 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Você está na sala 3A.",
-            "Rota até a sala 10B, em 8 etapas.",
+            "Da sala 3A para a sala 10B, em 8 etapas.",
             "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         },
@@ -1246,8 +1108,7 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Você está na entrada principal.",
-            "Rota até a sala 15B, em 4 etapas.",
+            "Da entrada principal para a sala 15B, em 4 etapas.",
             "Etapa 1 de 4. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         }
@@ -1286,8 +1147,7 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Você está na entrada principal.",
-            "Rota até o financeiro, em 7 etapas.",
+            "Da entrada principal para o financeiro, em 7 etapas.",
             "Etapa 1 de 7. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         },
@@ -1309,9 +1169,177 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Você está na sala 3A.",
-            "Rota até a sala 10B, em 8 etapas.",
+            "Da sala 3A para a sala 10B, em 8 etapas.",
             "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "destino ouvido errado: a hipotese com o mesmo lugar de antes e pulada",
+      "passos": [
+        [
+          "sala 5A"
+        ],
+        [
+          "sala 15B"
+        ],
+        [
+          "não 15B",
+          "não, dez B",
+          "não, 10B"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Onde você está agora?"
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está na sala 5A. Para onde você quer ir?"
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Indo para a sala 15B, em 10 etapas.",
+            "Etapa 1 de 10. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Indo para a sala 10B, em 8 etapas.",
+            "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "origem que nao existe na frase guarda o destino; duas salas sem palavra de destino",
+      "procurando": true,
+      "passos": [
+        [
+          "estou na 3B quero a 10B"
+        ],
+        [
+          "bloco B sala 5"
+        ],
+        [
+          "recomeçar"
+        ],
+        [
+          "3A e 10B"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Procurando sua localização."
+          ]
+        },
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Não encontrei a sala 3B neste mapa. Tente dizer o bloco e o número, por exemplo: bloco B, sala 10."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Da sala 5B para a sala 10B, em 3 etapas.",
+            "Etapa 1 de 3. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Onde você está agora?"
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Da sala 3A para a sala 10B, em 8 etapas.",
+            "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "no caminho, sim fica calado e nao pergunta o destino de novo",
+      "passos": [
+        [
+          "sala 5A"
+        ],
+        [
+          "10B"
+        ],
+        [
+          "sim"
+        ],
+        [
+          "não"
+        ],
+        [
+          "sala 20B"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Onde você está agora?"
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está na sala 5A. Para onde você quer ir?"
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Indo para a sala 10B, em 8 etapas.",
+            "Etapa 1 de 8. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": []
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Certo. Para onde você quer ir?"
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Indo para a sala 20B, em 11 etapas.",
+            "Etapa 1 de 11. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
           ]
         }
       ]

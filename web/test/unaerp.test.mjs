@@ -104,11 +104,10 @@ test('conversa: onde voce esta, banheiro mais perto e troca para o feminino', ()
   assert.deepEqual(session.start().say, ['Onde você está agora?']);
   assert.match(session.hear(['ajuda']).say.join(' '), /por exemplo, entrada principal, balcão de informações ou sala 5A/);
   assert.match(session.hear(['estou na sala 5A']).say[0], /^Você está na sala 5A\./);
-  assert.match(session.hear(['banheiro']).say[0], /banheiro masculino do bloco A/);
-  assert.match(session.hear(['não, feminino']).say[0], /banheiro feminino do bloco A/);
-  const go = session.hear(['isso']);
+  assert.match(session.hear(['banheiro']).say[0], /^Indo para o banheiro masculino do bloco A/);
+  const go = session.hear(['não, feminino']);
   assert.equal(go.phase, 'navigating');
-  assert.match(go.say[0], /^Rota até o banheiro feminino do bloco A, em 3 etapas/);
+  assert.match(go.say[0], /^Indo para o banheiro feminino do bloco A, em 3 etapas/);
 });
 
 test('nenhuma etapa do mapa pede para contar mais de 5 cruzamentos', () => {
@@ -134,7 +133,6 @@ test('na rota, silencio e a pessoa andando: o microfone segue ouvindo calado', (
   session.start();
   session.hear(['informações']);
   session.hear(['sala 15B']);
-  session.hear(['sim']);
   session.hear(['pronto']);
   for (let i = 0; i < 5; i++) {
     const quiet = session.silence();
@@ -143,7 +141,7 @@ test('na rota, silencio e a pessoa andando: o microfone segue ouvindo calado', (
     assert.deepEqual(quiet.say, []);
   }
   assert.match(session.resume().say[0], /^Retomando a etapa 2 de 8\. Diga pronto para a próxima/);
-  assert.match(session.hear(['pronto']).say[0], /^Etapa 3 de 8\. Suba a escada/);
+  assert.match(session.hear(['pronto']).say[0], /^Etapa 3\. Suba a escada/);
 });
 
 test('outro destino mantem onde a pessoa esta; no meio da rota, parte do fim da ultima etapa feita', () => {
@@ -151,7 +149,7 @@ test('outro destino mantem onde a pessoa esta; no meio da rota, parte do fim da 
   confirm.start();
   confirm.hear(['informações']);
   confirm.hear(['sala 15B']);
-  const other = confirm.hear(['não, outro destino']);
+  const other = confirm.hear(['outro destino']);
   assert.equal(other.phase, 'destination');
   assert.equal(other.say[0], 'Certo. Para onde você quer ir?');
 
@@ -159,12 +157,10 @@ test('outro destino mantem onde a pessoa esta; no meio da rota, parte do fim da 
   midway.start();
   midway.hear(['informações']);
   midway.hear(['sala 15B']);
-  midway.hear(['sim']);
   for (let i = 0; i < 3; i++) midway.hear(['pronto']); // etapas 1 a 3 feitas: a pessoa esta no alto da escada
   assert.equal(midway.hear(['novo destino']).phase, 'destination');
-  midway.hear(['sala 20B']);
-  const route = midway.hear(['sim']);
-  assert.match(route.say[0], /^Rota até a sala 20B, em 6 etapas/);
+  const route = midway.hear(['sala 20B']);
+  assert.match(route.say[0], /^Indo para a sala 20B, em 6 etapas/);
   assert.doesNotMatch(route.say.join(' '), /escada/);
 });
 
@@ -173,9 +169,8 @@ test('dizer um lugar no meio da rota troca o destino', () => {
   session.start();
   session.hear(['informações']);
   session.hear(['sala 15B']);
-  session.hear(['sim']);
   const changed = session.hear(['quero ir para o protocolo']);
-  assert.equal(changed.phase, 'confirm');
+  assert.equal(changed.phase, 'navigating');
   assert.match(changed.say[0], /protocolo/);
 });
 
@@ -199,13 +194,12 @@ test('quanto falta, repasse o caminho e onde estou', () => {
   session.hear(['informações']);
   assert.equal(session.hear(['quanto falta']).say[0], 'Ainda não há uma rota.');
   session.hear(['sala 15B']);
-  session.hear(['sim']);
   session.hear(['pronto']);
   session.hear(['pronto']);
   assert.equal(session.hear(['quanto falta?']).say[0], 'Você está na etapa 3 de 8. Depois desta, faltam 5 etapas até a sala 15B.');
   const where = session.hear(['onde eu estou']).say;
   assert.equal(where[0], 'Se você terminou a etapa 2, está no pé da escada entre os blocos.');
-  assert.match(where[1], /^Etapa 3 de 8\. Suba a escada/);
+  assert.match(where[1], /^Etapa 3\. Suba a escada/);
   const overview = session.hear(['repasse o caminho']).say;
   assert.equal(overview[0], 'Caminho até a sala 15B.');
   assert.equal(overview[1], 'Etapa 3: Suba a escada.');

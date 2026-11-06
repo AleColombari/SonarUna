@@ -295,6 +295,8 @@ const DESTINATION_MARKERS = [
   'preciso ir para', 'preciso ir pra', 'preciso ir pro', 'preciso ir ate', 'preciso ir',
   'vou para', 'vou pra', 'vou pro', 'vou ate', 'ir para', 'ir pra', 'ir pro', 'ir ate',
   'me leva para', 'me leva pra', 'me leve para', 'me leve pra', 'me levar para',
+  // Sozinhas, por ultimo: "estou na 3B, quero a 10B", "estou na 3B, pra 10B".
+  'quero', 'vou', 'para', 'pra', 'pro', 'ate',
 ];
 const ORIGIN_MARKERS = ['estou', 'to', 'tou', 'estamos', 'aqui'];
 // Sobras no fim de um pedaco ("estou na 3A e ..."), que atrapalham ler o codigo da sala.
@@ -316,6 +318,19 @@ const firstMarker = (padded, markers) => {
   return best;
 };
 
+/** "3A e 10B", "estou na 3B, 10B": duas salas com bloco, sem palavra de destino; a primeira e onde a pessoa esta. */
+function twoRooms(text) {
+  const words = text.split(' ').filter(Boolean);
+  for (let i = 1; i < words.length; i++) {
+    const origem = trimLinking(words.slice(0, i).join(' '));
+    const destino = trimLinking(words.slice(i).join(' '));
+    const from = parseRoomCode(origem);
+    const to = parseRoomCode(destino);
+    if (from?.block && to?.block && from.canonical !== to.canonical) return { origem, destino };
+  }
+  return null;
+}
+
 /**
  * Separa a parte que diz onde a pessoa esta da parte que diz aonde ela quer ir. Devolve { origem, destino }, cada um
  * texto normalizado ou null; sem marca de destino ("quero ir para"...), tudo e origem.
@@ -323,7 +338,7 @@ const firstMarker = (padded, markers) => {
 export function splitTrip(text) {
   const padded = ` ${normalize(text)} `;
   const destination = firstMarker(padded, DESTINATION_MARKERS);
-  if (!destination) return { origem: trimLinking(padded.trim()) || null, destino: null };
+  if (!destination) return twoRooms(padded.trim()) ?? { origem: trimLinking(padded.trim()) || null, destino: null };
   const before = trimLinking(padded.slice(0, destination.at));
   const after = ` ${padded.slice(destination.at + destination.marker.length + 1).trim()} `;
   const origin = firstMarker(after, ORIGIN_MARKERS);

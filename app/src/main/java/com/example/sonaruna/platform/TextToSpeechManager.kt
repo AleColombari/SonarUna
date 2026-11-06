@@ -4,8 +4,10 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
 import java.util.Locale
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.Dispatchers
@@ -15,6 +17,9 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
+
+/** How much faster than the person's own rate the app speaks (the web version uses 1.2 too). */
+private const val SPEECH_RATE = 1.2f
 
 /** Owns one TTS engine and completes speech only after its utterance callback. */
 class TextToSpeechManager(context: Context) {
@@ -33,10 +38,17 @@ class TextToSpeechManager(context: Context) {
     @Volatile
     private var closed = false
 
-    private data class PendingSpeech(
-        val id: String,
+    /** One reply, queued as [parts] utterances "<prefix>-0".."<prefix>-(parts-1)" that the engine plays back to back. */
+    private class PendingSpeech(
+        val prefix: String,
+        val parts: Int,
         val continuation: CancellableContinuation<Boolean>,
-    )
+        val onPart: ((Int) -> Unit)?,
+    ) {
+        val lastId: String get() = "$prefix-${parts - 1}"
+        fun part(utteranceId: String?): Int? =
+            utteranceId?.takeIf { it.startsWith("$prefix-") }?.substringAfterLast('-')?.toIntOrNull()
+    }
 
     suspend fun initialize(): Boolean = withContext(Dispatchers.Main.immediate) {
         initializationMutex.withLock {
@@ -69,29 +81,38 @@ class TextToSpeechManager(context: Context) {
         }
     }
 
-    suspend fun speak(text: String): Boolean = withContext(Dispatchers.Main.immediate) {
+    suspend fun speak(text: String): Boolean = speak(listOf(text))
+
+    /**
+     * Speaks [sentences] queued together, so the engine goes from one to the next without a pause. [onPart] is called
+     * as each sentence starts playing (for the echo check: only what was already said can come back).
+     */
+    suspend fun speak(sentences: List<String>, onPart: ((Int) -> Unit)? = null): Boolean = withContext(Dispatchers.Main.immediate) {
         val generation = stopGeneration
+        val parts = sentences.filter(String::isNotBlank)
+        val text = parts.joinToString(" ")
         speechMutex.withLock {
-            if (closed || !ready || generation != stopGeneration || text.isBlank()) return@withLock false
+            if (closed || !ready || generation != stopGeneration || parts.isEmpty()) return@withLock false
             // Respect slow speech rates chosen in accessibility settings. onDone is the
             // normal completion signal; this generous limit only handles a stalled engine.
             val timeoutMillis = (60_000L + text.length * 400L).coerceAtMost(300_000L)
             val completed = withTimeoutOrNull(timeoutMillis) {
                 suspendCancellableCoroutine { continuation ->
-                    val id = "sonaruna-${++nextUtteranceId}"
-                    speech = PendingSpeech(id, continuation)
+                    val pending = PendingSpeech("sonaruna-${++nextUtteranceId}", parts.size, continuation, onPart)
+                    speech = pending
                     continuation.invokeOnCancellation {
                         onMain {
-                            if (speech?.id == id) {
+                            if (speech === pending) {
                                 speech = null
                                 runCatching { engine?.stop() }
                             }
                         }
                     }
-                    val status = runCatching {
-                        engine?.speak(text, TextToSpeech.QUEUE_FLUSH, null, id)
-                    }.getOrNull()
-                    if (status != TextToSpeech.SUCCESS) finishSpeech(id, false)
+                    val queued = parts.withIndex().all { (i, sentence) ->
+                        val mode = if (i == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
+                        runCatching { engine?.speak(sentence, mode, null, "${pending.prefix}-$i") }.getOrNull() == TextToSpeech.SUCCESS
+                    }
+                    if (!queued) finishSpeech(pending.lastId, false)
                 }
             } ?: false
             // A failed or timed-out engine must be recreated on the next explicit retry.
@@ -129,9 +150,15 @@ class TextToSpeechManager(context: Context) {
         val configured = status == TextToSpeech.SUCCESS && tts != null && runCatching {
             val languageStatus = tts.setLanguage(Locale.forLanguageTag("pt-BR"))
             if (languageStatus < TextToSpeech.LANG_AVAILABLE) return@runCatching false
-            tts.voices?.firstOrNull {
-                it.locale.language == "pt" && it.locale.country == "BR" && !it.isNetworkConnectionRequired
-            }?.let { tts.voice = it }
+            // The most natural pt-BR voice installed (no network needed), the quickest to start among equals.
+            tts.voices
+                ?.filter { it.locale.language == "pt" && it.locale.country == "BR" && !it.isNetworkConnectionRequired }
+                ?.filterNot { it.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED) == true }
+                ?.maxWithOrNull(compareBy<Voice>({ it.quality }, { -it.latency }))
+                ?.let { tts.voice = it }
+            // A bit faster than the person's own speech rate (system text-to-speech setting), like the web version.
+            val ownRate = Settings.Secure.getInt(context.contentResolver, Settings.Secure.TTS_DEFAULT_RATE, 100) / 100f
+            tts.setSpeechRate(ownRate * SPEECH_RATE)
             tts.setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
@@ -139,7 +166,10 @@ class TextToSpeechManager(context: Context) {
                     .build(),
             )
             tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String?) = Unit
+                override fun onStart(utteranceId: String?) = onMain {
+                    val pending = speech ?: return@onMain
+                    pending.part(utteranceId)?.let { pending.onPart?.invoke(it) }
+                }
                 override fun onDone(utteranceId: String?) = onMain { finishSpeech(utteranceId, true) }
                 @Deprecated("Required by the platform listener")
                 override fun onError(utteranceId: String?) = onMain { finishSpeech(utteranceId, false) }
@@ -157,7 +187,9 @@ class TextToSpeechManager(context: Context) {
 
     private fun finishSpeech(id: String?, success: Boolean) {
         val pending = speech ?: return
-        if (pending.id != id) return
+        if (pending.part(id) == null) return
+        // A sentence before the last one finished: the next one is already queued.
+        if (success && id != pending.lastId) return
         speech = null
         if (pending.continuation.isActive) pending.continuation.resume(success && !closed)
     }

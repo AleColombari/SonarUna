@@ -19,7 +19,10 @@ GPS (ao ar livre, no campus, com localização **precisa**)
 
 - [ ] Na entrada principal, o app fala só "Procurando sua localização." e, ficando em silêncio, depois pergunta "Parece que você está na entrada principal. Está certo?".
 - [ ] Logo depois de "Procurando sua localização.", dizer "estou na sala 5A": o app aceita na hora e não faz a pergunta do GPS depois.
-- [ ] Ao abrir, dizer "estou na 3A e quero ir para a 10B": o app diz "Você está na sala 3A." e já fala a rota até a 10B, sem confirmar.
+- [ ] Ao abrir, dizer "estou na 3A e quero ir para a 10B": o app diz "Da sala 3A para a sala 10B, em 8 etapas." e já fala a primeira etapa.
+- [ ] Falar a frase com uma pausa no meio ("estou na 3A ... e quero ir para a 10B"): mesmo que o reconhecedor corte, a segunda parte vira o destino e a rota começa.
+- [ ] Dizer "10B" várias vezes, falando por cima ou depois da voz: anotar o que aparece escrito embaixo do botão. Se aparecer outra sala ("3B"), dizer "bloco B, sala 10" e anotar se acerta.
+- [ ] A voz fala cada resposta de uma vez, sem pausas entre as frases, um pouco mais rápida que a voz padrão do aparelho.
 - [ ] Ao abrir, dizer só "quero ir para a 10B": o app pergunta onde a pessoa está e, com "estou na 3A", já fala a rota.
 - [ ] Começar uma frase longa bem quando o GPS deve responder: o app não corta a frase no meio.
 - [ ] Repetir na entrada do bloco B e na entrada do bloco A.
@@ -40,7 +43,7 @@ Microfone e interrupção
 Destino e rota
 
 - [ ] Destinos falados de vários jeitos: "sala 15B", "quinze b", "bê quinze", "financeiro", "LIAPE", "sala dos computadores".
-- [ ] "Banheiro" leva ao mais perto. "Não, feminino" na confirmação troca para o feminino mais perto.
+- [ ] "Banheiro" leva ao mais perto, sem confirmação. "Não, feminino" no começo da rota troca para o feminino mais perto. "Sim" no caminho não faz o app falar.
 - [ ] "Sala 9" pede o nome completo (há 9A e 9B). "Trinta a" responde que a sala A30 não existe no mapa.
 - [ ] A rota fala quantas etapas tem e a primeira etapa.
   - "Pronto" passa à próxima, "voltar" repete a anterior e "repetir" repete a atual.
@@ -54,7 +57,7 @@ Destino e rota
 - [ ] Na rota, "quanto falta?", "repasse o caminho" e "onde estou?" respondem e mantêm a etapa atual.
 - [ ] As etapas falam só do piso ("Daqui a 3 cruzamentos, vire à esquerda"). Conferir no campus se cada contagem bate com os cruzamentos sentidos com a bengala.
 - [ ] "Parar" encerra; "recomeçar" volta ao início.
-- [ ] "Outro destino" na confirmação ou no meio da rota pergunta só o destino. A nova rota parte do fim da última etapa feita.
+- [ ] "Não" ou "outro destino" no meio da rota pergunta só o destino. A nova rota parte do fim da última etapa feita.
 - [ ] Dentro do bloco B, "saída" leva à porta do bloco B. Dentro do bloco A, leva à porta do bloco A. "Quero sair" faz o mesmo e não encerra a orientação.
 
 ## Registro da execução
@@ -80,7 +83,7 @@ Os caminhos dos menus e os textos dos diálogos de permissão variam entre vers�
 
 - [ ] A tela do aplicativo tem fundo branco e somente um botão circular preto com ícone de microfone branco, centralizado e grande. Barras e diálogos do sistema são separados da interface do aplicativo.
 - [ ] Ao navegar por gestos do TalkBack dentro do conteúdo do aplicativo, existe apenas um alvo de ação. O ícone interno não aparece como um segundo elemento.
-- [ ] TalkBack identifica o controle como botão e informa sua ação atual: origem, confirmação da origem, destino, confirmação do destino, nova tentativa ou reinício.
+- [ ] TalkBack identifica o controle como botão e informa sua ação atual: origem, confirmação da origem, destino, nova tentativa ou reinício.
 - [ ] A ativação normal por TalkBack executa a mesma ação do toque direto. Também testar a execução com TalkBack desligado.
 - [ ] Durante a escuta, a descrição muda para “Ouvindo. Toque para cancelar”, o estado informa microfone ativo e o botão continua acionável.
 - [ ] Acionar o botão durante a escuta cancela a captura. A mensagem de cancelamento é falada e um resultado atrasado não muda a etapa.
