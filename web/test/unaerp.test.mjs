@@ -120,3 +120,66 @@ test('origem com nome repetido pede o nome completo', () => {
   assert.match(session.hear(['estou no banheiro']).say[0], /Encontrei mais de um lugar/);
   assert.equal(session.phase, 'entrance');
 });
+
+test('na rota, silencio e a pessoa andando: pausa sem perder a rota', () => {
+  const session = createSession(map);
+  session.start();
+  session.hear(['informações']);
+  session.hear(['sala 15B']);
+  session.hear(['sim']);
+  session.hear(['pronto']);
+  for (let i = 0; i < 5; i++) {
+    const paused = session.silence();
+    assert.equal(paused.phase, 'navigating');
+    assert.equal(paused.listen, false);
+    assert.equal(paused.say[0], 'Microfone pausado. Quando terminar a etapa, toque no botão.');
+  }
+  assert.match(session.resume().say[0], /^Retomando a etapa 2 de 8\. Diga pronto para a próxima/);
+  assert.match(session.hear(['pronto']).say[0], /^Etapa 3 de 8\. Suba a escada/);
+});
+
+test('outro destino mantem onde a pessoa esta; no meio da rota, parte do fim da ultima etapa feita', () => {
+  const confirm = createSession(map);
+  confirm.start();
+  confirm.hear(['informações']);
+  confirm.hear(['sala 15B']);
+  const other = confirm.hear(['não, outro destino']);
+  assert.equal(other.phase, 'destination');
+  assert.equal(other.say[0], 'Certo. Para onde você quer ir?');
+
+  const midway = createSession(map);
+  midway.start();
+  midway.hear(['informações']);
+  midway.hear(['sala 15B']);
+  midway.hear(['sim']);
+  for (let i = 0; i < 3; i++) midway.hear(['pronto']); // etapas 1 a 3 feitas: a pessoa esta no alto da escada
+  assert.equal(midway.hear(['novo destino']).phase, 'destination');
+  midway.hear(['sala 20B']);
+  const route = midway.hear(['sim']);
+  assert.match(route.say[0], /^Rota até a sala 20B, em 6 etapas/);
+  assert.doesNotMatch(route.say.join(' '), /escada/);
+});
+
+test('dizer um lugar no meio da rota troca o destino', () => {
+  const session = createSession(map);
+  session.start();
+  session.hear(['informações']);
+  session.hear(['sala 15B']);
+  session.hear(['sim']);
+  const changed = session.hear(['quero ir para o protocolo']);
+  assert.equal(changed.phase, 'confirm');
+  assert.match(changed.say[0], /protocolo/);
+});
+
+test('saida e quero sair levam a saida mais perto, sem encerrar a orientacao', () => {
+  const destino = (origem, texto) => {
+    const session = createSession(map);
+    session.start();
+    session.hear([origem]);
+    return session.hear([texto]).say[0];
+  };
+  assert.match(destino('sala 20B', 'saída'), /entrada do bloco B/);
+  assert.match(destino('sala 5A', 'saída'), /entrada do bloco A/);
+  assert.match(destino('sala 5A', 'quero sair'), /entrada do bloco A/);
+  assert.match(destino('informações', 'saída principal'), /entrada principal/);
+});

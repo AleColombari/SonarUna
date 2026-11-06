@@ -98,15 +98,76 @@ class ConversationTest {
     }
 
     @Test
-    fun `silence asks again and stops after three tries`() {
+    fun `silence on a question asks again, then closes the microphone keeping the phase`() {
         val session = Conversation(map)
         session.start()
         assertEquals("Não ouvi. Pode repetir?", session.silence().say[0])
         session.silence()
-        val gaveUp = session.silence()
-        assertEquals(Phase.IDLE, gaveUp.phase)
-        assertFalse(gaveUp.listen)
-        assertTrue(session.resume().say[0].startsWith("Olá."))
+        val paused = session.silence()
+        assertEquals(Phase.ORIGIN, paused.phase)
+        assertFalse(paused.listen)
+        assertEquals("Retomando.", session.resume().say[0])
+    }
+
+    private fun navigating(): Conversation = Conversation(map).also {
+        it.start()
+        it.hear(listOf("informações"))
+        it.hear(listOf("sala 15B"))
+        it.hear(listOf("sim"))
+    }
+
+    @Test
+    fun `on a route, silence is the person walking - pause without losing the route`() {
+        val session = navigating()
+        session.hear(listOf("pronto"))
+        repeat(5) {
+            val paused = session.silence()
+            assertEquals(Phase.NAVIGATING, paused.phase)
+            assertFalse(paused.listen)
+            assertEquals("Microfone pausado. Quando terminar a etapa, toque no botão.", paused.say[0])
+        }
+        assertTrue(session.resume().say[0].startsWith("Retomando a etapa 2 de 8. Diga pronto para a próxima"))
+        assertTrue(session.hear(listOf("pronto")).say[0].startsWith("Etapa 3 de 8. Suba a escada"))
+    }
+
+    @Test
+    fun `another destination keeps the origin, halfway it starts where the last finished step ended`() {
+        val confirm = Conversation(map)
+        confirm.start()
+        confirm.hear(listOf("informações"))
+        confirm.hear(listOf("sala 15B"))
+        val other = confirm.hear(listOf("não, outro destino"))
+        assertEquals(Phase.DESTINATION, other.phase)
+        assertEquals("Certo. Para onde você quer ir?", other.say[0])
+
+        val midway = navigating()
+        repeat(3) { midway.hear(listOf("pronto")) } // steps 1 to 3 done: the person is at the top of the stairs
+        assertEquals(Phase.DESTINATION, midway.hear(listOf("novo destino")).phase)
+        midway.hear(listOf("sala 20B"))
+        val route = midway.hear(listOf("sim"))
+        assertTrue(route.say[0].startsWith("Rota até a sala 20B, em 6 etapas"))
+        assertFalse(route.say.joinToString(" ").contains("escada"))
+    }
+
+    @Test
+    fun `naming a place halfway changes the destination`() {
+        val changed = navigating().hear(listOf("quero ir para o protocolo"))
+        assertEquals(Phase.CONFIRM, changed.phase)
+        assertTrue(changed.say[0].contains("protocolo"))
+    }
+
+    @Test
+    fun `exit and quero sair go to the nearest exit without ending the guidance`() {
+        fun destination(from: String, text: String): String {
+            val session = Conversation(map)
+            session.start()
+            session.hear(listOf(from))
+            return session.hear(listOf(text)).say[0]
+        }
+        assertTrue(destination("sala 20B", "saída").contains("entrada do bloco B"))
+        assertTrue(destination("sala 5A", "saída").contains("entrada do bloco A"))
+        assertTrue(destination("sala 5A", "quero sair").contains("entrada do bloco A"))
+        assertTrue(destination("informações", "saída principal").contains("entrada principal"))
     }
 
     @Test

@@ -394,6 +394,7 @@ export function buildInstructions(map, entrance, segments) {
       last.passos += stepsOf(map, segment);
       last.referencias.push(...segment.referencias);
       last.destino = segment.para;
+      last.rumo = segment.rumo;
     } else {
       groups.push({
         virar: turnPhrase(angle),
@@ -401,6 +402,7 @@ export function buildInstructions(map, entrance, segments) {
         passos: stepsOf(map, segment),
         referencias: [...segment.referencias],
         destino: segment.para,
+        rumo: segment.rumo,
       });
     }
     heading = segment.rumo;
@@ -419,7 +421,7 @@ export function buildInstructions(map, entrance, segments) {
     } else {
       parts.push('Quando terminar, diga pronto.');
     }
-    return { texto: parts.join(' '), metros, passos, bruto: group.passos };
+    return { texto: parts.join(' '), metros, passos, bruto: group.passos, ponto: group.destino, rumo: group.rumo };
   });
 }
 
@@ -518,7 +520,8 @@ function floorStep(map, trechos, parts, arrives, passados = 0) {
   if (referencias.length > 0) parts.push(`Referência: ${referencias.join(', ')}.`);
   const end = map.points.get(trechos[trechos.length - 1].para);
   parts.push(arrives ? `Você chegará ${emLugar(end)}. Quando chegar, diga pronto.` : 'Quando terminar, diga pronto.');
-  return { texto: parts.join(' '), cruzamentos: passados, bruto: null };
+  // ponto/rumo: onde a etapa termina e para que lado a pessoa esta virada, para trocar de destino no meio da rota.
+  return { texto: parts.join(' '), cruzamentos: passados, bruto: null, ponto: end.id, rumo: trechos[trechos.length - 1].rumo };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -565,15 +568,18 @@ const COMMANDS = [
     'estou perdida', 'chamar atendente', 'chamar seguranca', 'falar com atendente', 'falar com um atendente',
     'falar com o atendente', 'falar com seguranca', 'falar com a seguranca', 'falar com um seguranca',
   ]],
-  ['stop', ['parar', 'pare', 'cancelar', 'cancela', 'encerrar', 'sair', 'finalizar']],
-  ['restart', ['recomecar', 'reiniciar', 'comecar de novo', 'nova rota', 'outra rota', 'novo destino', 'outro destino']],
+  // "sair" nao para a orientacao: "quero sair" e um destino (a saida mais perto, no mapa).
+  ['stop', ['parar', 'pare', 'cancelar', 'cancela', 'encerrar', 'finalizar']],
+  ['restart', ['recomecar', 'reiniciar', 'comecar de novo']],
+  // Trocar so o destino mantem onde a pessoa esta (ou onde terminou a ultima etapa feita).
+  ['destination', ['novo destino', 'outro destino', 'nova rota', 'outra rota', 'mudar o destino', 'mudar destino', 'trocar o destino', 'trocar destino']],
   ['help', ['ajuda']],
   ['repeat', ['repetir', 'repete', 'repita', 'de novo', 'nao ouvi', 'nao entendi']],
   ['back', ['voltar', 'volta', 'anterior', 'passo anterior']],
   ['next', ['pronto', 'proximo', 'continuar', 'continua', 'seguir', 'cheguei', 'ok', 'feito', 'ja fui', 'ja andei']],
 ];
 
-/** 'assist' | 'stop' | 'restart' | 'help' | 'repeat' | 'back' | 'next' | null. */
+/** 'assist' | 'stop' | 'restart' | 'destination' | 'help' | 'repeat' | 'back' | 'next' | null. */
 export function classifyCommand(text) {
   const normalized = normalize(text);
   for (const [name, phrases] of COMMANDS) {

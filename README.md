@@ -17,8 +17,11 @@ O repositório tem duas versões com o mesmo comportamento e os mesmos dados:
   2. A pessoa diz o destino: "sala 15B", "quinze b", "financeiro", "banheiro" (o mais perto), "LIAPE".
   3. O app confirma o destino e fala a rota em etapas. A pessoa diz "pronto" para ouvir a próxima.
 - **Mapa:** o da UNAERP, guiado pelo piso tátil e sem medidas: [docs/MAPA-UNAERP.md](docs/MAPA-UNAERP.md). Uma reta longa vira etapas de até 5 cruzamentos, e cada pausa cita a sala daquele ponto. Escadas, portas e referências ("porta sempre aberta") também são faladas.
-- **Respostas:** sim e não são entendidos dentro de frases ("acho que sim", "não, me enganei"). Na confirmação, dizer outro lugar já troca o destino. Comandos a qualquer momento: repetir, voltar, recomeçar, ajuda, parar.
-- **Microfone:** abre sozinho depois de cada pergunta. Tocar no botão enquanto o app fala interrompe a fala e já escuta, para a resposta da pessoa ter prioridade. Tocar enquanto ele escuta pausa a orientação. Depois de três silêncios seguidos, o microfone fecha.
+- **Respostas:** sim e não são entendidos dentro de frases ("acho que sim", "não, me enganei"). Na confirmação, dizer outro lugar já troca o destino.
+- **Comandos a qualquer momento:** repetir, voltar, recomeçar, ajuda e parar.
+- **Trocar o destino sem recomeçar:** "outro destino" ou "nova rota" pergunta só o destino. No meio da rota, dizer um lugar também troca o destino, e a nova rota parte do fim da última etapa feita.
+- **Saída:** "saída" ou "quero sair" leva à saída mais perto (entrada principal, porta do bloco B ou porta do bloco A).
+- **Microfone:** abre sozinho depois de cada pergunta. Tocar no botão enquanto o app fala interrompe a fala e já escuta, para a resposta da pessoa ter prioridade. Tocar enquanto ele escuta pausa a orientação. Numa pergunta, depois de três silêncios seguidos, o microfone fecha. Durante a rota, o primeiro silêncio já fecha o microfone ("Microfone pausado"), porque a pessoa está andando. A rota fica guardada, e o toque seguinte retoma na mesma etapa.
 
 **Ainda não estão no app Android:** o pedido de ajuda por ligação (existe só na versão web) e os caminhos marcados como futuros no mapa (bloco H, pavimentos superiores).
 

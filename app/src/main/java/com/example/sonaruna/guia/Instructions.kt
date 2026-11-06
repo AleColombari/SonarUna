@@ -2,8 +2,11 @@ package com.example.sonaruna.guia
 
 import kotlin.math.abs
 
-/** One spoken step of a route; [cruzamentos] is how many crossings it passes before the stop. */
-data class Instruction(val texto: String, val cruzamentos: Int)
+/**
+ * One spoken step of a route; [cruzamentos] is how many crossings it passes before the stop. [ponto] and [rumo]
+ * say where the step ends and which way the person faces there, to change destination halfway.
+ */
+data class Instruction(val texto: String, val cruzamentos: Int, val ponto: String, val rumo: Double)
 
 private const val STRAIGHT = "Siga em frente"
 private val NOT_A_CROSSING = setOf("curva", "patamar", "porta", "marco")
@@ -114,5 +117,5 @@ private fun FloorMap.step(trechos: List<Segment>, text: String, arrives: Boolean
     if (referencias.isNotEmpty()) parts += "Referência: ${referencias.joinToString(", ")}."
     val end = points.getValue(trechos.last().to)
     parts += if (arrives) "Você chegará ${end.emLugar}. Quando chegar, diga pronto." else "Quando terminar, diga pronto."
-    return Instruction(parts.joinToString(" "), passados)
+    return Instruction(parts.joinToString(" "), passados, end.id, trechos.last().rumo)
 }

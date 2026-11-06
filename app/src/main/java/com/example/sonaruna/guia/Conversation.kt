@@ -69,6 +69,9 @@ class Conversation(private val map: FloorMap) {
     fun resume(): Reply {
         if (phase == Phase.IDLE) return start()
         silences = 0
+        if (phase == Phase.NAVIGATING) {
+            return reply("Retomando a etapa ${index + 1} de ${steps.size}. Diga pronto para a próxima, ou repetir para ouvir de novo.")
+        }
         return reply(listOf("Retomando.") + currentQuestion().say)
     }
 
@@ -86,6 +89,7 @@ class Conversation(private val map: FloorMap) {
             when (classifyCommand(text)) {
                 Command.STOP -> return stop()
                 Command.RESTART -> return start()
+                Command.DESTINATION -> return if (origin != null) changeDestination() else currentQuestion()
                 Command.HELP -> return help()
                 else -> Unit
             }
@@ -111,16 +115,37 @@ class Conversation(private val map: FloorMap) {
         }
     }
 
-    /** Nothing was heard (silence, noise or a passing microphone error). */
+    /**
+     * Nothing was heard (silence, noise or a passing microphone error). On a route, silence is the person walking:
+     * the microphone closes and the route is kept until the next tap. On questions, after a few tries the
+     * microphone also closes, without losing what was already answered.
+     */
     fun silence(): Reply {
         if (phase == Phase.IDLE) return reply(emptyList(), listen = false)
+        if (phase == Phase.NAVIGATING) {
+            return reply(listOf("Microfone pausado. Quando terminar a etapa, toque no botão."), listen = false)
+        }
         silences++
         if (silences >= MAX_SILENCE_RETRIES) {
-            phase = Phase.IDLE
             silences = 0
             return reply(listOf("Não ouvi nenhuma resposta. Toque no botão quando quiser continuar."), listen = false)
         }
         return reply("Não ouvi. Pode repetir?")
+    }
+
+    /** A new destination without losing where the person is: halfway, where the last finished step ended. */
+    private fun changeDestination(): Reply {
+        if (phase == Phase.NAVIGATING && index > 0) {
+            val done = steps[index - 1]
+            origin = map.points.getValue(done.ponto)
+            originHeading = done.rumo
+        }
+        candidate = null
+        destination = null
+        steps = emptyList()
+        index = 0
+        phase = Phase.DESTINATION
+        return reply("Certo. Para onde você quer ir?")
     }
 
     private fun help(): Reply {
@@ -266,6 +291,11 @@ class Conversation(private val map: FloorMap) {
                 }
                 else -> Unit
             }
+        }
+        // Naming a place halfway ("quero ir para o banheiro") changes the destination from where the person is.
+        if (heard.any { map.findPlace(it) !is PlaceMatch.None }) {
+            changeDestination()
+            return hearDestination(heard)
         }
         return reply("Não entendi. Diga pronto para a próxima etapa, repetir, voltar ou parar.")
     }

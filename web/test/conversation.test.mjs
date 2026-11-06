@@ -111,7 +111,7 @@ test('voltar na etapa do destino pergunta a entrada de novo', () => {
   assert.match(said(result), /Por qual entrada/);
 });
 
-test('silencio repetido encerra depois do limite', () => {
+test('silencio repetido fecha o microfone sem perder a etapa da conversa', () => {
   const session = createSession(map);
   session.start();
   for (let i = 1; i < MAX_SILENCE_RETRIES; i++) {
@@ -119,9 +119,10 @@ test('silencio repetido encerra depois do limite', () => {
     assert.ok(retry.listen);
     assert.match(said(retry), /Não ouvi/);
   }
-  const ended = session.silence();
-  assert.equal(ended.phase, 'idle');
-  assert.equal(ended.listen, false);
+  const paused = session.silence();
+  assert.equal(paused.phase, 'entrance');
+  assert.equal(paused.listen, false);
+  assert.match(said(session.resume()), /^Retomando\. Por qual entrada/);
 });
 
 test('uma resposta valida zera a contagem de silencios', () => {
@@ -234,7 +235,7 @@ test('depois da ligacao, retomar continua na mesma etapa da rota', () => {
   const back = session.resume();
   assert.equal(back.phase, 'navigating');
   assert.ok(back.listen);
-  assert.match(said(back), /^Retomando\. Etapa 2 de 3/);
+  assert.match(said(back), /^Retomando a etapa 2 de 3\. Diga pronto para a próxima/);
 });
 
 test('retomar uma sessao encerrada comeca de novo', () => {
@@ -265,6 +266,7 @@ test('silencio demais durante o pedido de ajuda encerra sem ligar', () => {
   session.hear(['preciso de ajuda']);
   let last;
   for (let i = 0; i < MAX_SILENCE_RETRIES; i++) last = session.silence();
-  assert.equal(last.phase, 'idle');
+  assert.equal(last.phase, 'entrance');
+  assert.equal(last.listen, false);
   assert.equal(last.action, undefined);
 });

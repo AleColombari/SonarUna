@@ -28,7 +28,8 @@ Microfone e interrupção
 - [ ] Depois de cada pergunta, o microfone abre sozinho: vibração curta e descrição "Ouvindo. Toque para pausar".
 - [ ] Tocar enquanto o app fala interrompe a fala e já escuta.
 - [ ] Tocar enquanto o app escuta pausa a orientação ("Escuta pausada"). Um novo toque retoma onde parou.
-- [ ] Ficar em silêncio três vezes seguidas fecha o microfone ("Não ouvi nenhuma resposta").
+- [ ] Numa pergunta, ficar em silêncio três vezes seguidas fecha o microfone ("Não ouvi nenhuma resposta"). Um toque retoma a mesma pergunta.
+- [ ] Na rota, andar a etapa inteira sem falar: o microfone fecha ("Microfone pausado") e a rota continua guardada. Um toque retoma na mesma etapa, e "pronto" passa à próxima.
 - [ ] Nenhuma fala do próprio app, nem do TalkBack, é reconhecida como resposta. Registrar se isso acontecer.
 
 Destino e rota
@@ -46,6 +47,8 @@ Destino e rota
   - se as referências ajudam.
 - [ ] "Preciso de ajuda" informa que a ligação ainda não está no app e repete a pergunta atual.
 - [ ] "Parar" encerra; "recomeçar" volta ao início.
+- [ ] "Outro destino" na confirmação ou no meio da rota pergunta só o destino. A nova rota parte do fim da última etapa feita.
+- [ ] Dentro do bloco B, "saída" leva à porta do bloco B. Dentro do bloco A, leva à porta do bloco A. "Quero sair" faz o mesmo e não encerra a orientação.
 
 ## Registro da execução
 

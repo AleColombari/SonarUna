@@ -155,7 +155,27 @@ export function createSession(map, getContacts = () => []) {
   function resume() {
     if (phase === 'idle') return start();
     silences = 0;
+    if (phase === 'navigating') {
+      return reply([`Retomando a etapa ${index + 1} de ${steps.length}. Diga pronto para a próxima, ou repetir para ouvir de novo.`]);
+    }
     return reply(['Retomando.', ...announceCurrentQuestion().say]);
+  }
+
+  /**
+   * Novo destino sem perder onde a pessoa esta. No meio da rota, ela esta onde terminou a ultima etapa feita,
+   * virada para o lado em que andava.
+   */
+  function changeDestination() {
+    if (phase === 'navigating' && index > 0 && steps[index - 1].ponto) {
+      const done = steps[index - 1];
+      const place = map.points.get(done.ponto);
+      entrance = { id: place.id, nome: place.nome, artigo: place.artigo, ponto: place.id, rumo: done.rumo };
+    }
+    candidate = destination = null;
+    steps = [];
+    index = 0;
+    phase = 'destination';
+    return reply(['Certo. Para onde você quer ir?']);
   }
 
   /** Onde a pessoa esta: qualquer lugar do mapa; ela sai dele pelo unico trecho do piso que leva ate ali. */
@@ -299,6 +319,11 @@ export function createSession(map, getContacts = () => []) {
           break;
       }
     }
+    // Dizer um lugar no meio da rota ("quero ir para o banheiro") troca o destino a partir de onde a pessoa esta.
+    if (alternatives.some((text) => findPlace(map, text).kind !== 'none')) {
+      changeDestination();
+      return hearDestination(alternatives);
+    }
     return reply(['Não entendi. Diga pronto para a próxima etapa, repetir, voltar ou parar.']);
   }
 
@@ -316,6 +341,7 @@ export function createSession(map, getContacts = () => []) {
       const command = classifyCommand(text);
       if (command === 'stop') return stop();
       if (command === 'restart') return start();
+      if (command === 'destination') return entrance ? changeDestination() : announceCurrentQuestion();
       if (command === 'help') return help();
     }
     if (phase !== 'navigating') {
@@ -340,13 +366,23 @@ export function createSession(map, getContacts = () => []) {
     }
   }
 
-  /** Nada foi ouvido (silencio, ruido ou erro passageiro do microfone). */
+  /**
+   * Nada foi ouvido (silencio, ruido ou erro passageiro do microfone). Na rota, silencio e a pessoa andando: o
+   * microfone fecha e a rota fica guardada ate o proximo toque. Nas perguntas, depois de algumas tentativas o
+   * microfone tambem fecha, sem perder o que ja foi respondido.
+   */
   function silence() {
     if (phase === 'idle') return reply([], false);
+    if (phase === 'navigating') {
+      return reply(['Microfone pausado. Quando terminar a etapa, toque no botão.'], false);
+    }
     silences++;
     if (silences >= MAX_SILENCE_RETRIES) {
-      phase = 'idle';
       silences = 0;
+      if (phase === 'assist-choose' || phase === 'assist-confirm') {
+        phase = returnPhase;
+        pendingContact = null;
+      }
       return reply(['Não ouvi nenhuma resposta. Toque no botão quando quiser continuar.'], false);
     }
     return reply(['Não ouvi. Pode repetir?']);

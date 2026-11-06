@@ -2,7 +2,7 @@ package com.example.sonaruna.guia
 
 enum class YesNo { YES, NO }
 
-enum class Command { ASSIST, STOP, RESTART, HELP, REPEAT, BACK, NEXT }
+enum class Command { ASSIST, STOP, RESTART, DESTINATION, HELP, REPEAT, BACK, NEXT }
 
 // Words and expressions anywhere in the phrase: "acho que sim", "sim sim", "isso aí, pode ir".
 private val positive = listOf(
@@ -43,8 +43,13 @@ private val commands = listOf(
         "estou perdida", "chamar atendente", "chamar seguranca", "falar com atendente", "falar com um atendente",
         "falar com o atendente", "falar com seguranca", "falar com a seguranca", "falar com um seguranca",
     ),
-    Command.STOP to listOf("parar", "pare", "cancelar", "cancela", "encerrar", "sair", "finalizar"),
-    Command.RESTART to listOf("recomecar", "reiniciar", "comecar de novo", "nova rota", "outra rota", "novo destino", "outro destino"),
+    // "sair" does not stop the guidance: "quero sair" is a destination (the nearest exit, in the map).
+    Command.STOP to listOf("parar", "pare", "cancelar", "cancela", "encerrar", "finalizar"),
+    Command.RESTART to listOf("recomecar", "reiniciar", "comecar de novo"),
+    // Changing only the destination keeps where the person is (or where the last finished step ended).
+    Command.DESTINATION to listOf(
+        "novo destino", "outro destino", "nova rota", "outra rota", "mudar o destino", "mudar destino", "trocar o destino", "trocar destino",
+    ),
     Command.HELP to listOf("ajuda"),
     Command.REPEAT to listOf("repetir", "repete", "repita", "de novo", "nao ouvi", "nao entendi"),
     Command.BACK to listOf("voltar", "volta", "anterior", "passo anterior"),
