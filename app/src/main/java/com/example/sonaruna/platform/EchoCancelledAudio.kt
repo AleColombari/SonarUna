@@ -65,6 +65,20 @@ class EchoCancelledAudio(context: Context) {
     @Volatile
     private var onVoice: (() -> Unit)? = null
 
+    /**
+     * Call mode kept on for the whole conversation (see [holdCallPath]): switching it at every reply made the start
+     * of each reply play during the switch, in a worse voice.
+     */
+    private var callPathHeld = false
+
+    /** Keeps the call path on (or lets it go) whether or not the microphone records. */
+    @Synchronized
+    fun holdCallPath(on: Boolean) {
+        if (on == callPathHeld) return
+        callPathHeld = on
+        if (on) enterCallPath() else if (!running) leaveCallPath()
+    }
+
     /** Starts the call path and the recording that feeds the recognizer. False when the phone cannot do it. */
     @Synchronized
     fun start(): Boolean {
@@ -106,10 +120,10 @@ class EchoCancelledAudio(context: Context) {
         }
         canceller = runCatching { AcousticEchoCanceler.create(recorder.audioSessionId)?.apply { enabled = true } }.getOrNull()
         suppressor = runCatching { NoiseSuppressor.create(recorder.audioSessionId)?.apply { enabled = true } }.getOrNull()
-        enterCallPath()
+        if (!callPathHeld) enterCallPath()
         runCatching { recorder.startRecording() }.onFailure {
             release(recorder)
-            leaveCallPath()
+            if (!callPathHeld) leaveCallPath()
             return false
         }
         record = recorder
@@ -150,7 +164,7 @@ class EchoCancelledAudio(context: Context) {
         thread = null
         record?.let(::release)
         record = null
-        leaveCallPath()
+        if (!callPathHeld) leaveCallPath()
         Log.i(TAG, "Cancelamento de eco desligado")
     }
 

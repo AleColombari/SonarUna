@@ -24,8 +24,16 @@ class VoiceDetectorTest {
         val detector = VoiceDetector()
         val residue = List(50) { 500.0 }
         assertEquals(null, detector.feedAll(residue))
-        // Voice well above the residue: fires on the 8th loud frame (160 ms).
-        assertEquals(7, detector.feedAll(List(20) { 3500.0 }))
+        // Voice well above the residue: fires on the 6th loud frame (120 ms).
+        assertEquals(5, detector.feedAll(List(20) { 3500.0 }))
+    }
+
+    @Test
+    fun `a normal speaking voice is enough, no need to shout`() {
+        val detector = VoiceDetector()
+        // Residue as measured on the phone (3 to 110); a normal voice around 600-1000.
+        assertEquals(null, detector.feedAll(List(50) { 60.0 }))
+        assertEquals(5, detector.feedAll(List(10) { 700.0 }))
     }
 
     @Test

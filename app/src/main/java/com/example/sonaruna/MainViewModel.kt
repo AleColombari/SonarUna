@@ -77,7 +77,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val haptics = HapticFeedback(application)
     private val cleanedAudio = EchoCancelledAudio(application).also { audio ->
         recognition.cleanedAudio = audio
-        recognition.onCleanedAudioRefused = { voice.useCallPath(false) }
+        // Refused for the recognizer, the cleaned microphone still detects the person: the voice stays on the call path.
+        recognition.onCleanedAudioRefused = { if (!audio.canDetect) voice.useCallPath(false) }
     }
 
     // Test builds only (debuggable): logcat shows what the recognizer heard, to check misrecognitions on the phone.
@@ -129,12 +130,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** Hear the person over the app's voice without hearing the voice itself, when the phone can (see EchoCancelledAudio). */
     private fun startEchoCancellation() {
         if (!permissions.microphone || !foreground) return
-        voice.useCallPath(cleanedAudio.start())
+        // One audio path for the whole conversation, so the voice always sounds the same.
+        val callPath = cleanedAudio.canDetect
+        cleanedAudio.holdCallPath(callPath)
+        voice.useCallPath(callPath)
+        cleanedAudio.start()
     }
 
     private fun stopEchoCancellation() {
         detectingVoice = false
         cleanedAudio.stop()
+        cleanedAudio.holdCallPath(false)
         voice.useCallPath(false)
     }
 
@@ -342,15 +348,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun startVoiceDetection(): Boolean {
         if (!cleanedAudio.canDetect) return false
         val currentGeneration = generation
-        voice.useCallPath(true)
         detectingVoice = cleanedAudio.startDetecting {
             if (currentGeneration == generation && speaking && foreground) {
                 Log.i(TAG, "A pessoa falou por cima; voz interrompida (detector)")
                 haptics.start()
+                cutByVoice = true
                 interruptAndListen()
             }
         }
-        if (!detectingVoice) voice.useCallPath(false)
         return detectingVoice
     }
 
@@ -359,8 +364,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (!detectingVoice) return
         detectingVoice = false
         cleanedAudio.stop()
-        voice.useCallPath(false)
     }
+
+    /**
+     * The voice was cut because the person spoke over it. If the recognizer, opened just after, hears nothing (a short
+     * answer may end before it opens), the app asks for it again in two words instead of "Não ouvi".
+     */
+    private var cutByVoice = false
 
     /**
      * One answer. With [duringSpeech], recognition starts while the app speaks and only takes over the conversation
@@ -416,6 +426,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 duringSpeech?.recognizing = false
                 hearingPhrase = false
                 if (foreground && takeOver(hypotheses, final = true) && listening) {
+                    cutByVoice = false
                     // Without the stretch of the app's voice the recognizer may have caught before the answer.
                     val answer = duringSpeech?.let { turn ->
                         hypotheses.map { Echo.answerAfterSpeech(it, turn.words) }.filter(String::isNotEmpty).ifEmpty { hypotheses }
@@ -479,6 +490,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun recognitionFailed(error: SpeechFailure) {
+        if (cutByVoice && (error == SpeechFailure.NO_SPEECH || error == SpeechFailure.UNKNOWN)) {
+            cutByVoice = false
+            val conversation = guide?.conversation ?: return
+            deliver(Reply(listOf("Pode falar."), listen = true, phase = conversation.phase))
+            return
+        }
+        cutByVoice = false
         if (error == SpeechFailure.NO_SPEECH || error == SpeechFailure.UNKNOWN) {
             // Silence is the conversation's business: it asks again, and stops after a few tries.
             deliver(guide!!.conversation.silence())

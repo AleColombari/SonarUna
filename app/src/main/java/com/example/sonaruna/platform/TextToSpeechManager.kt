@@ -2,6 +2,7 @@ package com.example.sonaruna.platform
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -191,6 +192,11 @@ class TextToSpeechManager(context: Context) {
                 override fun onStop(utteranceId: String?, interrupted: Boolean) =
                     onMain { finishSpeech(utteranceId, false) }
             })
+            // Warm-up, silent: Google's voice may start with a plainer voice until its best one is loaded, which
+            // made the first sentence of the app sound different from the rest.
+            runCatching {
+                tts.speak(" ", TextToSpeech.QUEUE_FLUSH, Bundle().apply { putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 0f) }, "sonaruna-aquecer")
+            }
             true
         }.getOrDefault(false)
         ready = configured

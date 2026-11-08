@@ -12,12 +12,15 @@ class VoiceDetector(
     private val frameMillis: Int = 20,
     /** At the start the canceller is still adapting: only learn the level, never fire. */
     private val lockoutMillis: Int = 400,
-    /** How long the sound must stay above the threshold: 160 ms. */
-    private val framesNeeded: Int = 8,
+    /** How long the sound must stay above the threshold: 120 ms. */
+    private val framesNeeded: Int = 6,
     /** How much louder than the residue: about 11 dB. */
     private val factor: Double = 3.5,
-    /** Never fire below this level (16-bit samples), whatever the residue. */
-    private val minimumLevel: Double = 500.0,
+    /**
+     * Never fire below this level (16-bit samples), whatever the residue. On the phone the canceller left a residue of
+     * 3 to 110 and the person speaking reached 2900 to 11700; 500 made people raise their voice, 250 does not.
+     */
+    private val minimumLevel: Double = 250.0,
 ) {
     private var elapsed = 0
     private var residue = 0.0
