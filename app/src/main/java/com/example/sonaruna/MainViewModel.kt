@@ -12,6 +12,7 @@ import com.example.sonaruna.guia.FloorMap
 import com.example.sonaruna.guia.GpsPoints
 import com.example.sonaruna.guia.Phase
 import com.example.sonaruna.guia.Reply
+import com.example.sonaruna.platform.EchoCancelledAudio
 import com.example.sonaruna.platform.HapticFeedback
 import com.example.sonaruna.platform.LocationRepository
 import com.example.sonaruna.platform.SpeechFailure
@@ -74,6 +75,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val recognition = SpeechRecognitionManager(application)
     private val voice = TextToSpeechManager(application)
     private val haptics = HapticFeedback(application)
+    private val cleanedAudio = EchoCancelledAudio(application).also { audio ->
+        recognition.cleanedAudio = audio
+        recognition.onCleanedAudioRefused = { voice.useCallPath(false) }
+    }
 
     // Test builds only (debuggable): logcat shows what the recognizer heard, to check misrecognitions on the phone.
     private val debugLog = (application.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
@@ -116,8 +121,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         runOperation {
             if (!ensureVoice()) return@runOperation
             if (!ensureGuide()) return@runOperation
+            startEchoCancellation()
             startOrResume()
         }
+    }
+
+    /** Hear the person over the app's voice without hearing the voice itself, when the phone can (see EchoCancelledAudio). */
+    private fun startEchoCancellation() {
+        if (!permissions.microphone || !foreground) return
+        voice.useCallPath(cleanedAudio.start())
+    }
+
+    private fun stopEchoCancellation() {
+        cleanedAudio.stop()
+        voice.useCallPath(false)
     }
 
     private suspend fun startOrResume() {
@@ -138,6 +155,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         operation?.cancel()
         recognition.cancel()
         voice.stop()
+        stopEchoCancellation()
         listening = false
         speaking = false
         working = false
@@ -152,6 +170,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (!ensureVoice()) return@runOperation
             if (status.microphone) {
                 recovery = null
+                startEchoCancellation()
                 begin()
             } else {
                 explainMissingMicrophone()
@@ -527,6 +546,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun string(@StringRes resource: Int): String = getApplication<Application>().getString(resource)
 
     override fun onCleared() {
+        cleanedAudio.stop()
         recognition.close()
         voice.close()
         actionsChannel.close()

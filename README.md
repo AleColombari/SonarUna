@@ -24,6 +24,7 @@ O repositório tem duas versões com o mesmo comportamento e os mesmos dados:
 - **Trocar o destino sem recomeçar:** "outro destino" ou "nova rota" pergunta só o destino. No meio da rota, dizer um lugar também troca o destino, e a nova rota parte do fim da última etapa feita.
 - **Saída:** "saída" ou "quero sair" leva à saída mais perto (entrada principal, porta do bloco B ou porta do bloco A).
 - **Microfone:** quando o app espera resposta, o microfone já escuta enquanto ele fala.
+  - **Cancelamento de eco (Android 13+):** como numa chamada de voz, o app grava o microfone no modo de chamada, com o cancelador de eco do aparelho, e a voz dele toca pelo mesmo caminho (ainda no alto-falante). O reconhecedor recebe esse áudio já sem a voz do app. O reconhecimento do Google só aceita esse áudio **offline**: sem o português offline baixado, o app pede o download sozinho e, até lá, usa o microfone comum com o filtro de texto abaixo.
   - A pessoa pode **responder por cima**, falando: a voz do app para e a resposta vale. Palavras que o próprio app já disse são tratadas como eco do alto-falante, e por isso funciona melhor com fone de ouvido.
   - Tocar no botão enquanto o app fala também interrompe e já escuta. Tocar enquanto ele escuta não corta o microfone.
   - O microfone não fecha sozinho: numa pergunta, o app pede para repetir até duas vezes e depois só escuta; na rota, o silêncio é a pessoa andando e o app escuta calado até ela dizer "pronto". Para encerrar, a pessoa diz "parar".

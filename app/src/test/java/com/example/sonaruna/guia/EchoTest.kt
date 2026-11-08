@@ -30,11 +30,23 @@ class EchoTest {
         assertEquals("", Echo.answerAfterSpeech("diga pronto", spoken))
         assertEquals("", Echo.answerAfterSpeech("quando terminar diga pronto", spoken))
         assertEquals("sim", Echo.answerAfterSpeech("diga pronto sim", spoken))
-        assertEquals("pronto", Echo.answerAfterSpeech("diga pronto pronto", spoken))
+        // Several words the app said, even repeated, are the app's.
+        assertEquals("", Echo.answerAfterSpeech("diga pronto pronto", spoken))
         // A single word is the person's: "pronto" right after the app is the most common answer.
         assertEquals("pronto", Echo.answerAfterSpeech("pronto", spoken))
         // "quero ir" is not "quer ir": the person's answer stays whole.
         assertEquals("quero ir para a 5 a", Echo.answerAfterSpeech("quero ir para a 5A", Echo.words("Você está na sala 3B. Para onde você quer ir?")))
+    }
+
+    @Test
+    fun `echo as the phone really heard it - small words dropped, numbers written out`() {
+        // From the phone's log: the app said "Indo para a sala 16B, em 4 etapas..." and the recognizer wrote this.
+        val said = Echo.words("Indo para a sala 16B, em 4 etapas. Etapa 1 de 4. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto.")
+        assertEquals("", Echo.answerAfterSpeech("indo para sala 16b em quatro etapas etapa 1 de 4 no próximo cruzamento vire à esquerda quando terminar diga pronto", said))
+        val step = Echo.words("Etapa 3. Daqui a 2 cruzamentos, vire à esquerda.")
+        assertEquals("", Echo.answerAfterSpeech("etapa 3 daqui a dois cruzamentos vire à esquerda", step))
+        assertFalse(Echo.interrupts("etapa 3 daqui a dois cruzamentos", step, needed = 2))
+        assertTrue(Echo.interrupts("quero ir para o banheiro", step, needed = 2))
     }
 
     @Test

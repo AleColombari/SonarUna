@@ -122,6 +122,22 @@ class TextToSpeechManager(context: Context) {
         }
     }
 
+    /**
+     * With the echo canceller on, the voice plays as a call (still on the loudspeaker), so the canceller knows what
+     * is playing and removes it from the microphone. Otherwise it plays as accessibility speech.
+     */
+    fun useCallPath(on: Boolean) = onMain {
+        callPath = on
+        runCatching { engine?.setAudioAttributes(attributes()) }
+    }
+
+    private var callPath = false
+
+    private fun attributes(): AudioAttributes = AudioAttributes.Builder()
+        .setUsage(if (callPath) AudioAttributes.USAGE_VOICE_COMMUNICATION else AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
+        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+        .build()
+
     fun stop() = onMain {
         stopGeneration++
         val pending = speech
@@ -159,12 +175,7 @@ class TextToSpeechManager(context: Context) {
             // A bit faster than the person's own speech rate (system text-to-speech setting), like the web version.
             val ownRate = Settings.Secure.getInt(context.contentResolver, Settings.Secure.TTS_DEFAULT_RATE, 100) / 100f
             tts.setSpeechRate(ownRate * SPEECH_RATE)
-            tts.setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build(),
-            )
+            tts.setAudioAttributes(attributes())
             tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) = onMain {
                     val pending = speech ?: return@onMain

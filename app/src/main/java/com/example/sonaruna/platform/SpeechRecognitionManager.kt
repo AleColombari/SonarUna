@@ -5,10 +5,12 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioFormat
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.ParcelFileDescriptor
 import android.speech.RecognitionListener
 import android.speech.RecognitionService
 import android.speech.RecognizerIntent
@@ -52,6 +54,15 @@ class SpeechRecognitionManager(context: Context) {
     /** Names on the map ("sala 10B", "financeiro"): recognizers that support it lean towards them (Android 13+). */
     var biasing: List<String> = emptyList()
 
+    /**
+     * Microphone audio with the app's own voice cancelled (Android 13+). While it runs, recognizers listen to it
+     * instead of the raw microphone. If a recognizer refuses it before it ever worked, it is turned off for good
+     * and [onCleanedAudioRefused] is called.
+     */
+    var cleanedAudio: EchoCancelledAudio? = null
+    var onCleanedAudioRefused: (() -> Unit)? = null
+    private var cleanedAudioWorked = false
+
     @Volatile
     private var closed = false
 
@@ -64,6 +75,7 @@ class SpeechRecognitionManager(context: Context) {
         var reconnected: Boolean = false,
         var recognizer: SpeechRecognizer? = null,
         var timeout: Runnable? = null,
+        var stream: ParcelFileDescriptor? = null,
     )
 
     /**
@@ -177,11 +189,22 @@ class SpeechRecognitionManager(context: Context) {
                 override fun onError(error: Int) = onMain {
                     if (!isCurrent(session, attempt)) return@onMain
                     // Only codes are logged, never what was said: enough to tell why recognition failed on a phone.
-                    Log.i(TAG, "Reconhecimento falhou: motor=$engine offline=$offline erro=$error")
+                    val cleaned = session.stream != null
+                    Log.i(TAG, "Reconhecimento falhou: motor=$engine offline=$offline sem-eco=$cleaned erro=$error")
                     if (offline && isLanguageError(error)) {
                         // pt-BR not downloaded for offline use: the same engine, now online (as the web version).
                         preferOffline = false
                         beginAttempt(session, engineIndex)
+                    } else if (cleaned && !cleanedAudioWorked && refusesCleanedAudio(error)) {
+                        // This recognizer does not take audio from the app (or, with it, only works offline without
+                        // pt-BR downloaded): back to the plain microphone, from the first engine.
+                        Log.i(TAG, "Reconhecimento recusou o áudio sem eco; usando o microfone comum")
+                        // With the app's audio, Google's recognizer works offline only: ask it for pt-BR, so the
+                        // echo cancellation works the next time the app opens.
+                        if (isLanguageError(error)) requestOfflinePortuguese(engine)
+                        cleanedAudio?.markUnsupported()
+                        onCleanedAudioRefused?.invoke()
+                        beginAttempt(session, 0)
                     } else if (isDisconnection(error) && !session.reconnected) {
                         // The service dropped this recognizer: reconnect to the same engine once, after a pause so the
                         // service can finish closing the old one, before moving on.
@@ -204,9 +227,10 @@ class SpeechRecognitionManager(context: Context) {
                     if (hypotheses.isEmpty()) {
                         finishError(session, SpeechFailure.NO_SPEECH)
                     } else {
-                        if (workingEngine != engineIndex || session.attempt > 1) {
-                            Log.i(TAG, "Reconhecimento funcionou: motor=$engine offline=$offline")
+                        if (workingEngine != engineIndex || session.attempt > 1 || (session.stream != null && !cleanedAudioWorked)) {
+                            Log.i(TAG, "Reconhecimento funcionou: motor=$engine offline=$offline sem-eco=${session.stream != null}")
                         }
+                        if (session.stream != null) cleanedAudioWorked = true
                         workingEngine = engineIndex
                         active = null
                         disposeRecognizer(session)
@@ -235,6 +259,15 @@ class SpeechRecognitionManager(context: Context) {
                 }
                 // The system recognizer may ignore this preference; offline use is not guaranteed.
                 putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, offline)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    cleanedAudio?.newStream()?.let { stream ->
+                        session.stream = stream
+                        putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, stream)
+                        putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1)
+                        putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING, AudioFormat.ENCODING_PCM_16BIT)
+                        putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE, EchoCancelledAudio.SAMPLE_RATE)
+                    }
+                }
             })
         } catch (_: SecurityException) {
             finishError(session, SpeechFailure.PERMISSION_DENIED)
@@ -245,6 +278,25 @@ class SpeechRecognitionManager(context: Context) {
                 finishError(session, SpeechFailure.UNAVAILABLE)
             }
         }
+    }
+
+    private var offlineModelRequested = false
+
+    /** Asks the recognizer to download pt-BR for offline use (Android 13+). It may show its own confirmation. */
+    private fun requestOfflinePortuguese(engine: Engine) {
+        if (offlineModelRequested || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        offlineModelRequested = true
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "pt-BR")
+        val requester = runCatching {
+            if (engine is Engine.Service) SpeechRecognizer.createSpeechRecognizer(context, engine.component)
+            else SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+        }.getOrNull() ?: return
+        runCatching { requester.triggerModelDownload(intent) }
+            .onSuccess { Log.i(TAG, "Pedido o download do português offline do reconhecimento de voz") }
+            .onFailure { Log.i(TAG, "Download do português offline indisponível: ${it.javaClass.simpleName}") }
+        handler.postDelayed({ runCatching { requester.destroy() } }, MODEL_REQUEST_LINGER_MILLIS)
     }
 
     private fun isCurrent(session: Session, attempt: Int): Boolean =
@@ -270,6 +322,8 @@ class SpeechRecognitionManager(context: Context) {
         session.recognizer = null
         // Cancel only: the recognizer is reused by the next answer.
         runCatching { recognizer?.cancel() }
+        session.stream?.let { runCatching { it.close() } }
+        session.stream = null
     }
 
     private fun onMain(action: () -> Unit) {
@@ -286,6 +340,18 @@ class SpeechRecognitionManager(context: Context) {
         SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED, SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ->
             SpeechFailure.LANGUAGE_UNAVAILABLE
         else -> SpeechFailure.UNKNOWN
+    }
+
+    /**
+     * Errors that mean the recognizer cannot work from the app's audio, not "nothing was said". A language error
+     * counts too: with an audio source, Google's service may only use its offline model, missing if pt-BR was not
+     * downloaded, while the plain microphone works online.
+     */
+    private fun refusesCleanedAudio(error: Int): Boolean = when (error) {
+        SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT,
+        SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT,
+        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> false
+        else -> true
     }
 
     private fun isDisconnection(error: Int): Boolean = error == SpeechRecognizer.ERROR_CLIENT ||
@@ -311,6 +377,7 @@ class SpeechRecognitionManager(context: Context) {
         const val TAG = "SonarUna"
         const val RECONNECT_DELAY_MILLIS = 400L
         const val PHRASE_SILENCE_MILLIS = 1500L
+        const val MODEL_REQUEST_LINGER_MILLIS = 10_000L
 
     }
 }

@@ -34,6 +34,7 @@ Microfone e interrupção
 
 - [ ] Depois de cada pergunta, o microfone abre sozinho: vibração curta e descrição "Ouvindo. Pode falar".
 - [ ] Tocar enquanto o app fala interrompe a fala e já escuta.
+- [ ] **Cancelamento de eco:** com o cabo, `adb logcat -s SonarUna` deve mostrar "Cancelamento de eco ligado" e, depois do português offline baixado (o app pede o download sozinho; reabrir o app depois), "Reconhecimento funcionou ... sem-eco=true". Sem o português offline aparece "recusou o áudio sem eco" e o app segue com o microfone comum.
 - [ ] **Eco:** no alto-falante, sem fone, deixar o app falar até o fim sem dizer nada, várias vezes (na rota e nas perguntas). Ele não pode avançar etapa nem responder à própria voz; o texto embaixo do botão não deve mostrar frases do app.
 - [ ] **Falar por cima:** começar a responder enquanto o app ainda faz a pergunta. A voz do app para e a resposta vale. Testar com o alto-falante e com fone de ouvido, e registrar se o app interrompe a si mesmo (eco) ou se o reconhecedor faz um bipe a cada tentativa.
 - [ ] Tocar enquanto o app escuta pausa a orientação ("Escuta pausada"). Um novo toque retoma onde parou.
