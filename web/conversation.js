@@ -379,6 +379,16 @@ export function createSession(map, getContacts = () => []) {
   }
 
   function hearNavigation(alternatives) {
+    // "E agora quero ir para o banheiro": um destino dito com "quero ir", "para"... vale antes de "e agora" contar
+    // como pronto.
+    if (alternatives.some((text) => {
+      const trip = splitTrip(text);
+      return trip.destino && findPlace(map, trip.destino).kind !== 'none';
+    })) {
+      const previous = destination.id;
+      changeDestination();
+      return hearDestination(alternatives, previous);
+    }
     for (const text of alternatives) {
       switch (classifyCommand(text)) {
         case 'next':

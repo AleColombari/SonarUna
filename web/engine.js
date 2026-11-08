@@ -597,18 +597,23 @@ function floorStep(map, trechos, parts, arrives, passados = 0, faces = undefined
 // Comandos de voz
 
 // Palavras e expressoes soltas em qualquer parte da frase: "acho que sim", "sim sim", "isso ai, pode ir".
+// A mesma lista esta em app/.../guia/Answers.kt; as duas sao geradas juntas e os casos compartilhados conferem.
 const POSITIVE = [
   'sim', 'isso', 'correto', 'correta', 'certo', 'certa', 'confirmo', 'confirmado', 'confirma', 'exato', 'exatamente',
-  'claro', 'ok', 'okay', 'beleza', 'positivo', 'afirmativo', 'perfeito', 'uhum', 'aham', 'certeza', 'pode',
-  'quero', 'bora', 'vamos', 'ta bom', 'esta bom', 'tudo bem', 'e esse', 'e essa', 'e ela', 'e ele', 'esse mesmo',
-  'essa mesma', 'yes',
+  'claro', 'ok', 'okay', 'beleza', 'positivo', 'afirmativo', 'perfeito', 'uhum', 'aham', 'certeza', 'pode', 'quero',
+  'bora', 'vamos', 'vamo', 'ta bom', 'esta bom', 'tudo bem', 'e esse', 'e essa', 'e ela', 'e ele', 'esse mesmo',
+  'essa mesma', 'yes', 'isso mesmo', 'isso ai', 'e isso', 'com certeza', 'sem duvida', 'certissimo', 'certinho',
+  'confere', 'concordo', 'de acordo', 'fechado', 'fechou', 'combinado', 'show', 'otimo', 'otima', 'blz', 'firmeza',
+  'demorou', 'tranquilo', 'suave', 'ta certo', 'esta certo', 'ta ok', 'acertou', 'sim senhor', 'sim senhora',
+  'aham sim', 'hum hum', 'unhum', 'pode crer', 'manda ver', 'manda bala', 'positivo e operante', 'yep', 'yeah',
 ];
 const NEGATIVE = [
-  'nao', 'errado', 'errada', 'incorreto', 'incorreta', 'negativo', 'nunca', 'corrigir', 'corrige', 'trocar',
-  'troca', 'mudar', 'muda', 'nem', 'enganei',
+  'nao', 'errado', 'errada', 'incorreto', 'incorreta', 'negativo', 'nunca', 'corrigir', 'corrige', 'trocar', 'troca',
+  'mudar', 'muda', 'nem', 'enganei', 'jamais', 'de jeito nenhum', 'nada disso', 'que nada', 'negado', 'errei',
+  'errou', 'nem pensar', 'longe disso', 'outro lugar', 'outro local', 'outra sala', 'nope', 'na na', 'nananinanao',
 ];
-// Duvida declarada: nao e resposta, mesmo com "nao" no meio.
-const UNSURE = ['nao sei', 'sei la', 'talvez', 'duvida', 'nao tenho certeza'];
+// Duvida declarada: nao e resposta, mesmo com "nao" no meio. ("sem duvida" e sim: por isso nao ha "duvida" sozinha.)
+const UNSURE = ['nao sei', 'sei la', 'talvez', 'tenho duvida', 'em duvida', 'na duvida', 'nao tenho certeza', 'acho que nao sei'];
 
 const containsAny = (normalizedText, phrases) => phrases.some((phrase) => containsPhrase(normalizedText, phrase));
 
@@ -637,22 +642,50 @@ const COMMANDS = [
     'estou perdida', 'chamar atendente', 'chamar seguranca', 'falar com atendente', 'falar com um atendente',
     'falar com o atendente', 'falar com seguranca', 'falar com a seguranca', 'falar com um seguranca',
   ]],
-  // "sair" nao para a orientacao: "quero sair" e um destino (a saida mais perto, no mapa).
-  ['stop', ['parar', 'pare', 'cancelar', 'cancela', 'encerrar', 'finalizar']],
-  ['restart', ['recomecar', 'reiniciar', 'comecar de novo']],
+  // "sair" nao para a orientacao: "quero sair" e um destino. "para" sozinho tambem nao: e preposicao.
+  ['stop', [
+    'parar', 'pare', 'cancelar', 'cancela', 'encerrar', 'encerra', 'finalizar', 'finaliza', 'desligar', 'desliga',
+    'tchau', 'fechar o app', 'fechar o aplicativo', 'pode parar', 'para tudo',
+  ]],
+  ['restart', [
+    'recomecar', 'reiniciar', 'comecar de novo', 'do comeco', 'desde o comeco',
+  ]],
   // Trocar so o destino mantem onde a pessoa esta (ou onde terminou a ultima etapa feita).
-  ['destination', ['novo destino', 'outro destino', 'nova rota', 'outra rota', 'mudar o destino', 'mudar destino', 'trocar o destino', 'trocar destino']],
-  ['remaining', ['quanto falta', 'falta muito', 'quantas etapas faltam', 'quantas faltam']],
+  ['destination', [
+    'novo destino', 'outro destino', 'nova rota', 'outra rota', 'mudar o destino', 'mudar destino',
+    'trocar o destino', 'trocar destino', 'mudar de destino', 'quero ir para outro lugar', 'ir para outro lugar',
+  ]],
+  ['remaining', [
+    'quanto falta', 'falta muito', 'quantas etapas faltam', 'quantas faltam', 'falta quanto', 'falta pouco',
+    'ta longe', 'esta longe', 'ainda falta', 'quantas etapas',
+  ]],
   // Antes de 'repeat', porque "repete o caminho" tem "repete".
   ['overview', [
-    'repasse o caminho', 'repassa o caminho', 'repassar o caminho', 'repete o caminho', 'repita o caminho', 'caminho todo',
-    'caminho completo', 'resumo do caminho', 'resumo da rota',
+    'repasse o caminho', 'repassa o caminho', 'repassar o caminho', 'repete o caminho', 'repita o caminho',
+    'caminho todo', 'caminho completo', 'resumo do caminho', 'resumo da rota', 'me fala o caminho',
+    'qual e o caminho', 'como e o caminho',
   ]],
-  ['where', ['onde estou', 'onde eu estou', 'aonde estou', 'aonde eu estou']],
-  ['help', ['ajuda']],
-  ['repeat', ['repetir', 'repete', 'repita', 'de novo', 'nao ouvi', 'nao entendi']],
-  ['back', ['voltar', 'volta', 'anterior', 'passo anterior']],
-  ['next', ['pronto', 'proximo', 'continuar', 'continua', 'seguir', 'cheguei', 'ok', 'feito', 'ja fui', 'ja andei']],
+  ['where', [
+    'onde estou', 'onde eu estou', 'aonde estou', 'aonde eu estou', 'onde eu to', 'onde to', 'onde e que eu estou',
+    'em que lugar eu estou', 'em que lugar estou', 'onde estamos',
+  ]],
+  ['help', [
+    'ajuda', 'o que eu posso falar', 'o que eu posso dizer', 'como funciona', 'quais comandos',
+  ]],
+  ['repeat', [
+    'repetir', 'repete', 'repita', 'de novo', 'nao ouvi', 'nao entendi', 'nao escutei', 'nao captei', 'outra vez',
+    'mais uma vez', 'hein', 'o que voce disse', 'o que voce falou', 'fala de novo', 'como e que e',
+  ]],
+  ['back', [
+    'voltar', 'volta', 'volte', 'anterior', 'passo anterior', 'etapa anterior', 'a de antes',
+  ]],
+  // Concordar ("certo", "beleza") nao e "pronto": a pessoa pode so ter entendido, sem ter andado ainda.
+  ['next', [
+    'pronto', 'pronta', 'prontinho', 'proximo', 'proxima', 'proxima etapa', 'proximo passo', 'continuar', 'continua',
+    'continue', 'seguir', 'segue', 'avancar', 'avanca', 'cheguei', 'ja cheguei', 'ok', 'feito', 'fiz', 'terminei',
+    'acabei', 'consegui', 'ja fui', 'ja andei', 'ja fiz', 'ja passei', 'e agora', 'e depois', 'e dai',
+    'qual a proxima', 'qual e a proxima', 'manda a proxima', 'pode mandar', 'pode continuar', 'pode seguir', 'next',
+  ]],
 ];
 
 /** 'assist' | 'stop' | 'restart' | 'destination' | 'remaining' | 'overview' | 'where' | 'help' | 'repeat' | 'back' | 'next' | null. */

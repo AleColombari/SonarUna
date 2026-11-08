@@ -410,6 +410,13 @@ class Conversation(private val map: FloorMap) {
     }
 
     private fun hearNavigation(heard: List<String>): Reply {
+        // "E agora quero ir para o banheiro": a destination said with "quero ir", "para"... wins before "e agora"
+        // counts as "pronto".
+        if (heard.any { text -> splitTrip(text).destino?.let { map.findPlace(it) !is PlaceMatch.None } == true }) {
+            val previous = destination!!.id
+            changeDestination()
+            return hearDestination(heard, avoid = previous)
+        }
         for (text in heard) {
             when (classifyCommand(text)) {
                 Command.NEXT -> {

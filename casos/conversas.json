@@ -1343,6 +1343,225 @@
           ]
         }
       ]
+    },
+    {
+      "nome": "vocabulario de conversa: jeitos de dizer sim, nao, pronto e repetir",
+      "gps": {
+        "lat": -21.2030256,
+        "lon": -47.779547,
+        "precisao": 5
+      },
+      "passos": [
+        [
+          "isso mesmo"
+        ],
+        [
+          "sala 15B"
+        ],
+        [
+          "beleza"
+        ],
+        [
+          "prontinho"
+        ],
+        [
+          "e agora?"
+        ],
+        [
+          "hein?"
+        ],
+        [
+          "tá longe?"
+        ],
+        [
+          "onde eu tô?"
+        ],
+        [
+          "e agora quero ir pro financeiro"
+        ],
+        [
+          "de jeito nenhum"
+        ],
+        [
+          "sala 20B"
+        ],
+        [
+          "terminei"
+        ],
+        [
+          "etapa anterior"
+        ],
+        [
+          "tchau"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "confirm-origin",
+          "ouvir": true,
+          "dizer": [
+            "Parece que você está na entrada principal. Está certo?"
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está na entrada principal. Para onde você quer ir?"
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Indo para a sala 15B, em 4 etapas.",
+            "Etapa 1 de 4. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": []
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 2. Siga em frente pelo piso tátil por 5 cruzamentos. Referência: porta da entrada do bloco B, sempre aberta."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 3. Daqui a 3 cruzamentos, vire à direita."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 3. Daqui a 3 cruzamentos, vire à direita."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Você está na etapa 3 de 4. Depois desta, falta 1 etapa até a sala 15B."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Se você terminou a etapa 2, está no cruzamento do banheiro feminino e do audiovisual.",
+            "Etapa 3. Daqui a 3 cruzamentos, vire à direita."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Indo para o financeiro, em 5 etapas.",
+            "Etapa 1 de 5. Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Certo. Para onde você quer ir?"
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Indo para a sala 20B, em 2 etapas.",
+            "Etapa 1 de 2. Dê meia-volta e siga o piso tátil. Daqui a 3 cruzamentos, vire à direita. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Última etapa. Siga em frente pelo piso tátil até o fim. Você chegará na sala 20B."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 1 de 2. Dê meia-volta e siga o piso tátil. Daqui a 3 cruzamentos, vire à direita. Quando terminar, diga pronto."
+          ]
+        },
+        {
+          "fase": "idle",
+          "ouvir": false,
+          "dizer": [
+            "Orientação encerrada. Toque no botão para começar de novo."
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "gps: nada disso pergunta onde a pessoa esta",
+      "gps": {
+        "lat": -21.2030256,
+        "lon": -47.779547,
+        "precisao": 5
+      },
+      "passos": [
+        [
+          "nada disso"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "confirm-origin",
+          "ouvir": true,
+          "dizer": [
+            "Parece que você está na entrada principal. Está certo?"
+          ]
+        },
+        {
+          "fase": "entrance",
+          "ouvir": true,
+          "dizer": [
+            "Tudo bem. Onde você está agora?"
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "gps: sem duvida confirma",
+      "gps": {
+        "lat": -21.2030256,
+        "lon": -47.779547,
+        "precisao": 5
+      },
+      "passos": [
+        [
+          "sem dúvida"
+        ]
+      ],
+      "esperado": [
+        {
+          "fase": "confirm-origin",
+          "ouvir": true,
+          "dizer": [
+            "Parece que você está na entrada principal. Está certo?"
+          ]
+        },
+        {
+          "fase": "destination",
+          "ouvir": true,
+          "dizer": [
+            "Você está na entrada principal. Para onde você quer ir?"
+          ]
+        }
+      ]
     }
   ]
 }

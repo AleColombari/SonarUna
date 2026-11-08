@@ -294,3 +294,24 @@ test('splitTrip separa onde a pessoa esta e para onde quer ir, em qualquer ordem
   assert.deepEqual(splitTrip('3A e 10B'), { origem: '3 a', destino: '10 b' });
   assert.deepEqual(splitTrip('quero sair'), { origem: null, destino: 'sair' });
 });
+
+test('vocabulario de conversa: mais jeitos de dizer sim, nao e pronto, sem confundir', () => {
+  for (const text of ['isso mesmo', 'com certeza', 'sem dúvida', 'fechou', 'pode crer', 'tá certo', 'claro que sim']) {
+    assert.equal(classifyYesNo(text), 'yes', text);
+  }
+  for (const text of ['de jeito nenhum', 'nada disso', 'nem pensar', 'claro que não', 'outro lugar']) {
+    assert.equal(classifyYesNo(text), 'no', text);
+  }
+  for (const text of ['não tenho certeza', 'talvez', 'sei lá']) assert.equal(classifyYesNo(text), null, text);
+  for (const text of ['prontinho', 'próxima', 'e agora?', 'terminei', 'já fiz', 'pode continuar']) {
+    assert.equal(classifyCommand(text), 'next', text);
+  }
+  // Concordar nao e ter andado; preposicoes e a propria fala do app nao sao comandos.
+  for (const text of ['certo', 'beleza', 'para a 10B', 'no cruzamento', 'siga em frente']) {
+    assert.equal(classifyCommand(text), null, text);
+  }
+  assert.equal(classifyCommand('hein?'), 'repeat');
+  assert.equal(classifyCommand('tá longe?'), 'remaining');
+  assert.equal(classifyCommand('onde eu tô?'), 'where');
+  assert.equal(classifyCommand('tchau'), 'stop');
+});

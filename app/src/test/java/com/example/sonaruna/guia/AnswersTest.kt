@@ -44,4 +44,26 @@ class AnswersTest {
         assertEquals("a 15 sala", normalize("  Á-15,  Sala!! "))
         assertEquals("a 15", normalize("A15"))
     }
+
+    @Test
+    fun `more ways to say yes, no and pronto, without mixing them up`() {
+        for (text in listOf("isso mesmo", "com certeza", "sem dúvida", "fechou", "pode crer", "tá certo", "claro que sim")) {
+            assertEquals(text, YesNo.YES, classifyYesNo(text))
+        }
+        for (text in listOf("de jeito nenhum", "nada disso", "nem pensar", "claro que não", "outro lugar")) {
+            assertEquals(text, YesNo.NO, classifyYesNo(text))
+        }
+        for (text in listOf("não tenho certeza", "talvez", "sei lá")) assertNull(text, classifyYesNo(text))
+        for (text in listOf("prontinho", "próxima", "e agora?", "terminei", "já fiz", "pode continuar")) {
+            assertEquals(text, Command.NEXT, classifyCommand(text))
+        }
+        // Agreeing is not having walked; prepositions and the app's own words are not commands.
+        for (text in listOf("certo", "beleza", "para a 10B", "no cruzamento", "siga em frente")) {
+            assertNull(text, classifyCommand(text))
+        }
+        assertEquals(Command.REPEAT, classifyCommand("hein?"))
+        assertEquals(Command.REMAINING, classifyCommand("tá longe?"))
+        assertEquals(Command.WHERE, classifyCommand("onde eu tô?"))
+        assertEquals(Command.STOP, classifyCommand("tchau"))
+    }
 }
