@@ -22,10 +22,8 @@ test('fluxo completo: entrada principal, sala A12 e tres passos, sem confirmar o
   assert.equal(route.phase, 'navigating');
   assert.match(said(route), /^Indo para a sala A12: 60 passos, em 3 etapas/);
   assert.match(said(route), /Etapa 1 de 3\. Siga em frente/);
-  // "Sim" no caminho e so concordar: o app segue ouvindo, calado.
-  assert.deepEqual(session.hear(['sim']).say, []);
-
-  assert.match(said(session.hear(['pronto'])), /^Etapa 2\. Vire à direita/);
+  // "Foi", "sim" ou "pronto": a etapa foi feita.
+  assert.match(said(session.hear(['foi'])), /^Etapa 2\. Vire à direita/);
   assert.doesNotMatch(said(session.hear(['repetir'])), /diga pronto/);
   assert.match(said(session.hear(['voltar'])), /^Etapa 1 de 3/);
   session.hear(['próximo']);
@@ -140,7 +138,6 @@ test('instrucao nao entendida durante a rota nao muda de passo', () => {
   session.start();
   session.hear(['lateral']);
   session.hear(['sala A12']);
-  session.hear(['sim']);
   const result = session.hear(['banana']);
   assert.match(said(result), /Diga pronto para a próxima etapa/);
   assert.match(said(session.hear(['repetir'])), /Etapa 1 de 2/);
@@ -156,7 +153,6 @@ const toNavigation = (session) => {
   session.start();
   session.hear(['principal']);
   session.hear(['sala A12']);
-  session.hear(['sim']);
   return session;
 };
 

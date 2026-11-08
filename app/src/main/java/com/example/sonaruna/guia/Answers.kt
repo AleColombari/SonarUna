@@ -43,6 +43,7 @@ fun classifyYesNo(text: String): YesNo? {
 }
 
 private val commands = listOf(
+    private val commands = listOf(
     // "preciso de ajuda" asks for someone; "ajuda" alone only explains the app, so ASSIST comes before HELP.
     Command.ASSIST to listOf(
         "preciso de ajuda", "preciso de socorro", "preciso de um atendente", "preciso de atendente", "quero ajuda",
@@ -87,13 +88,14 @@ private val commands = listOf(
     Command.BACK to listOf(
         "voltar", "volta", "volte", "anterior", "passo anterior", "etapa anterior", "a de antes",
     ),
-    // Agreeing ("certo", "beleza") is not "pronto": the person may have only understood, without walking yet.
+    // On the way, any "yes" ("beleza", "certo", "isso") also goes to the next step (Conversation.kt).
     Command.NEXT to listOf(
         "pronto", "pronta", "prontinho", "proximo", "proxima", "proxima etapa", "proximo passo", "continuar",
         "continua", "continue", "seguir", "segue", "avancar", "avanca", "cheguei", "ja cheguei", "ok", "feito",
         "fiz", "terminei", "acabei", "consegui", "ja fui", "ja andei", "ja fiz", "ja passei", "e agora", "e depois",
         "e dai", "qual a proxima", "qual e a proxima", "manda a proxima", "pode mandar", "pode continuar",
-        "pode seguir", "next",
+        "pode seguir", "next", "foi", "fui", "ja", "andei", "passei", "ta feito", "esta feito", "cheguei la",
+        "to la", "estou la", "ja era",
     ),
 )
 

@@ -1281,13 +1281,16 @@
       ]
     },
     {
-      "nome": "no caminho, sim fica calado e nao pergunta o destino de novo",
+      "nome": "no caminho, foi e sim passam a etapa; nao pergunta o destino de novo",
       "passos": [
         [
           "sala 5A"
         ],
         [
           "10B"
+        ],
+        [
+          "foi"
         ],
         [
           "sim"
@@ -1325,7 +1328,16 @@
         {
           "fase": "navigating",
           "ouvir": true,
-          "dizer": []
+          "dizer": [
+            "Etapa 2. Siga em frente pelo piso tátil por 5 cruzamentos."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Etapa 3. Daqui a 3 cruzamentos, vire à direita."
+          ]
         },
         {
           "fase": "destination",
@@ -1338,8 +1350,8 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Indo para a sala 20B, em 11 etapas.",
-            "Etapa 1 de 11. No próximo cruzamento, vire à esquerda. Quando terminar, diga pronto."
+            "Indo para a sala 20B, em 9 etapas.",
+            "Etapa 1 de 9. Daqui a 3 cruzamentos, vire à direita. Quando terminar, diga pronto."
           ]
         }
       ]
@@ -1421,11 +1433,6 @@
         {
           "fase": "navigating",
           "ouvir": true,
-          "dizer": []
-        },
-        {
-          "fase": "navigating",
-          "ouvir": true,
           "dizer": [
             "Etapa 2. Siga em frente pelo piso tátil por 5 cruzamentos. Referência: porta da entrada do bloco B, sempre aberta."
           ]
@@ -1441,22 +1448,29 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 3. Daqui a 3 cruzamentos, vire à direita."
+            "Última etapa. Siga em frente pelo piso tátil até o fim. Você chegará na sala 15B."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Você está na etapa 3 de 4. Depois desta, falta 1 etapa até a sala 15B."
+            "Última etapa. Siga em frente pelo piso tátil até o fim. Você chegará na sala 15B."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Se você terminou a etapa 2, está no cruzamento do banheiro feminino e do audiovisual.",
-            "Etapa 3. Daqui a 3 cruzamentos, vire à direita."
+            "Esta é a última etapa até a sala 15B."
+          ]
+        },
+        {
+          "fase": "navigating",
+          "ouvir": true,
+          "dizer": [
+            "Se você terminou a etapa 3, está no cruzamento da sala 15B.",
+            "Última etapa. Siga em frente pelo piso tátil até o fim. Você chegará na sala 15B."
           ]
         },
         {
@@ -1464,7 +1478,7 @@
           "ouvir": true,
           "dizer": [
             "Indo para o financeiro, em 5 etapas.",
-            "Etapa 1 de 5. Siga em frente pelo piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
+            "Etapa 1 de 5. Vire à esquerda e siga o piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
           ]
         },
         {
@@ -1478,22 +1492,22 @@
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Indo para a sala 20B, em 2 etapas.",
-            "Etapa 1 de 2. Dê meia-volta e siga o piso tátil. Daqui a 3 cruzamentos, vire à direita. Quando terminar, diga pronto."
+            "Indo para a sala 20B, em 3 etapas.",
+            "Etapa 1 de 3. Vire à direita e siga o piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Última etapa. Siga em frente pelo piso tátil até o fim. Você chegará na sala 20B."
+            "Etapa 2. No próximo cruzamento, vire à direita."
           ]
         },
         {
           "fase": "navigating",
           "ouvir": true,
           "dizer": [
-            "Etapa 1 de 2. Dê meia-volta e siga o piso tátil. Daqui a 3 cruzamentos, vire à direita. Quando terminar, diga pronto."
+            "Etapa 1 de 3. Vire à direita e siga o piso tátil por 5 cruzamentos. Quando terminar, diga pronto."
           ]
         },
         {

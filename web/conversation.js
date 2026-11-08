@@ -390,7 +390,8 @@ export function createSession(map, getContacts = () => []) {
       return hearDestination(alternatives, previous);
     }
     for (const text of alternatives) {
-      switch (classifyCommand(text)) {
+      // "Pronto", "foi" ou qualquer sim ("beleza", "isso", "certo"): a etapa foi feita.
+      switch (classifyCommand(text) ?? (classifyYesNo(text) === 'yes' ? 'next' : null)) {
         case 'next':
           if (index + 1 >= steps.length) {
             // Chegou: o destino vira o novo ponto de partida e o app ja escuta o proximo, sem precisar tocar.
@@ -418,8 +419,6 @@ export function createSession(map, getContacts = () => []) {
       changeDestination();
       return hearDestination(alternatives, previous);
     }
-    // "Sim" ou "ok" no caminho e so a pessoa concordando: o app segue ouvindo, calado.
-    if (alternatives.some((text) => classifyYesNo(text) === 'yes')) return reply([]);
     // "Nao" no caminho: o destino ouvido estava errado; pergunta de novo, sem perder onde a pessoa esta.
     if (alternatives.some((text) => classifyYesNo(text) === 'no' && normalize(text).split(' ').length <= 4)) return changeDestination();
     return reply(['Não entendi. Diga pronto para a próxima etapa, repetir, voltar ou parar.']);

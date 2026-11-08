@@ -679,12 +679,13 @@ const COMMANDS = [
   ['back', [
     'voltar', 'volta', 'volte', 'anterior', 'passo anterior', 'etapa anterior', 'a de antes',
   ]],
-  // Concordar ("certo", "beleza") nao e "pronto": a pessoa pode so ter entendido, sem ter andado ainda.
+  // No caminho, um "sim" qualquer ("beleza", "certo", "isso") tambem passa para a proxima etapa (conversation.js).
   ['next', [
     'pronto', 'pronta', 'prontinho', 'proximo', 'proxima', 'proxima etapa', 'proximo passo', 'continuar', 'continua',
     'continue', 'seguir', 'segue', 'avancar', 'avanca', 'cheguei', 'ja cheguei', 'ok', 'feito', 'fiz', 'terminei',
     'acabei', 'consegui', 'ja fui', 'ja andei', 'ja fiz', 'ja passei', 'e agora', 'e depois', 'e dai',
     'qual a proxima', 'qual e a proxima', 'manda a proxima', 'pode mandar', 'pode continuar', 'pode seguir', 'next',
+    'foi', 'fui', 'ja', 'andei', 'passei', 'ta feito', 'esta feito', 'cheguei la', 'to la', 'estou la', 'ja era',
   ]],
 ];
 

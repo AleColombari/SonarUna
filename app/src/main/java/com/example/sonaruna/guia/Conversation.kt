@@ -418,7 +418,8 @@ class Conversation(private val map: FloorMap) {
             return hearDestination(heard, avoid = previous)
         }
         for (text in heard) {
-            when (classifyCommand(text)) {
+            // "Pronto", "foi" or any yes ("beleza", "isso", "certo"): the step is done.
+            when (classifyCommand(text) ?: if (classifyYesNo(text) == YesNo.YES) Command.NEXT else null) {
                 Command.NEXT -> {
                     if (index + 1 >= steps.size) {
                         // Arrived: the destination becomes the new starting place and the app already listens for the next.
@@ -447,8 +448,6 @@ class Conversation(private val map: FloorMap) {
             changeDestination()
             return hearDestination(heard, avoid = previous)
         }
-        // "Sim" or "ok" on the way is just the person agreeing: the app keeps listening, quietly.
-        if (heard.any { classifyYesNo(it) == YesNo.YES }) return reply(emptyList())
         // "Não" on the way: the destination heard was wrong; ask again without losing where the person is.
         if (heard.any { classifyYesNo(it) == YesNo.NO && normalize(it).split(' ').size <= 4 }) return changeDestination()
         return reply("Não entendi. Diga pronto para a próxima etapa, repetir, voltar ou parar.")

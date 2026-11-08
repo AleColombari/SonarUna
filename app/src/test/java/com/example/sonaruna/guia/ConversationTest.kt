@@ -92,9 +92,8 @@ class ConversationTest {
         assertEquals(Phase.NAVIGATING, go.phase)
         assertEquals("Indo para o banheiro feminino do bloco A, em 3 etapas.", go.say[0])
         assertTrue(go.say[1].startsWith("Etapa 1 de 3. "))
-        // Agreeing on the way is quiet.
-        assertEquals(emptyList<String>(), session.hear(listOf("isso")).say)
-        assertTrue(session.hear(listOf("pronto")).say[0].startsWith("Etapa 2. "))
+        // "Isso", "foi" or "pronto": the step is done.
+        assertTrue(session.hear(listOf("isso")).say[0].startsWith("Etapa 2. "))
         assertTrue(session.hear(listOf("voltar")).say[0].startsWith("Etapa 1 de 3. "))
         session.hear(listOf("pronto"))
         session.hear(listOf("pronto"))
