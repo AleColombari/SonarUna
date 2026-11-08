@@ -250,7 +250,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * microphone already listens while the voice speaks, so the person can answer over it (as in the web version).
      */
     private suspend fun deliver(reply: Reply) {
-        val turn = if (VOICE_INTERRUPTION && reply.listen && foreground && permissions.microphone) SpokenTurn() else null
+        // Listening while speaking (the person answers over the voice) only with the echo canceller on: without it
+        // the microphone hears the loudspeaker and the app takes its own voice for the person. Then it listens right
+        // after speaking, and a tap still interrupts the voice.
+        val bargeIn = VOICE_INTERRUPTION && cleanedAudio.active
+        val turn = if (bargeIn && reply.listen && foreground && permissions.microphone) SpokenTurn() else null
         turn?.let { startRecognition(duringSpeech = it) }
         // The whole reply queued at once: no gap between its sentences, so the voice flows.
         val lines = reply.say.filter(String::isNotBlank)
@@ -557,7 +561,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         const val MAP_ASSET = "unaerp.json"
         const val GPS_ASSET = "unaerp-pontos.geojson"
 
-        /** Listen while speaking, so the person can answer over the app. Set false if a phone cuts its own voice. */
+        /** Listen while speaking (with the echo canceller on), so the person can answer over the app. */
         const val VOICE_INTERRUPTION = true
 
         const val REOPEN_DELAY_MILLIS = 300L
