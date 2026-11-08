@@ -14,6 +14,14 @@ fun normalize(text: String): String {
     return spaces.replace(letterDigitBoundary.replace(separators.replace(plain, " "), " ").trim(), " ")
 }
 
+// Letter names of the blocks, so the voice reads "5B" as "5 bê": some voices read "5B" as "5 billion".
+private val letterSounds = mapOf('A' to "á", 'B' to "bê", 'C' to "cê", 'D' to "dê", 'E' to "é", 'F' to "éfe", 'G' to "gê", 'H' to "agá", 'I' to "i", 'J' to "jota", 'K' to "cá", 'L' to "éle", 'M' to "ême", 'N' to "êne", 'O' to "ó", 'P' to "pê", 'Q' to "quê", 'R' to "érre", 'S' to "ésse")
+private val roomCode = Regex("""\b(\d+)([A-S])\b""")
+
+/** Text for the voice: room "5B" becomes "5 bê". The text on screen stays "5B". Same as forSpeech in web/engine.js. */
+fun forSpeech(text: String): String =
+    roomCode.replace(text) { match -> "${match.groupValues[1]} ${letterSounds.getValue(match.groupValues[2][0])}" }
+
 /** Whole-word phrase match on already normalized text, so "sim" never matches "simples". */
 internal fun containsPhrase(normalized: String, phrase: String): Boolean = " $normalized ".contains(" $phrase ")
 

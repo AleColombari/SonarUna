@@ -1,6 +1,14 @@
 // Motor do SonarUna: reconhecimento de lugares falados, rota e instrucoes.
 // Nao depende do navegador, entao roda tambem no Node para os testes.
 
+// Nome das letras dos blocos, para a voz ler "5B" como "5 bê": algumas vozes leem "5B" como "5 bilhoes".
+const LETTER_SOUNDS = { A: 'á', B: 'bê', C: 'cê', D: 'dê', E: 'é', F: 'éfe', G: 'gê', H: 'agá', I: 'i', J: 'jota', K: 'cá', L: 'éle', M: 'ême', N: 'êne', O: 'ó', P: 'pê', Q: 'quê', R: 'érre', S: 'ésse' };
+
+/** Texto para a voz: sala "5B" vira "5 bê". O texto na tela continua "5B". */
+export function forSpeech(text) {
+  return String(text).replace(/\b(\d+)([A-S])\b/g, (_, number, letter) => `${number} ${LETTER_SOUNDS[letter]}`);
+}
+
 /** Minusculas, sem acentos, sem pontuacao; letras e numeros colados sao separados ("a15" -> "a 15"). */
 export function normalize(text) {
   return String(text ?? '')

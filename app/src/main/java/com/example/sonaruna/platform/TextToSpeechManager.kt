@@ -8,6 +8,7 @@ import android.provider.Settings
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
+import com.example.sonaruna.guia.forSpeech
 import java.util.Locale
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.Dispatchers
@@ -89,7 +90,8 @@ class TextToSpeechManager(context: Context) {
      */
     suspend fun speak(sentences: List<String>, onPart: ((Int) -> Unit)? = null): Boolean = withContext(Dispatchers.Main.immediate) {
         val generation = stopGeneration
-        val parts = sentences.filter(String::isNotBlank)
+        // "5B" read as "5 bê", not "5 billion".
+        val parts = sentences.filter(String::isNotBlank).map(::forSpeech)
         val text = parts.joinToString(" ")
         speechMutex.withLock {
             if (closed || !ready || generation != stopGeneration || parts.isEmpty()) return@withLock false

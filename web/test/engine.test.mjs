@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  ateLugar, buildInstructions, classifyCommand, emLugar, findContact, paraLugar, roundSteps, stepsPhrase, classifyYesNo, findEntrance, findPlace, loadMap, normalize, parseRoomCode, planRoute, splitTrip,
+  ateLugar, buildInstructions, classifyCommand, emLugar, findContact, paraLugar, roundSteps, stepsPhrase, classifyYesNo, findEntrance, findPlace, loadMap, normalize, parseRoomCode, planRoute, splitTrip, forSpeech,
 } from '../engine.js';
 
 const map = loadMap(JSON.parse(readFileSync(new URL('../../data/bloco-a.json', import.meta.url), 'utf8')));
@@ -314,4 +314,11 @@ test('vocabulario de conversa: mais jeitos de dizer sim, nao e pronto, sem confu
   assert.equal(classifyCommand('tá longe?'), 'remaining');
   assert.equal(classifyCommand('onde eu tô?'), 'where');
   assert.equal(classifyCommand('tchau'), 'stop');
+});
+
+test('forSpeech: a voz le o bloco pelo nome da letra ("5 bê", nao "5 bilhoes")', () => {
+  assert.equal(forSpeech('Indo para a sala 5B, em 3 etapas.'), 'Indo para a sala 5 bê, em 3 etapas.');
+  assert.equal(forSpeech('Da sala 20B para a sala 9A.'), 'Da sala 20 bê para a sala 9 á.');
+  // Numeros soltos, "1 e 2" e codigos com a letra antes (A12) ficam como estao.
+  assert.equal(forSpeech('Etapa 1 de 3. Etapas 1 e 2. Sala A12.'), 'Etapa 1 de 3. Etapas 1 e 2. Sala A12.');
 });

@@ -43,7 +43,6 @@ fun classifyYesNo(text: String): YesNo? {
 }
 
 private val commands = listOf(
-    private val commands = listOf(
     // "preciso de ajuda" asks for someone; "ajuda" alone only explains the app, so ASSIST comes before HELP.
     Command.ASSIST to listOf(
         "preciso de ajuda", "preciso de socorro", "preciso de um atendente", "preciso de atendente", "quero ajuda",

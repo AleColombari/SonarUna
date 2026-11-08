@@ -10,6 +10,8 @@ import android.media.MediaRecorder
 import android.media.audiofx.AcousticEchoCanceler
 import android.media.audiofx.NoiseSuppressor
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import java.io.FileOutputStream
@@ -23,6 +25,10 @@ import java.io.IOException
  *
  * One recording runs while the conversation is on screen, so the canceller stays adapted to the room; each recognition
  * gets a fresh pipe fed from it. Nothing is saved: the audio only goes to the recognizer.
+ *
+ * When the recognizer refuses that audio (Google's only takes it offline, with pt-BR downloaded), the same cleaned
+ * microphone still serves to notice the person speaking over the voice ([startDetecting]): the voice stops and the
+ * plain recognizer listens. That needs no recognizer at all, only the loudness of the cleaned audio.
  */
 class EchoCancelledAudio(context: Context) {
     private val audioManager = context.applicationContext.getSystemService(AudioManager::class.java)
@@ -41,17 +47,47 @@ class EchoCancelledAudio(context: Context) {
     var unsupported = false
         private set
 
+    /** The recognizer may take the cleaned audio (Android 13+, not refused yet). */
     val supported: Boolean
-        get() = !unsupported && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && AcousticEchoCanceler.isAvailable()
+        get() = !unsupported && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && canDetect
 
-    val active: Boolean get() = running
+    /** The phone has an echo canceller: the cleaned microphone can at least tell when the person speaks. */
+    val canDetect: Boolean get() = runCatching { AcousticEchoCanceler.isAvailable() }.getOrDefault(false)
 
-    /** Starts the call path and the recording. False when the phone cannot do it; then nothing changed. */
-    @SuppressLint("MissingPermission") // The caller only starts this after RECORD_AUDIO was granted.
+    /** Running and feeding the recognizer. */
+    val active: Boolean get() = running && !unsupported
+
+    private val main = Handler(Looper.getMainLooper())
+
+    @Volatile
+    private var detector: VoiceDetector? = null
+
+    @Volatile
+    private var onVoice: (() -> Unit)? = null
+
+    /** Starts the call path and the recording that feeds the recognizer. False when the phone cannot do it. */
     @Synchronized
     fun start(): Boolean {
         if (running) return true
         if (!supported) return false
+        return open()
+    }
+
+    /**
+     * While the app speaks: records the cleaned microphone and calls [voice] (on the main thread, once) as soon as the
+     * person is heard speaking over it. False when the phone cannot do it. [stop] ends it.
+     */
+    @Synchronized
+    fun startDetecting(voice: () -> Unit): Boolean {
+        if (!running && (!canDetect || !open())) return false
+        onVoice = voice
+        detector = VoiceDetector()
+        return true
+    }
+
+    /** Starts the call path and the recording. False when the phone cannot do it; then nothing changed. */
+    @SuppressLint("MissingPermission") // The caller only starts this after RECORD_AUDIO was granted.
+    private fun open(): Boolean {
         val minimum = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
         if (minimum <= 0) return false
         val recorder = runCatching {
@@ -103,6 +139,8 @@ class EchoCancelledAudio(context: Context) {
 
     @Synchronized
     fun stop() {
+        detector = null
+        onVoice = null
         if (!running) return
         running = false
         output?.let(::closeOutput)
@@ -125,6 +163,7 @@ class EchoCancelledAudio(context: Context) {
         while (running) {
             val read = recorder.read(buffer, 0, buffer.size)
             if (read <= 0) continue
+            detector?.let { detect(it, buffer, read) }
             val stream = output ?: continue
             try {
                 stream.write(buffer, 0, read)
@@ -134,6 +173,15 @@ class EchoCancelledAudio(context: Context) {
                 closeOutput(stream)
             }
         }
+    }
+
+    private fun detect(voiceDetector: VoiceDetector, buffer: ByteArray, length: Int) {
+        if (!voiceDetector.feed(VoiceDetector.rms(buffer, length))) return
+        val voice = onVoice ?: return
+        detector = null
+        onVoice = null
+        Log.i(TAG, "Voz da pessoa detectada durante a fala (${voiceDetector.describe()})")
+        main.post(voice)
     }
 
     private fun release(recorder: AudioRecord) {

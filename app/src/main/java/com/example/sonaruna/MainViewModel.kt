@@ -133,6 +133,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun stopEchoCancellation() {
+        detectingVoice = false
         cleanedAudio.stop()
         voice.useCallPath(false)
     }
@@ -256,6 +257,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val bargeIn = VOICE_INTERRUPTION && cleanedAudio.active
         val turn = if (bargeIn && reply.listen && foreground && permissions.microphone) SpokenTurn() else null
         turn?.let { startRecognition(duringSpeech = it) }
+        // When the recognizer does not take the cleaned audio, the cleaned microphone still notices the person speaking
+        // over the voice: the voice stops and the plain recognizer listens (the start of the phrase may be lost).
+        val detecting = turn == null && VOICE_INTERRUPTION && reply.listen && foreground && permissions.microphone &&
+            reply.say.any(String::isNotBlank) && startVoiceDetection()
         // The whole reply queued at once: no gap between its sentences, so the voice flows.
         val lines = reply.say.filter(String::isNotBlank)
         if (lines.isNotEmpty() && turn?.interrupted != true) {
@@ -265,6 +270,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             ) return
         }
         turn?.active = false
+        if (detecting) endVoiceDetection()
         // Interrupted: the recognition that started during the speech has the floor and delivers the answer.
         if (turn?.interrupted == true) return
         when {
@@ -325,8 +331,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         generation++
         operation?.cancel()
         voice.stop()
+        endVoiceDetection()
         speaking = false
         startRecognition()
+    }
+
+    private var detectingVoice = false
+
+    /** Voice on the call path and the cleaned microphone watching for the person (see EchoCancelledAudio). */
+    private fun startVoiceDetection(): Boolean {
+        if (!cleanedAudio.canDetect) return false
+        val currentGeneration = generation
+        voice.useCallPath(true)
+        detectingVoice = cleanedAudio.startDetecting {
+            if (currentGeneration == generation && speaking && foreground) {
+                Log.i(TAG, "A pessoa falou por cima; voz interrompida (detector)")
+                haptics.start()
+                interruptAndListen()
+            }
+        }
+        if (!detectingVoice) voice.useCallPath(false)
+        return detectingVoice
+    }
+
+    /** Frees the microphone for the recognizer, which would only hear silence while the app records. */
+    private fun endVoiceDetection() {
+        if (!detectingVoice) return
+        detectingVoice = false
+        cleanedAudio.stop()
+        voice.useCallPath(false)
     }
 
     /**
@@ -507,6 +540,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun runOperation(block: suspend () -> Unit) {
         val currentGeneration = ++generation
         operation?.cancel()
+        endVoiceDetection()
         voice.stop()
         recognition.cancel()
         listening = false

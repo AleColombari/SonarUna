@@ -1,6 +1,6 @@
 // Interface web do SonarUna: ouve pelo microfone, fala com a voz do navegador e usa o mapa em data/unaerp.json.
 
-import { loadMap, normalize } from './engine.js';
+import { forSpeech, loadMap, normalize } from './engine.js';
 import { createSession } from './conversation.js';
 import { loadGpsPoints, suggestOrigin } from './localizacao.js';
 import { ROLES, callMode, loadStoredPhones, maskPhone, readContacts, savePhones } from './contacts.js';
@@ -90,7 +90,7 @@ function pickVoice() {
 
 function speakSentence(text) {
   return new Promise((resolve) => {
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(forSpeech(text));
     utterance.lang = 'pt-BR';
     utterance.rate = SPEECH_RATE;
     if (voice) utterance.voice = voice;
