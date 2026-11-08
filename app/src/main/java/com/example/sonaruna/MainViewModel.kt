@@ -7,11 +7,11 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sonaruna.guia.Conversation
+import com.example.sonaruna.guia.Echo
 import com.example.sonaruna.guia.FloorMap
 import com.example.sonaruna.guia.GpsPoints
 import com.example.sonaruna.guia.Phase
 import com.example.sonaruna.guia.Reply
-import com.example.sonaruna.guia.normalize
 import com.example.sonaruna.platform.HapticFeedback
 import com.example.sonaruna.platform.LocationRepository
 import com.example.sonaruna.platform.SpeechFailure
@@ -52,11 +52,11 @@ private enum class Recovery { PERMISSIONS, SETTINGS, SPEECH, TTS, MAP }
 private class Guide(val gps: GpsPoints, val conversation: Conversation)
 
 /**
- * One reply being spoken while the microphone already listens. [words]: what the app has started to say, so the
- * microphone hearing the loudspeaker (echo) is not taken for the person. [active] while the voice is speaking.
+ * One reply being spoken while the microphone already listens. [words]: what the app has started to say, in order, so
+ * the microphone hearing the loudspeaker (echo) is not taken for the person. [active] while the voice is speaking.
  */
 private class SpokenTurn {
-    val words = mutableSetOf<String>()
+    val words = mutableListOf<String>()
     var active = true
     var interrupted = false
 
@@ -237,7 +237,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val lines = reply.say.filter(String::isNotBlank)
         if (lines.isNotEmpty() && turn?.interrupted != true) {
             // Only what the app has started saying can come back as echo through the microphone.
-            if (!speakMessage(lines, turn) { i -> turn?.words?.addAll(normalize(lines[i]).split(' ')) } &&
+            if (!speakMessage(lines, turn) { i -> turn?.words?.addAll(Echo.words(lines[i])) } &&
                 turn?.interrupted != true
             ) return
         }
@@ -323,19 +323,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         fun takeOver(hypotheses: List<String>, final: Boolean): Boolean {
             if (personSpoke) return true
             if (duringSpeech == null) return false
-            // The speech is over: whatever is heard now is the person's answer.
+            val heard = hypotheses.first()
+            // Only counts are logged (and the text in test builds): enough to check the echo on a real phone.
+            val words = Echo.words(heard).size
             if (!duringSpeech.active) {
-                personSpoke = true
+                // The voice ended, but this recognition was open during it: the tail of the app's own voice may still
+                // arrive. Only what is left beyond that tail is the person; a phrase still open does not decide yet.
+                val rest = Echo.answerAfterSpeech(heard, duringSpeech.words)
+                if (rest.isEmpty()) {
+                    Log.i(TAG, "Ouviu depois da fala: $words palavras, tratado como eco" + if (debugLog) " ($heard)" else "")
+                    return false
+                }
+                if (final) personSpoke = true
                 return true
             }
-            // Only counts are logged, never what was said: enough to check the interruption on a real phone.
-            val words = normalize(hypotheses.first()).split(' ').count(String::isNotEmpty)
-            if (isEcho(hypotheses.first(), duringSpeech)) {
-                Log.i(TAG, "Ouviu durante a fala: $words palavras, tratado como eco")
+            // While the voice speaks, the person needs words the app did not say: 2 in a phrase still open (a single
+            // word may be noise or a misheard echo), 1 when the recognizer closes it.
+            if (!Echo.interrupts(heard, duringSpeech.words, needed = if (final) 1 else MIN_PARTIAL_WORDS)) {
+                Log.i(TAG, "Ouviu durante a fala: $words palavras, tratado como eco" + if (debugLog) " ($heard)" else "")
                 return false
             }
-            // A single word halfway may be noise; it only interrupts once the recognizer closes the phrase.
-            if (!final && words < MIN_PARTIAL_WORDS) return false
             Log.i(TAG, "Ouviu durante a fala: $words palavras, a pessoa falou por cima; voz interrompida")
             personSpoke = true
             interruptSpeech(duringSpeech)
@@ -353,8 +360,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 duringSpeech?.recognizing = false
                 hearingPhrase = false
                 if (foreground && takeOver(hypotheses, final = true) && listening) {
+                    // Without the stretch of the app's voice the recognizer may have caught before the answer.
                     val answer = duringSpeech?.let { turn ->
-                        hypotheses.map { withoutEcho(it, turn) }.filter(String::isNotEmpty).ifEmpty { hypotheses }
+                        hypotheses.map { Echo.answerAfterSpeech(it, turn.words) }.filter(String::isNotEmpty).ifEmpty { hypotheses }
                     } ?: hypotheses
                     if (debugLog) Log.d(TAG, "Ouviu: ${hypotheses.joinToString(" | ")} -> ${answer.first()}")
                     showHeard(answer.first())
@@ -362,7 +370,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     haptics.success()
                     runOperation { deliver(guide!!.conversation.hear(answer)) }
                 } else if (foreground && duringSpeech != null && !personSpoke) {
-                    reopenDuringSpeech(duringSpeech)
+                    // Only echo: while the voice speaks, listen again during it; after it, listen normally.
+                    if (duringSpeech.active) reopenDuringSpeech(duringSpeech) else listenAgainAfterEcho()
                 }
             },
             onError = { error ->
@@ -396,29 +405,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         haptics.start()
     }
 
+    /** The recognition handed over from the speech heard only the app's voice: open a fresh one for the answer. */
+    private fun listenAgainAfterEcho() {
+        val currentGeneration = generation
+        viewModelScope.launch {
+            delay(REOPEN_DELAY_MILLIS)
+            if (currentGeneration == generation && listening && foreground) startRecognition()
+        }
+    }
+
     private fun reopenDuringSpeech(turn: SpokenTurn) {
         val currentGeneration = generation
         viewModelScope.launch {
             delay(REOPEN_DELAY_MILLIS)
             if (currentGeneration == generation && turn.active && !turn.interrupted && foreground) startRecognition(turn)
         }
-    }
-
-    /**
-     * The recognition opened during the speech may bring the end of the app's question before the answer ("... para
-     * onde você quer ir banheiro"). The leading words the app said are dropped, so the answer is not read with them.
-     */
-    private fun withoutEcho(text: String, turn: SpokenTurn): String {
-        val words = normalize(text).split(' ').filter(String::isNotEmpty)
-        val start = words.indexOfFirst { it !in turn.words }.let { if (it < 0) words.size else it }
-        return if (start == 0) text else words.drop(start).joinToString(" ")
-    }
-
-    /** The microphone heard the app's own voice: most heard words were already said by the app. */
-    private fun isEcho(text: String, turn: SpokenTurn): Boolean {
-        val words = normalize(text).split(' ').filter(String::isNotEmpty)
-        if (words.isEmpty()) return true
-        return words.count { it in turn.words } >= words.size * ECHO_RATIO
     }
 
     private suspend fun recognitionFailed(error: SpeechFailure) {
@@ -539,8 +540,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         /** Listen while speaking, so the person can answer over the app. Set false if a phone cuts its own voice. */
         const val VOICE_INTERRUPTION = true
 
-        /** Share of heard words that the app already said above which it is the loudspeaker's echo (as on the web). */
-        const val ECHO_RATIO = 0.6
         const val REOPEN_DELAY_MILLIS = 300L
 
         /** How often the GPS answer checks whether the person finished the phrase they started. */
