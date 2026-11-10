@@ -52,7 +52,6 @@ object Echo {
     fun answerAfterSpeech(text: String, spoken: List<String>): String =
         withoutLeadingEcho(words(text), spoken).joinToString(" ")
 
-    /** One letter swapped ("vire" / "vira"); a letter more or less is a different word ("para" / "parar"). */
     /** Numbers the voice says as digits come back from the recognizer as words, and the other way around. */
     private fun canonical(word: String): String = NUMBERS[word] ?: word
 
@@ -63,6 +62,7 @@ object Echo {
         "dezessete" to "17", "dezoito" to "18", "dezenove" to "19", "vinte" to "20",
     )
 
+    /** One letter swapped ("vire" / "vira"); a letter more or less is a different word ("para" / "parar"). */
     private fun withinOneEdit(a: String, b: String): Boolean =
         a.length == b.length && a.indices.count { a[it] != b[it] } <= 1
 }

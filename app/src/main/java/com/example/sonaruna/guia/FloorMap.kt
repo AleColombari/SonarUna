@@ -68,7 +68,13 @@ class FloorMap(
             if (code.block != null) {
                 // The map may spell a code "A30" or "30A"; both become the same canonical code.
                 val room = rooms.find { RoomCodeParser.parse(it.codigo!!)?.canonical == code.canonical }
-                return if (room != null) PlaceMatch.Found(room) else PlaceMatch.UnknownRoom(code.canonical)
+                if (room != null) return PlaceMatch.Found(room)
+                // "para a 10" read as room A10: the "a" was the article. When only one room has that number, it is that.
+                if (code.block == 'A') {
+                    rooms.filter { it.codigo!!.filter(Char::isDigit).toIntOrNull() == code.number }
+                        .singleOrNull()?.let { return PlaceMatch.Found(it) }
+                }
+                return PlaceMatch.UnknownRoom(code.canonical)
             }
             val matches = rooms.filter { it.codigo!!.filter(Char::isDigit).toIntOrNull() == code.number }
             return when (matches.size) {

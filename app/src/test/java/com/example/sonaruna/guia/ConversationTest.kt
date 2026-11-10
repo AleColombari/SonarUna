@@ -218,4 +218,13 @@ class ConversationTest {
         assertTrue(session.hear(listOf("estou no banheiro")).say[0].startsWith("Encontrei mais de um lugar"))
         assertEquals(Phase.ORIGIN, session.phase)
     }
+
+    @Test
+    fun `commands count only from the best hypothesis`() {
+        val conversation = Conversation(map)
+        conversation.start()
+        conversation.hear(listOf("estou na sala 5A"))
+        assertEquals(Phase.NAVIGATING, conversation.hear(listOf("para a 10B", "pare a 10B")).phase)
+        assertTrue(conversation.hear(listOf("repete", "pronto")).say[0].startsWith("Etapa 1"))
+    }
 }

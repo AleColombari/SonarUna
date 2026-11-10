@@ -32,9 +32,12 @@ GPS (ao ar livre, no campus, com localização **precisa**)
 
 Microfone e interrupção
 
-- [ ] Depois de cada pergunta, o microfone abre sozinho: vibração curta e descrição "Ouvindo. Pode falar".
+- [ ] Depois de cada pergunta, o microfone abre sozinho: descrição "Ouvindo. Pode falar" e, quando ele já está ouvindo de verdade, uma vibração curta. Responder logo depois da vibração deve funcionar na primeira vez.
 - [ ] Tocar enquanto o app fala interrompe a fala e já escuta.
-- [ ] **Cancelamento de eco:** com o cabo, `adb logcat -s SonarUna` deve mostrar "Cancelamento de eco ligado" e, depois do português offline baixado (o app pede o download sozinho; reabrir o app depois), "Reconhecimento funcionou ... sem-eco=true". Sem o português offline aparece "recusou o áudio sem eco" e o app segue com o microfone comum.
+- [ ] **Falar por cima:** durante uma etapa longa, dizer "pronto" por cima: a voz para e a resposta é aceita. Ficar calado no corredor durante uma fala inteira: a voz não deve se cortar sozinha (no log, "Corte falso" indica que um barulho cortou e o app retomou a fala).
+- [ ] **Pausa no meio:** dizer "estou na… (pausa) dez bê": o app deve esperar o resto ("Frase cortada no meio; ouvindo o resto" no log) e entender a frase inteira.
+- [ ] **Depois de um corte:** a voz é cortada e o app volta a falar normalmente na resposta seguinte (antes ele ficava sem voz).
+- [ ] **Cancelamento de eco:** com o cabo, `adb logcat -s SonarUna` deve mostrar "Cancelamento de eco ligado" e, depois do português offline baixado (o app pede o download sozinho; reabrir o app depois), "Reconhecimento funcionou ... sem-eco=true". Ao abrir aparece "Português offline do reconhecimento: instalado=..."; com `instalado=false` o app já começa no microfone comum, sem a primeira resposta falhar.
 - [ ] **Eco:** no alto-falante, sem fone, deixar o app falar até o fim sem dizer nada, várias vezes (na rota e nas perguntas). Ele não pode avançar etapa nem responder à própria voz; o texto embaixo do botão não deve mostrar frases do app.
 - [ ] **Falar por cima:** começar a responder enquanto o app ainda faz a pergunta. A voz do app para e a resposta vale. Testar com o alto-falante e com fone de ouvido, e registrar se o app interrompe a si mesmo (eco) ou se o reconhecedor faz um bipe a cada tentativa.
 - [ ] Tocar enquanto o app escuta pausa a orientação ("Escuta pausada"). Um novo toque retoma onde parou.

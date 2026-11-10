@@ -208,3 +208,18 @@ test('quanto falta, repasse o caminho e onde estou', () => {
   for (let i = 0; i < 5; i++) session.hear(['pronto']);
   assert.equal(session.hear(['quanto falta']).say[0], 'Esta é a última etapa até a sala 15B.');
 });
+
+test('"para a 10": o "a" e o artigo, nao o bloco A (so existe a 10B)', () => {
+  assert.equal(findPlace(map, 'para a 10').place?.id, '10B');
+  assert.equal(findPlace(map, 'quero ir para a dez').place?.id, '10B');
+  // A 9 existe nos dois blocos: "a 9" continua sendo a 9A.
+  assert.equal(findPlace(map, 'para a 9').place?.id, '9A');
+});
+
+test('comandos so valem pela melhor hipotese: "pare" numa alternativa baixa nao encerra o guia', () => {
+  const session = createSession(map);
+  session.start();
+  session.hear(['estou na sala 5A']);
+  assert.equal(session.hear(['para a 10B', 'pare a 10B']).phase, 'navigating');
+  assert.equal(session.hear(['repete', 'pronto']).say[0].startsWith('Etapa 1'), true);
+});

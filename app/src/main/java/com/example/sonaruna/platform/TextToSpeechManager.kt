@@ -23,6 +23,9 @@ import kotlin.coroutines.resume
 /** How much faster than the person's own rate the app speaks (the web version uses 1.2 too). */
 private const val SPEECH_RATE = 1.2f
 
+/** How one reply ended: spoken to the end, cut by [TextToSpeechManager.stop] (the person spoke), or a real failure. */
+enum class SpeechOutcome { DONE, STOPPED, FAILED }
+
 /** Owns one TTS engine and completes speech only after its utterance callback. */
 class TextToSpeechManager(context: Context) {
     private val context = context.applicationContext
@@ -83,19 +86,18 @@ class TextToSpeechManager(context: Context) {
         }
     }
 
-    suspend fun speak(text: String): Boolean = speak(listOf(text))
-
     /**
      * Speaks [sentences] queued together, so the engine goes from one to the next without a pause. [onPart] is called
      * as each sentence starts playing (for the echo check: only what was already said can come back).
      */
-    suspend fun speak(sentences: List<String>, onPart: ((Int) -> Unit)? = null): Boolean = withContext(Dispatchers.Main.immediate) {
+    suspend fun speak(sentences: List<String>, onPart: ((Int) -> Unit)? = null): SpeechOutcome = withContext(Dispatchers.Main.immediate) {
         val generation = stopGeneration
         // "5B" read as "5 bê", not "5 billion".
         val parts = sentences.filter(String::isNotBlank).map(::forSpeech)
         val text = parts.joinToString(" ")
         speechMutex.withLock {
-            if (closed || !ready || generation != stopGeneration || parts.isEmpty()) return@withLock false
+            if (generation != stopGeneration) return@withLock SpeechOutcome.STOPPED
+            if (closed || !ready || parts.isEmpty()) return@withLock SpeechOutcome.FAILED
             // Respect slow speech rates chosen in accessibility settings. onDone is the
             // normal completion signal; this generous limit only handles a stalled engine.
             val timeoutMillis = (60_000L + text.length * 400L).coerceAtMost(300_000L)
@@ -118,10 +120,17 @@ class TextToSpeechManager(context: Context) {
                     if (!queued) finishSpeech(pending.lastId, false)
                 }
             } ?: false
-            // A failed or timed-out engine must be recreated on the next explicit retry.
-            // Cancellation propagates above and does not mark a healthy engine as failed.
-            if (!completed) releaseEngine()
-            completed
+            when {
+                completed -> SpeechOutcome.DONE
+                // Stopped on purpose (the person spoke over it, a new reply): the engine is fine. Releasing it here made
+                // the next reply fail and the app go silent after every interruption.
+                generation != stopGeneration -> SpeechOutcome.STOPPED
+                else -> {
+                    // A failed or timed-out engine must be recreated on the next explicit retry.
+                    releaseEngine()
+                    SpeechOutcome.FAILED
+                }
+            }
         }
     }
 

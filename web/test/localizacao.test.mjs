@@ -54,6 +54,15 @@ test('leitura imprecisa, longe de tudo ou fora do campus nao sugere lugar', () =
   assert.equal(suggestOrigin(gps, { lat: -21.1700, lon: -47.8100, precisao: 10 }).kind, 'fora-do-campus');
 });
 
+test('ao sair do predio (leitura de 15 a 30 m): vale so quando uma unica entrada cabe nela', () => {
+  // Bloco A fica longe das outras entradas: mesmo com 25 m de erro e 15 m de desvio, e ela.
+  assert.equal(suggestOrigin(gps, { ...north(at('saida-a'), 15), precisao: 25 }).place?.id, 'saida-a');
+  // Principal e bloco B ficam a uns 23 m: com 20 m de erro nao da para saber qual.
+  assert.equal(suggestOrigin(gps, { ...ENTRADA, precisao: 20 }).kind, 'imprecisa');
+  // Pior que 30 m: nunca.
+  assert.equal(suggestOrigin(gps, { ...at('saida-a'), precisao: 31 }).kind, 'imprecisa');
+});
+
 test('GeoJSON invalido falha com mensagem clara', () => {
   assert.throws(() => loadGpsPoints({ type: 'Feature' }, map), /FeatureCollection/);
   const bad = { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [0, 0] }, properties: { ponto: 'nao-existe', raio: 10 } }] };

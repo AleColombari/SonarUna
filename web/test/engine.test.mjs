@@ -321,4 +321,7 @@ test('forSpeech: a voz le o bloco pelo nome da letra ("5 bê", nao "5 bilhoes")'
   assert.equal(forSpeech('Da sala 20B para a sala 9A.'), 'Da sala 20 bê para a sala 9 á.');
   // Numeros soltos, "1 e 2" e codigos com a letra antes (A12) ficam como estao.
   assert.equal(forSpeech('Etapa 1 de 3. Etapas 1 e 2. Sala A12.'), 'Etapa 1 de 3. Etapas 1 e 2. Sala A12.');
+  // Siglas ditas como palavra nao sao soletradas.
+  assert.equal(forSpeech('Você não parece estar no campus da UNAERP.'), 'Você não parece estar no campus da Unaerp.');
+  assert.equal(forSpeech('Indo para o LIAPE, bloco B.'), 'Indo para o Liape, bloco B.');
 });

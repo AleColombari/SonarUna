@@ -4,9 +4,14 @@
 // Nome das letras dos blocos, para a voz ler "5B" como "5 bê": algumas vozes leem "5B" como "5 bilhoes".
 const LETTER_SOUNDS = { A: 'á', B: 'bê', C: 'cê', D: 'dê', E: 'é', F: 'éfe', G: 'gê', H: 'agá', I: 'i', J: 'jota', K: 'cá', L: 'éle', M: 'ême', N: 'êne', O: 'ó', P: 'pê', Q: 'quê', R: 'érre', S: 'ésse' };
 
-/** Texto para a voz: sala "5B" vira "5 bê". O texto na tela continua "5B". */
+/**
+ * Texto para a voz: sala "5B" vira "5 bê"; siglas ditas como palavra ("UNAERP", "LIAPE") viram "Unaerp", porque em
+ * maiusculas algumas vozes soletram. O texto na tela continua como esta.
+ */
 export function forSpeech(text) {
-  return String(text).replace(/\b(\d+)([A-S])\b/g, (_, number, letter) => `${number} ${LETTER_SOUNDS[letter]}`);
+  return String(text)
+    .replace(/\b(\d+)([A-S])\b/g, (_, number, letter) => `${number} ${LETTER_SOUNDS[letter]}`)
+    .replace(/\b([A-Z])([A-Z]{2,})\b/g, (_, first, rest) => first + rest.toLowerCase());
 }
 
 /** Minusculas, sem acentos, sem pontuacao; letras e numeros colados sao separados ("a15" -> "a 15"). */
@@ -273,7 +278,13 @@ export function findPlace(map, text) {
     if (code.block) {
       // O mapa pode escrever o codigo "A30" ou "30A"; os dois viram o mesmo canonico.
       const room = rooms.find((point) => parseRoomCode(point.codigo)?.canonical === code.canonical);
-      return room ? { kind: 'found', place: room } : { kind: 'unknown-room', code: code.canonical };
+      if (room) return { kind: 'found', place: room };
+      // "para a 10" lido como sala A10: o "a" era o artigo. Se so uma sala tem esse numero, e ela.
+      if (code.block === 'A') {
+        const same = rooms.filter((point) => Number(point.codigo.replace(/\D/g, '')) === code.number);
+        if (same.length === 1) return { kind: 'found', place: same[0] };
+      }
+      return { kind: 'unknown-room', code: code.canonical };
     }
     const matches = rooms.filter((point) => Number(point.codigo.replace(/\D/g, '')) === code.number);
     if (matches.length === 1) return { kind: 'found', place: matches[0] };

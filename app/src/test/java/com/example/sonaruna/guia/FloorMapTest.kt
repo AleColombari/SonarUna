@@ -125,4 +125,12 @@ class FloorMapTest {
         assertEquals("banheiro-f-a", bathrooms.minBy { map.routeWeight("5A", it.id) }.id)
         assertEquals("banheiro-f-b", bathrooms.minBy { map.routeWeight("20B", it.id) }.id)
     }
+
+    @Test
+    fun `in "para a 10" the "a" is the article, not block A`() {
+        assertEquals("10B", found("para a 10"))
+        assertEquals("10B", found("quero ir para a dez"))
+        // Room 9 exists in both blocks: "a 9" stays 9A.
+        assertEquals("9A", found("para a 9"))
+    }
 }

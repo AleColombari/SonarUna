@@ -7,6 +7,9 @@
  */
 export const PRECISAO_MAXIMA = 10;
 
+/** Ate isso (metros) a leitura ainda vale, mas so quando uma unica entrada cabe nela. */
+export const PRECISAO_FOLGADA = 30;
+
 const RAIO_TERRA = 6371000;
 const rad = (graus) => (graus * Math.PI) / 180;
 
@@ -62,16 +65,17 @@ export function loadGpsPoints(geojson, map) {
  * Um ponto entra quando a distancia cabe no seu raio mais a margem de erro da leitura; vence o mais perto.
  */
 export function suggestOrigin(gps, posicao) {
-  if (!posicao || !(posicao.precisao <= PRECISAO_MAXIMA)) return { kind: 'imprecisa' };
+  if (!posicao || !(posicao.precisao <= PRECISAO_FOLGADA)) return { kind: 'imprecisa' };
   if (gps.campus && distanciaMetros(gps.campus, posicao) > gps.campus.raio + posicao.precisao) {
     return { kind: 'fora-do-campus' };
   }
-  let best = null;
-  for (const ponto of gps.pontos) {
-    const distancia = distanciaMetros(ponto, posicao);
-    if (distancia <= ponto.raio + posicao.precisao && (!best || distancia < best.distancia)) {
-      best = { place: ponto.place, distancia };
-    }
-  }
-  return best ? { kind: 'sugestao', ...best } : { kind: 'nenhuma' };
+  const candidatos = gps.pontos
+    .map((ponto) => ({ place: ponto.place, distancia: distanciaMetros(ponto, posicao), raio: ponto.raio }))
+    .filter((c) => c.distancia <= c.raio + posicao.precisao);
+  // Leitura boa distingue ate as entradas mais proximas: vence a mais perto. Uma pior (logo ao sair do predio)
+  // ainda vale quando so uma entrada cabe nela, como a do bloco A, longe das outras; quando cabem duas (principal
+  // e bloco B), nao da para saber qual.
+  if (posicao.precisao > PRECISAO_MAXIMA && candidatos.length > 1) return { kind: 'imprecisa' };
+  const best = candidatos.reduce((a, b) => (!a || b.distancia < a.distancia ? b : a), null);
+  return best ? { kind: 'sugestao', place: best.place, distancia: best.distancia } : { kind: 'nenhuma' };
 }

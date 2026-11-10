@@ -130,30 +130,28 @@ class Conversation(private val map: FloorMap) {
         // The person spoke: whatever the GPS finds later no longer changes the conversation.
         locating = false
 
-        if (heard.any { classifyCommand(it) == Command.ASSIST }) {
+        // Commands only from the best hypothesis: a low alternative ("pare" for "para a 10B") must not stop the guide.
+        // Places still come from every hypothesis (the recognizer mixes up "dez bê" and "3B").
+        val command = classifyCommand(heard.first())
+        if (command == Command.ASSIST) {
             return reply(listOf("O pedido de ajuda por ligação ainda não está neste aplicativo. Se precisar, peça ajuda a alguém por perto.") + currentQuestion().say)
         }
-        for (text in heard) {
-            when (classifyCommand(text)) {
-                Command.STOP -> return stop()
-                Command.RESTART -> return start()
-                Command.DESTINATION -> return if (origin != null) changeDestination() else currentQuestion()
-                Command.REMAINING -> return remaining()
-                Command.OVERVIEW -> return overview()
-                Command.WHERE -> return whereAmI()
-                Command.HELP -> return help()
-                else -> Unit
-            }
+        when (command) {
+            Command.STOP -> return stop()
+            Command.RESTART -> return start()
+            Command.DESTINATION -> return if (origin != null) changeDestination() else currentQuestion()
+            Command.REMAINING -> return remaining()
+            Command.OVERVIEW -> return overview()
+            Command.WHERE -> return whereAmI()
+            Command.HELP -> return help()
+            else -> Unit
         }
         if (phase != Phase.NAVIGATING) {
-            for (text in heard) {
-                val command = classifyCommand(text)
-                if (command == Command.REPEAT) return currentQuestion()
-                if (command == Command.BACK && phase != Phase.ORIGIN) {
-                    phase = Phase.ORIGIN
-                    candidate = null
-                    return currentQuestion()
-                }
+            if (command == Command.REPEAT) return currentQuestion()
+            if (command == Command.BACK && phase != Phase.ORIGIN) {
+                phase = Phase.ORIGIN
+                candidate = null
+                return currentQuestion()
             }
         }
         if (phase in setOf(Phase.ORIGIN, Phase.CONFIRM_ORIGIN, Phase.DESTINATION)) {
@@ -417,8 +415,8 @@ class Conversation(private val map: FloorMap) {
             changeDestination()
             return hearDestination(heard, avoid = previous)
         }
-        for (text in heard) {
-            // "Pronto", "foi" or any yes ("beleza", "isso", "certo"): the step is done.
+        // "Pronto", "foi" or any yes ("beleza", "isso", "certo"): the step is done. Only from the best hypothesis.
+        for (text in heard.take(1)) {
             when (classifyCommand(text) ?: if (classifyYesNo(text) == YesNo.YES) Command.NEXT else null) {
                 Command.NEXT -> {
                     if (index + 1 >= steps.size) {

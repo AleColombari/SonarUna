@@ -30,14 +30,22 @@ sealed interface OriginGuess {
 class GpsPoints(val campus: GpsArea?, val pontos: List<GpsPoint>, val pendentes: List<String>) {
 
     fun suggestOrigin(position: Position?): OriginGuess {
-        if (position == null || !(position.precisao <= MAX_ACCURACY_METERS)) return OriginGuess.Imprecise
+        if (position == null || !(position.precisao <= MAX_LOOSE_ACCURACY_METERS)) return OriginGuess.Imprecise
         if (campus != null && distanceMeters(campus.lat, campus.lon, position.lat, position.lon) > campus.raio + position.precisao) {
             return OriginGuess.OutsideCampus
         }
-        val best = pontos
+        val candidates = pontos
             .map { it to distanceMeters(it.lat, it.lon, position.lat, position.lon) }
             .filter { (point, distance) -> distance <= point.raio + position.precisao }
-            .minByOrNull { it.second }
+        // A good reading tells even the closest entrances apart: the nearest wins. A rougher one (just out of a
+        // building, walls in the way) still counts when only one entrance fits it, as at block A's, far from the
+        // others; when two fit (main entrance and block B's), it cannot tell them apart.
+        val best = when {
+            position.precisao <= MAX_ACCURACY_METERS -> candidates.minByOrNull { it.second }
+            candidates.size == 1 -> candidates.single()
+            candidates.isEmpty() -> null
+            else -> return OriginGuess.Imprecise
+        }
         return if (best != null) OriginGuess.Suggestion(best.first.place, best.second) else OriginGuess.NoMatch
     }
 
@@ -48,6 +56,9 @@ class GpsPoints(val campus: GpsArea?, val pontos: List<GpsPoint>, val pendentes:
          * they are never confused.
          */
         const val MAX_ACCURACY_METERS = 10.0
+
+        /** Up to this accuracy (meters) a reading still counts, but only when a single entrance fits it. */
+        const val MAX_LOOSE_ACCURACY_METERS = 30.0
 
         fun parse(json: String, map: FloorMap): GpsPoints {
             val raw = JSONObject(json)

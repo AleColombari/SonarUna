@@ -38,9 +38,10 @@ Dentro dos prédios o GPS piora muito. Ele serve para sugerir o ponto de partida
 
 ## Como o app usa
 
-1. Ao começar, o app diz só "Procurando sua localização." e já escuta enquanto pede a localização precisa (até 8 segundos). Se a pessoa disser onde está antes, vale o que ela disse e a leitura é ignorada. Os lugares de partida com coordenadas são a entrada principal, a entrada do bloco B e a entrada do bloco A.
+1. Ao começar, o app diz só "Procurando sua localização." e já escuta enquanto pede a localização precisa: junta leituras por até 10 segundos, fica com a melhor e para assim que uma tiver ±10 m ou menos (o log mostra "Localização: leituras=… melhor_precisao=… m" e "GPS: … -> sugere …", sem coordenadas). Se a pessoa disser onde está antes, vale o que ela disse e a leitura é ignorada. Os lugares de partida com coordenadas são a entrada principal, a entrada do bloco B e a entrada do bloco A.
 2. `suggestOrigin` ([web/localizacao.js](../web/localizacao.js)) decide:
-   - **leitura pior que ±10 m** ou sem leitura: não sugere nada e pergunta "Onde você está agora?";
+   - **leitura pior que ±30 m** ou sem leitura: não sugere nada e pergunta "Onde você está agora?";
+   - **leitura entre ±10 e ±30 m** (comum logo ao sair de um prédio): só sugere quando **uma única** entrada cabe na leitura, como a do bloco A, longe das outras. Na entrada principal e na do bloco B (a uns 23 m uma da outra) ela não decide e o app pergunta. Mudança de 09/11/2026: na saída do bloco A o app não sugeria nada, porque a primeira leitura ao sair do prédio vinha pior que 10 m;
    - **fora do raio do campus**: avisa "você não parece estar no campus da UNAERP" e pergunta;
    - **dentro do raio de um ponto** (raio do ponto + margem de erro da leitura): sugere o mais perto.
 3. A sugestão é sempre uma pergunta: "Parece que você está na entrada principal. Está certo?"

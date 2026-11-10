@@ -17,6 +17,17 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    buildTypes {
+        // "SonarUna 2": the same app with another id and name, installed next to the one already on the phone, to try
+        // a new version without replacing the one that works. Build with: gradlew assembleLado
+        create("lado") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".lado"
+            versionNameSuffix = "-teste"
+            matchingFallbacks += listOf("debug")
+        }
+    }
+
     buildFeatures { compose = true }
     // The map and GPS points are the same files the web version reads, packaged as assets without a copy.
     sourceSets["main"].assets.srcDirs("src/main/assets", "$rootDir/data")

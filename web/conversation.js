@@ -389,8 +389,8 @@ export function createSession(map, getContacts = () => []) {
       changeDestination();
       return hearDestination(alternatives, previous);
     }
-    for (const text of alternatives) {
-      // "Pronto", "foi" ou qualquer sim ("beleza", "isso", "certo"): a etapa foi feita.
+    // "Pronto", "foi" ou qualquer sim ("beleza", "isso", "certo"): a etapa foi feita. So da melhor hipotese.
+    for (const text of alternatives.slice(0, 1)) {
       switch (classifyCommand(text) ?? (classifyYesNo(text) === 'yes' ? 'next' : null)) {
         case 'next':
           if (index + 1 >= steps.length) {
@@ -471,27 +471,23 @@ export function createSession(map, getContacts = () => []) {
     locating = false;
 
     if (phase === 'assist-choose' || phase === 'assist-confirm') return hearAssist(heard);
-    if (heard.some((text) => classifyCommand(text) === 'assist')) return beginAssist(heard);
-
-    for (const text of heard) {
-      const command = classifyCommand(text);
-      if (command === 'stop') return stop();
-      if (command === 'restart') return start();
-      if (command === 'destination') return entrance ? changeDestination() : announceCurrentQuestion();
-      if (command === 'remaining') return remaining();
-      if (command === 'overview') return overview();
-      if (command === 'where') return whereAmI();
-      if (command === 'help') return help();
-    }
+    // Comandos so da melhor hipotese: uma alternativa baixa ("pare" no lugar de "para a 10B") nao pode encerrar o guia.
+    // Lugares ainda vem de todas as hipoteses (o reconhecedor troca "dez bê" por "3B").
+    const command = classifyCommand(heard[0]);
+    if (command === 'assist') return beginAssist(heard);
+    if (command === 'stop') return stop();
+    if (command === 'restart') return start();
+    if (command === 'destination') return entrance ? changeDestination() : announceCurrentQuestion();
+    if (command === 'remaining') return remaining();
+    if (command === 'overview') return overview();
+    if (command === 'where') return whereAmI();
+    if (command === 'help') return help();
     if (phase !== 'navigating') {
-      for (const text of heard) {
-        const command = classifyCommand(text);
-        if (command === 'repeat') return announceCurrentQuestion();
-        if (command === 'back' && phase !== 'entrance') {
-          phase = 'entrance';
-          candidate = null;
-          return announceCurrentQuestion();
-        }
+      if (command === 'repeat') return announceCurrentQuestion();
+      if (command === 'back' && phase !== 'entrance') {
+        phase = 'entrance';
+        candidate = null;
+        return announceCurrentQuestion();
       }
     }
 

@@ -18,9 +18,39 @@ fun normalize(text: String): String {
 private val letterSounds = mapOf('A' to "á", 'B' to "bê", 'C' to "cê", 'D' to "dê", 'E' to "é", 'F' to "éfe", 'G' to "gê", 'H' to "agá", 'I' to "i", 'J' to "jota", 'K' to "cá", 'L' to "éle", 'M' to "ême", 'N' to "êne", 'O' to "ó", 'P' to "pê", 'Q' to "quê", 'R' to "érre", 'S' to "ésse")
 private val roomCode = Regex("""\b(\d+)([A-S])\b""")
 
-/** Text for the voice: room "5B" becomes "5 bê". The text on screen stays "5B". Same as forSpeech in web/engine.js. */
-fun forSpeech(text: String): String =
-    roomCode.replace(text) { match -> "${match.groupValues[1]} ${letterSounds.getValue(match.groupValues[2][0])}" }
+// Acronyms said as words at the university ("UNAERP", "LIAPE"): in capitals, some voices spell them letter by letter.
+private val acronym = Regex("""\b([A-Z])([A-Z]{2,})\b""")
+
+/**
+ * Text for the voice: room "5B" becomes "5 bê", "UNAERP" becomes "Unaerp". The text on screen stays as it is. Same as
+ * forSpeech in web/engine.js.
+ */
+fun forSpeech(text: String): String = roomCode
+    .replace(text) { match -> "${match.groupValues[1]} ${letterSounds.getValue(match.groupValues[2][0])}" }
+    .let { spoken -> acronym.replace(spoken) { it.groupValues[1] + it.groupValues[2].lowercase() } }
+
+// Words a phrase cannot end on: the person paused in the middle ("estou na ... 3A", "quero ir para a ... 10B").
+private val midPhraseWords = setOf(
+    "na", "no", "nas", "nos", "para", "pra", "pro", "a", "o", "e", "em", "de", "do", "da", "ao", "ate", "perto",
+    "sala", "bloco", "estou", "to", "tou", "quero", "ir", "vou",
+)
+
+/**
+ * The recognizer ended the phrase at a pause in the middle of it: the last word cannot end it, and the phrase is not
+ * already an answer (a command, a yes or a no: "onde estou", "sim, estou").
+ */
+fun endsMidPhrase(text: String): Boolean {
+    val normalized = normalize(text)
+    val words = normalized.split(' ')
+    val last = words.last()
+    if (last.isEmpty() || last !in midPhraseWords) return false
+    // "estou na 3A" ends in "3 a" and "bloco e" in a block letter: the letter closes the room, the phrase is whole.
+    val before = words.getOrNull(words.size - 2)
+    if (last.length == 1 && before != null && (before.all(Char::isDigit) || before == "bloco")) return false
+    // Only an explicit "sim"/"não" makes it an answer: "quero" counts as yes, but "quero ir para a" is unfinished.
+    val explicitAnswer = containsPhrase(normalized, "sim") || containsPhrase(normalized, "nao")
+    return classifyCommand(text) == null && !explicitAnswer
+}
 
 /** Whole-word phrase match on already normalized text, so "sim" never matches "simples". */
 internal fun containsPhrase(normalized: String, phrase: String): Boolean = " $normalized ".contains(" $phrase ")

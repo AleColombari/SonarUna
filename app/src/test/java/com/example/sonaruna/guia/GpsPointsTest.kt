@@ -46,6 +46,15 @@ class GpsPointsTest {
     }
 
     @Test
+    fun `just out of a building (15 to 30 m) it counts only when a single entrance fits`() {
+        val blockA = at("saida-a", precisao = 25.0)
+        val shifted = blockA.copy(lat = blockA.lat + 15 / 111_320.0)
+        assertEquals("saida-a", (gps.suggestOrigin(shifted) as OriginGuess.Suggestion).place.id)
+        assertEquals(OriginGuess.Imprecise, gps.suggestOrigin(at("entrada-principal", precisao = 20.0)))
+        assertEquals(OriginGuess.Imprecise, gps.suggestOrigin(at("saida-a", precisao = 31.0)))
+    }
+
+    @Test
     fun `haversine distance in meters`() {
         val d = distanceMeters(-21.2, -47.78, -21.2 + 100 / 111_320.0, -47.78)
         assertTrue(d.toString(), kotlin.math.abs(d - 100) < 0.5)
